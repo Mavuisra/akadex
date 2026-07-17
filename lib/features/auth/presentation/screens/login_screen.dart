@@ -27,101 +27,113 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => context.go('/onboarding'),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () => context.go('/onboarding'),
+                icon: const Icon(Icons.arrow_back_rounded),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Akadex',
-                style: TextStyle(
-                  color: AkadexColors.primary,
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Bon retour parmi nous',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AkadexColors.ink,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Connecte-toi pour accéder à tes ressources',
-                style: TextStyle(color: AkadexColors.inkMuted),
-              ),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.mail_outline_rounded),
-                ),
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _password,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText: 'Mot de passe',
-                  prefixIcon: const Icon(Icons.lock_outline_rounded),
-                  suffixIcon: IconButton(
-                    onPressed: () => setState(() => _obscure = !_obscure),
-                    icon: Icon(
-                      _obscure
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
+            ),
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Akadex',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AkadexColors.primary,
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Connexion',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AkadexColors.ink,
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                        TextField(
+                          controller: _email,
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: const InputDecoration(
+                            hintText: 'Email',
+                            prefixIcon: Icon(Icons.mail_outline_rounded),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _password,
+                          textAlign: TextAlign.center,
+                          obscureText: _obscure,
+                          decoration: InputDecoration(
+                            hintText: 'Mot de passe',
+                            prefixIcon: const Icon(Icons.lock_outline_rounded),
+                            suffixIcon: IconButton(
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                              icon: Icon(
+                                _obscure
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: TextButton(
+                            onPressed: () {},
+                            child: const Text('Mot de passe oublié ?'),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => context.go('/home'),
+                          child: const Text('Se connecter'),
+                        ),
+                        const SizedBox(height: 20),
+                        Center(
+                          child: GestureDetector(
+                            onTap: () => context.go('/register'),
+                            child: const Text.rich(
+                              TextSpan(
+                                style: TextStyle(color: AkadexColors.inkMuted),
+                                children: [
+                                  TextSpan(text: 'Pas de compte ? '),
+                                  TextSpan(
+                                    text: "S'inscrire",
+                                    style: TextStyle(
+                                      color: AkadexColors.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text('Mot de passe oublié ?'),
-                ),
-              ),
-              const SizedBox(height: 8),
-              FilledButton(
-                onPressed: () => context.go('/home'),
-                child: const Text('Se connecter'),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Pas encore de compte ? ',
-                    style: TextStyle(color: AkadexColors.inkMuted),
-                  ),
-                  GestureDetector(
-                    onTap: () => context.go('/register'),
-                    child: const Text(
-                      "S'inscrire",
-                      style: TextStyle(
-                        color: AkadexColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
