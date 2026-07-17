@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (ex: v1.0.1) — utilisé uniquement en manual dispatch'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & publish GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          elif [[ -n "${{ inputs.version }}" ]]; then
+            echo "tag=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build Android APK
+        run: flutter build apk --release
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Package artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/akadex-android-${{ steps.ver.outputs.tag }}.apk"
+          cd build/web
+          zip -r "../../dist/akadex-web-${{ steps.ver.outputs.tag }}.zip" .
+          cd ../..
+          ls -lh dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Akadex ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            dist/akadex-android-*.apk
+            dist/akadex-web-*.zip
+          body: |
+            ## Téléchargements Akadex
+
+            | Fichier | Plateforme |
+            |---------|------------|
+            | `akadex-android-*.apk` | Android (installable) |
+            | `akadex-web-*.zip` | Build web (héberger ou ouvrir en local) |
+
+            ### Android
+            1. Télécharge le fichier `.apk`
+            2. Autorise l’installation depuis des sources inconnues si demandé
+            3. Ouvre le fichier et installe
+
+            > Build signé avec la clé debug CI (pour tests). Pour le Play Store, ajoute une clé de release.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

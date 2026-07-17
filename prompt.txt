@@ -1,0 +1,524 @@
+# Prompt de conception – **Akadex**
+
+## La plateforme académique des étudiants
+
+### Contexte du projet
+
+Je souhaite concevoir une **application mobile multiplateforme (Android et iOS) développée avec Flutter** appelée **Akadex**.
+
+Akadex n'est pas une simple application de consultation de documents. C'est une **plateforme académique et communautaire** qui ambitionne de devenir la référence pour les étudiants des universités, instituts supérieurs et grandes écoles, en Afrique et au-delà.
+
+Aujourd'hui, les étudiants rencontrent plusieurs difficultés qui ralentissent leur apprentissage.
+
+Lorsqu'un étudiant entre dans une université, il connaît rarement le contenu réel de son programme. Il choisit parfois une filière sans comprendre les compétences qui y seront développées, les cours qui seront dispensés ou les opportunités professionnelles qui en découlent. Une fois les cours commencés, il découvre progressivement son cursus, souvent sans disposer d'une vue d'ensemble de son parcours académique.
+
+À cela s'ajoute un autre problème majeur : les ressources académiques sont dispersées.
+
+Les anciens examens, travaux pratiques, interrogations, exposés, notes personnelles, résumés, rapports, mémoires et autres documents circulent principalement sur WhatsApp, Telegram, Google Drive, par e-mail ou via des clés USB. Beaucoup de ressources disparaissent lorsque les étudiants terminent leurs études ou changent d'appareil.
+
+Dans certains établissements, les supports de cours ne sont plus distribués comme auparavant, tandis que les livres recommandés restent souvent coûteux ou difficiles à trouver. Les nouveaux étudiants perdent ainsi un temps considérable à rechercher des informations qui existent déjà.
+
+Akadex répond à ce problème en créant une plateforme unique où les étudiants peuvent retrouver, partager et enrichir toutes les ressources utiles à leur réussite académique.
+
+Mais Akadex va beaucoup plus loin.
+
+Son ambition est de devenir le **campus numérique** des étudiants.
+
+Une application où ils peuvent apprendre, collaborer, communiquer, découvrir leur université, préparer leurs examens, partager leurs connaissances, rejoindre des communautés, trouver des opportunités et construire leur réseau académique.
+
+---
+
+# Vision
+
+Akadex doit être une application que les étudiants utilisent quotidiennement.
+
+Elle ne doit pas être perçue comme une simple bibliothèque de PDF.
+
+Elle doit devenir l'écosystème central de la vie étudiante.
+
+Chaque université possède son propre espace.
+
+Chaque faculté possède son organisation.
+
+Chaque département possède sa communauté.
+
+Chaque cours possède son contenu.
+
+Chaque étudiant peut contribuer.
+
+---
+
+# Objectifs
+
+Créer une plateforme qui :
+
+* centralise les ressources académiques
+* facilite le partage des connaissances
+* aide les nouveaux étudiants à mieux comprendre leur cursus
+* valorise les contributions des étudiants
+* favorise l'entraide
+* réduit la perte des documents académiques
+* améliore la préparation aux examens
+* crée une véritable communauté universitaire
+
+---
+
+# Utilisateurs
+
+L'application est destinée à :
+
+* étudiants
+* anciens étudiants (Alumni)
+* enseignants
+* assistants
+* représentants des promotions
+* associations étudiantes
+* bibliothèques universitaires
+* administrations académiques
+
+---
+
+# Architecture multi-universités
+
+L'application doit supporter plusieurs établissements.
+
+Exemple :
+
+Université
+
+↓
+
+Campus (optionnel)
+
+↓
+
+Faculté
+
+↓
+
+Département
+
+↓
+
+Promotion
+
+↓
+
+Cours
+
+↓
+
+Documents
+
+Chaque université possède :
+
+* son identité
+* ses couleurs
+* son logo
+* ses départements
+* ses enseignants
+* ses cours
+* ses documents
+* ses annonces
+
+---
+
+# Fonctionnalités principales
+
+## Authentification
+
+* Email
+* Google
+* Apple
+* Téléphone
+* Facebook
+
+Création d'un profil étudiant.
+
+---
+
+# Profil
+
+Chaque utilisateur possède :
+
+* photo
+* nom
+* établissement
+* faculté
+* département
+* promotion
+* niveau
+* biographie
+* badges
+* réputation
+* nombre de contributions
+
+---
+
+# Accueil
+
+L'écran d'accueil affiche :
+
+* actualités universitaires
+* annonces
+* nouveaux documents
+* cours populaires
+* examens récents
+* nouveaux TP
+* nouveaux livres
+* discussions populaires
+* événements
+* recommandations personnalisées
+
+---
+
+# Bibliothèque académique
+
+Organisation :
+
+Université
+
+↓
+
+Faculté
+
+↓
+
+Département
+
+↓
+
+Promotion
+
+↓
+
+Cours
+
+↓
+
+Documents
+
+Chaque cours contient :
+
+* description
+* objectifs
+* compétences visées
+* prérequis
+* crédits
+* semestre
+* enseignant(s)
+* bibliographie
+
+---
+
+# Types de documents
+
+Support de cours
+
+Résumé
+
+PDF
+
+Word
+
+PowerPoint
+
+Images
+
+Vidéos
+
+Liens
+
+Livre
+
+TP
+
+Corrigé
+
+Interrogation
+
+Examen
+
+Rapport
+
+Projet
+
+Mémoire
+
+Thèse
+
+Article scientifique
+
+Tutoriel
+
+Fiche de révision
+
+---
+
+Chaque document affiche :
+
+* aperçu
+* auteur
+* université
+* département
+* cours associé
+* année académique
+* date
+* taille
+* nombre de téléchargements
+* vues
+* favoris
+* commentaires
+* notation
+
+---
+
+# Visionneuse intégrée
+
+Lecture directe des PDF.
+
+Fonctionnalités :
+
+* annotations
+* surlignage
+* reprise de lecture
+* favoris
+* téléchargement
+* lecture hors ligne
+
+---
+
+# Recherche intelligente
+
+Recherche globale.
+
+Recherche par :
+
+* université
+* faculté
+* département
+* enseignant
+* cours
+* étudiant
+* document
+* examen
+* TP
+* mémoire
+* livre
+
+Filtres :
+
+* année
+* promotion
+* type
+* popularité
+* date
+
+---
+
+# Communauté
+
+Chaque département possède un espace communautaire.
+
+Les étudiants peuvent :
+
+* publier
+* poser des questions
+* répondre
+* commenter
+* liker
+* partager
+* suivre des sujets
+
+L'expérience doit s'inspirer de Reddit, Discord et LinkedIn.
+
+---
+
+# Chat
+
+Messagerie privée.
+
+Discussions de groupe.
+
+Partage :
+
+* PDF
+* images
+* vidéos
+* documents
+* audio
+
+---
+
+# Calendrier
+
+Calendrier universitaire.
+
+* examens
+* défenses
+* délibérations
+* inscriptions
+* événements
+* conférences
+
+---
+
+# Notifications
+
+Notifications push.
+
+Informer lors :
+
+* nouveau document
+* nouveau commentaire
+* nouvelle annonce
+* nouveau message
+* nouveau cours
+* nouvelle réponse
+
+---
+
+# Téléchargement
+
+Téléchargement sécurisé.
+
+Synchronisation automatique.
+
+Mode hors ligne.
+
+---
+
+# Favoris
+
+Sauvegarder :
+
+* documents
+* cours
+* enseignants
+* livres
+* discussions
+
+---
+
+# Historique
+
+Retrouver tout ce qui a été consulté.
+
+---
+
+# Contributions
+
+Chaque étudiant peut partager :
+
+* notes
+* résumés
+* TP
+* examens
+* exposés
+* projets
+* mémoires
+* documents utiles
+
+Toutes les publications sont modérées.
+
+---
+
+# Gamification
+
+Les étudiants gagnent :
+
+* points
+* badges
+* niveaux
+* récompenses
+* classement
+
+Les meilleurs contributeurs sont mis en avant.
+
+---
+
+# Intelligence artificielle
+
+Assistant IA intégré.
+
+Il peut :
+
+* expliquer un chapitre
+* résumer un PDF
+* répondre aux questions
+* créer des fiches de révision
+* générer des quiz
+* préparer un étudiant à un examen
+* recommander des ressources
+* proposer un plan d'étude personnalisé
+
+L'IA exploite les documents disponibles sur la plateforme pour fournir des réponses contextualisées.
+
+---
+
+# Tableau de bord administrateur
+
+Les administrateurs peuvent :
+
+* gérer les établissements
+* gérer les facultés
+* gérer les départements
+* gérer les promotions
+* gérer les enseignants
+* gérer les utilisateurs
+* gérer les documents
+* modérer les publications
+* envoyer des annonces
+* consulter les statistiques
+
+---
+
+# Architecture Flutter
+
+Construire une application Flutter professionnelle avec :
+
+* Flutter (dernière version stable)
+* Material Design 3
+* Riverpod
+* Go Router
+* Dio
+* Freezed
+* Json Serializable
+* Flutter Hooks
+* Hive
+* SQLite
+* Firebase Cloud Messaging
+* Supabase ou Django REST API
+* Clean Architecture
+* Repository Pattern
+* Dependency Injection
+* Offline First
+* Cache intelligent
+* Infinite Scroll
+* Pagination
+* Pull To Refresh
+* Animations Fluides
+* Hero Animations
+* Shimmer Loading
+* Mode clair / sombre
+* Internationalisation
+* Accessibilité
+* Excellentes performances
+
+---
+
+# Design
+
+Créer un design premium, moderne et élégant.
+
+L'interface doit être comparable aux meilleures applications mobiles actuelles comme Notion, Duolingo, Google Classroom, Discord ou LinkedIn Learning.
+
+L'expérience utilisateur doit être intuitive, rapide, agréable et parfaitement adaptée aux étudiants.
+
+---
+
+# Ambition
+
+Akadex doit devenir la plateforme académique de référence pour les étudiants, en connectant les établissements, les enseignants, les anciens étudiants et les apprenants autour d'un même écosystème numérique.
+
+L'objectif n'est pas seulement de stocker des documents, mais de construire une communauté où chacun peut apprendre, partager ses connaissances, collaborer et réussir son parcours universitaire. À terme, Akadex pourra intégrer des services complémentaires comme les offres de stage et d'emploi, les clubs étudiants, les événements, les formations en ligne, les certifications, les bourses, les paiements de frais académiques et d'autres services utiles à la vie universitaire.
