@@ -51,3 +51,10 @@ python manage.py runserver
 
 Docs : http://127.0.0.1:8000/api/docs/  
 Détails : [backend/README.md](backend/README.md)
+
+## Déployer l’API sur Render
+
+1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**
+2. Repo `Mavuisra/akadex` (fichier `render.yaml`)
+3. Apply → l’API sera sur `https://akadex-api.onrender.com`
+
