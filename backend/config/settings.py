@@ -7,7 +7,6 @@ from pathlib import Path
 import os
 
 from dotenv import load_dotenv
-import dj_database_url
 
 load_dotenv()
 
@@ -84,6 +83,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # SQLite en local, Postgres sur Render via DATABASE_URL
 if os.getenv('DATABASE_URL'):
+    try:
+        import dj_database_url
+    except ImportError as exc:
+        raise ImportError(
+            'dj-database-url est requis quand DATABASE_URL est défini. '
+            'Installe-le avec : pip install -r requirements.txt'
+        ) from exc
+
     DATABASES = {
         'default': dj_database_url.config(
             conn_max_age=600,
