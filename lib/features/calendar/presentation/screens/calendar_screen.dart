@@ -1,206 +1,148 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
-import '../../../../data/mocks/mock_data.dart';
+import '../../../../data/api/api_client.dart';
+import '../../../../data/mappers/mappers.dart';
+import '../../../../data/repositories/repositories.dart';
 
-class CalendarScreen extends StatelessWidget {
+class CalendarScreen extends ConsumerWidget {
   const CalendarScreen({super.key});
 
+  IconData _iconFor(String type) => switch (type) {
+        'examen' => Icons.assignment_outlined,
+        'deadline' => Icons.flag_outlined,
+        'deliberation' => Icons.how_to_vote_outlined,
+        'evenement' => Icons.celebration_outlined,
+        'cours' => Icons.school_outlined,
+        _ => Icons.event_outlined,
+      };
+
+  Color _colorFor(String type) => switch (type) {
+        'examen' => const Color(0xFFE53935),
+        'deadline' => const Color(0xFFFB8C00),
+        'deliberation' => const Color(0xFF8E24AA),
+        'evenement' => const Color(0xFF1A47B8),
+        _ => AkadexColors.primary,
+      };
+
   @override
-  Widget build(BuildContext context) {
-    const days = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
-    // Mai 2024 starts on Wednesday
-    final cells = <int?>[
-      null,
-      null,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      13,
-      14,
-      15,
-      16,
-      17,
-      18,
-      19,
-      20,
-      21,
-      22,
-      23,
-      24,
-      25,
-      26,
-      27,
-      28,
-      29,
-      30,
-      31,
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final eventsAsync = ref.watch(eventsProvider);
+    final dateFmt = DateFormat('EEE d MMM', 'fr_FR');
+    final timeFmt = DateFormat('HH:mm');
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        child: const Icon(Icons.add),
-      ),
       appBar: AppBar(
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: const Text('Calendrier'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.edit_calendar_outlined),
-          ),
-        ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-        children: [
-          SoftCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Mai 2024',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(eventsProvider),
+        child: eventsAsync.when(
+          loading: () => const Center(child: CupertinoActivityIndicator()),
+          error: (e, _) => ListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: SoftCard(
+                  child: Column(
+                    children: [
+                      Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                      TextButton(
+                        onPressed: () => ref.invalidate(eventsProvider),
+                        child: const Text('Réessayer'),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.chevron_left_rounded),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.chevron_right_rounded),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: days
-                      .map(
-                        (d) => Expanded(
-                          child: Center(
-                            child: Text(
-                              d,
-                              style: const TextStyle(
-                                color: AkadexColors.inkMuted,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-                const SizedBox(height: 8),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: cells.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    mainAxisSpacing: 6,
-                    crossAxisSpacing: 6,
+                    ],
                   ),
-                  itemBuilder: (context, i) {
-                    final day = cells[i];
-                    if (day == null) return const SizedBox.shrink();
-                    final selected = day == 16;
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: selected ? AkadexColors.primary : null,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$day',
-                          style: TextStyle(
-                            color: selected ? Colors.white : AkadexColors.ink,
-                            fontWeight:
-                                selected ? FontWeight.w800 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          const SectionTitle('Événements à venir'),
-          const SizedBox(height: 12),
-          ...MockData.events.map(
-            (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: SoftCard(
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: Color(e.color).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(e.icon, color: Color(e.color)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            e.title,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AkadexColors.ink,
-                            ),
-                          ),
-                          Text(
-                            e.date,
-                            style: const TextStyle(
-                              color: AkadexColors.inkMuted,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      e.time,
-                      style: const TextStyle(
-                        color: AkadexColors.inkMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+          data: (events) {
+            if (events.isEmpty) {
+              return ListView(
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Aucun événement à venir.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AkadexColors.inkMuted),
+                    ),
+                  ),
+                ],
+              );
+            }
+            return ListView.separated(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+              itemCount: events.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (context, i) {
+                final e = events[i];
+                final color = _colorFor(e.eventType);
+                return SoftCard(
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(_iconFor(e.eventType), color: color),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              e.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AkadexColors.ink,
+                              ),
+                            ),
+                            Text(
+                              '${dateFmt.format(e.startsAt.toLocal())} · ${timeFmt.format(e.startsAt.toLocal())}'
+                              '${e.location.isNotEmpty ? ' · ${e.location}' : ''}',
+                              style: const TextStyle(
+                                color: AkadexColors.inkMuted,
+                                fontSize: 13,
+                              ),
+                            ),
+                            if (e.description.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  e.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AkadexColors.inkMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

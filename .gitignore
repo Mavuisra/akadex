@@ -33,6 +33,9 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local CanvasKit mirror (generated offline workaround)
+web/canvaskit/
+
 # Symbolication related
 app.*.symbols
 

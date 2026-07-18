@@ -12,6 +12,7 @@ class UserProfile extends Equatable {
     required this.department,
     required this.promotion,
     required this.level,
+    this.role = 'student',
     this.bio = '',
     this.avatarUrl,
     this.reputation = 0,
@@ -27,14 +28,18 @@ class UserProfile extends Equatable {
   final String department;
   final String promotion;
   final String level;
+  final String role;
   final String bio;
   final String? avatarUrl;
   final int reputation;
   final int contributions;
   final List<String> badges;
 
+  bool get isAlumni => role == 'alumni';
+  bool get isTeacher => role == 'teacher' || role == 'admin';
+
   @override
-  List<Object?> get props => [id, name, email];
+  List<Object?> get props => [id, name, email, role];
 }
 
 class AcademicDocument extends Equatable {
@@ -86,6 +91,11 @@ class Course extends Equatable {
     required this.credits,
     required this.department,
     this.description = '',
+    this.objectives = '',
+    this.skills = '',
+    this.prerequisites = '',
+    this.university = '',
+    this.faculty = '',
     this.documentCount = 0,
   });
 
@@ -97,6 +107,11 @@ class Course extends Equatable {
   final int credits;
   final String department;
   final String description;
+  final String objectives;
+  final String skills;
+  final String prerequisites;
+  final String university;
+  final String faculty;
   final int documentCount;
 
   @override
@@ -111,20 +126,122 @@ class CommunityPost extends Equatable {
     required this.title,
     required this.content,
     required this.createdAt,
+    this.authorId = '',
+    this.authorRole = 'student',
+    this.kind = 'discussion',
+    this.kindDisplay = '',
+    this.videoUrl = '',
     this.likes = 0,
     this.comments = 0,
     this.tags = const [],
+    this.isLiked = false,
+    this.isSaved = false,
+    this.isFollowingAuthor = false,
   });
 
   final String id;
   final String author;
+  final String authorId;
+  final String authorRole;
   final String department;
   final String title;
   final String content;
+  final String kind;
+  final String kindDisplay;
+  final String videoUrl;
   final DateTime createdAt;
   final int likes;
   final int comments;
   final List<String> tags;
+  final bool isLiked;
+  final bool isSaved;
+  final bool isFollowingAuthor;
+
+  bool get isAlumniContent => kind.startsWith('alumni_');
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class CourseLessonItem extends Equatable {
+  const CourseLessonItem({
+    required this.id,
+    required this.moduleId,
+    required this.title,
+    required this.contentType,
+    required this.order,
+    this.description = '',
+    this.videoUrl = '',
+    this.externalUrl = '',
+    this.durationSeconds = 0,
+    this.subtitlesUrl = '',
+  });
+
+  final String id;
+  final String moduleId;
+  final String title;
+  final String contentType;
+  final int order;
+  final String description;
+  final String videoUrl;
+  final String externalUrl;
+  final int durationSeconds;
+  final String subtitlesUrl;
+
+  bool get isVideo => contentType == 'video' && videoUrl.isNotEmpty;
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class CourseModuleItem extends Equatable {
+  const CourseModuleItem({
+    required this.id,
+    required this.title,
+    required this.order,
+    this.description = '',
+    this.lessons = const [],
+  });
+
+  final String id;
+  final String title;
+  final int order;
+  final String description;
+  final List<CourseLessonItem> lessons;
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class CourseOutline extends Equatable {
+  const CourseOutline({
+    required this.course,
+    this.modules = const [],
+  });
+
+  final Course course;
+  final List<CourseModuleItem> modules;
+
+  @override
+  List<Object?> get props => [course.id];
+}
+
+class CourseCommentItem extends Equatable {
+  const CourseCommentItem({
+    required this.id,
+    required this.author,
+    required this.content,
+    required this.createdAt,
+    this.authorRole = '',
+    this.parentId,
+  });
+
+  final String id;
+  final String author;
+  final String authorRole;
+  final String content;
+  final DateTime createdAt;
+  final String? parentId;
 
   @override
   List<Object?> get props => [id];

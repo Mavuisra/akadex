@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/widgets/common_widgets.dart';
 
 class AiAssistantScreen extends StatefulWidget {
   const AiAssistantScreen({super.key});
@@ -61,6 +62,8 @@ class _AiAssistantScreenState extends State<AiAssistantScreen> {
           children: [
             Row(
               children: [
+                const AkadexLogo(size: 28),
+                const SizedBox(width: 8),
                 const Text(
                   'Akadex IA',
                   style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),

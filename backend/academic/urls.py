@@ -12,6 +12,7 @@ from .views import (
     FacultyViewSet,
     FavoriteViewSet,
     PromotionViewSet,
+    RewardPrizeViewSet,
     UniversityViewSet,
 )
 
@@ -27,6 +28,7 @@ router.register('document-comments', DocumentCommentViewSet, basename='document-
 router.register('favorites', FavoriteViewSet, basename='favorite')
 router.register('announcements', AnnouncementViewSet, basename='announcement')
 router.register('events', CalendarEventViewSet, basename='event')
+router.register('rewards', RewardPrizeViewSet, basename='reward')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -68,6 +68,11 @@ class MainShell extends StatelessWidget {
                 label: 'Communauté',
               ),
               BottomNavigationBarItem(
+                icon: Icon(CupertinoIcons.person_2),
+                activeIcon: Icon(CupertinoIcons.person_2_fill),
+                label: 'Alumni',
+              ),
+              BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.person),
                 activeIcon: Icon(CupertinoIcons.person_fill),
                 label: 'Profil',

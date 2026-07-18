@@ -117,7 +117,7 @@ abstract final class MockData {
     ),
     DemoDoc(
       id: 'd2',
-      title: 'Examen S1 - 2023',
+      title: 'Examen L1 - 2023',
       meta: 'L2 - Mathématiques',
       type: 'PDF',
       tags: ['Examens', 'Mathématiques', 'L2'],
@@ -229,7 +229,7 @@ abstract final class MockData {
   static const universities = [
     DemoUni(code: 'UPN', name: 'UPN', city: 'Kinshasa'),
     DemoUni(code: 'UNIKIN', name: 'UNIKIN', city: 'Kinshasa'),
-    DemoUni(code: 'ISP', name: 'ISP', city: 'Gombe'),
+    DemoUni(code: 'UPC', name: 'UPC', city: 'Kinshasa'),
     DemoUni(code: 'UL', name: 'UL', city: 'Lubumbashi'),
   ];
 

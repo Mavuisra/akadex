@@ -1,8 +1,12 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../domain/models/models.dart';
 import '../../features/ai/presentation/screens/ai_assistant_screen.dart';
+import '../../features/alumni/presentation/screens/alumni_publish_screen.dart';
+import '../../features/alumni/presentation/screens/alumni_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
@@ -12,8 +16,12 @@ import '../../features/explorer/presentation/screens/explorer_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
+import '../../features/library/presentation/screens/lesson_player_screen.dart';
 import '../../features/library/presentation/screens/library_screen.dart';
+import '../../features/professor/presentation/screens/professor_hub_screen.dart';
+import '../../features/professor/presentation/screens/professor_publish_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/rewards_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
 import '../../features/shell/main_shell.dart';
 
@@ -122,6 +130,32 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                     ),
                   ),
+                  GoRoute(
+                    path: 'lesson/:id/play',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>?;
+                      final lesson = extra?['lesson'] as CourseLessonItem?;
+                      if (lesson == null) {
+                        return _cupertino(
+                          state,
+                          const Scaffold(
+                            body: Center(child: Text('Leçon introuvable')),
+                          ),
+                        );
+                      }
+                      return _cupertino(
+                        state,
+                        LessonPlayerScreen(
+                          lessonId: state.pathParameters['id']!,
+                          lesson: lesson,
+                          courseId: (extra?['courseId'] ?? '').toString(),
+                          modules: (extra?['modules'] as List<CourseModuleItem>?) ??
+                              const [],
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ],
@@ -132,6 +166,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/community',
                 pageBuilder: (context, state) =>
                     _fadeSlide(state, const CommunityScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/alumni',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const AlumniScreen()),
               ),
             ],
           ),
@@ -163,6 +206,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const CalendarScreen()),
+      ),
+      GoRoute(
+        path: '/rewards',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const RewardsScreen()),
+      ),
+      GoRoute(
+        path: '/alumni/publish',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const AlumniPublishScreen()),
+      ),
+      GoRoute(
+        path: '/professor',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ProfessorHubScreen()),
+      ),
+      GoRoute(
+        path: '/professor/publish',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ProfessorPublishScreen()),
       ),
     ],
   );

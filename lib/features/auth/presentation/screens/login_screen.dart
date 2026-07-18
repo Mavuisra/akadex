@@ -1,25 +1,59 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/widgets/common_widgets.dart';
+import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _email = TextEditingController(text: 'aicha.mbemba@unikin.ac.cd');
-  final _password = TextEditingController(text: '••••••••');
+  final _password = TextEditingController(text: 'akadex2026');
   bool _obscure = true;
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
     _email.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    await ref.read(authStateProvider.notifier).login(
+          _email.text,
+          _password.text,
+        );
+    if (!mounted) return;
+    final auth = ref.read(authStateProvider);
+    if (auth.hasError) {
+      setState(() {
+        _error = apiErrorMessage(auth.error!);
+        _loading = false;
+      });
+      return;
+    }
+    if (auth.valueOrNull != null) {
+      context.go('/home');
+    } else {
+      setState(() {
+        _error = 'Connexion impossible.';
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -46,16 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Akadex',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AkadexColors.primary,
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                        const Center(child: AkadexLogo(size: 96)),
+                        const SizedBox(height: 20),
                         const Text(
                           'Connexion',
                           textAlign: TextAlign.center,
@@ -94,6 +120,14 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                         ),
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: AkadexColors.danger),
+                          ),
+                        ],
                         const SizedBox(height: 8),
                         Center(
                           child: TextButton(
@@ -103,8 +137,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         FilledButton(
-                          onPressed: () => context.go('/home'),
-                          child: const Text('Se connecter'),
+                          onPressed: _loading ? null : _submit,
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Se connecter'),
                         ),
                         const SizedBox(height: 20),
                         Center(

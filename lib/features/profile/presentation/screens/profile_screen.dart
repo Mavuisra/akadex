@@ -1,44 +1,86 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
+import '../../../../data/mappers/mappers.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
-  static const _menu = [
-    (Icons.description_outlined, 'Mes documents'),
-    (Icons.favorite_border, 'Mes favoris'),
-    (Icons.history_rounded, 'Historique'),
-    (Icons.emoji_events_outlined, 'Badges'),
-    (Icons.settings_outlined, 'Paramètres'),
-    (Icons.help_outline_rounded, 'Aide & support'),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authStateProvider);
+
     return Scaffold(
-      body: ListView(
-        physics: const BouncingScrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
-        ),
-        padding: EdgeInsets.zero,
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 56),
-            decoration: const BoxDecoration(
-              color: AkadexColors.primary,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+      body: auth.when(
+        loading: () => const Center(child: CupertinoActivityIndicator()),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => context.go('/login'),
+                  child: const Text('Se connecter'),
+                ),
+              ],
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Row(
+          ),
+        ),
+        data: (user) {
+          if (user == null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const AkadexLogo(size: 72),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Connecte-toi pour voir ton profil',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: () => context.go('/login'),
+                      child: const Text('Se connecter'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          return ListView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            padding: EdgeInsets.zero,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 56),
+                decoration: const BoxDecoration(
+                  color: AkadexColors.primary,
+                  borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(28)),
+                ),
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
                     children: [
-                      const Expanded(
+                      const Align(
+                        alignment: Alignment.centerLeft,
                         child: Text(
                           'Mon profil',
                           style: TextStyle(
@@ -48,168 +90,208 @@ class ProfileScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.settings_outlined, color: Colors.white),
-                      ),
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.edit_outlined, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const CircleAvatar(
-                    radius: 44,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 48,
-                      color: AkadexColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Aïcha Mbemba',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    'L3 Informatique · UNIKIN',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Transform.translate(
-            offset: const Offset(0, -28),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SoftCard(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: const Row(
-                  children: [
-                    _ProfileStat(value: '126', label: 'Documents'),
-                    _ProfileStat(value: '2.4K', label: 'Points'),
-                    _ProfileStat(value: '#15', label: 'Classement'),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
-            child: Column(
-              children: [
-                SoftCard(
-                  onTap: () => context.push('/ai'),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.auto_awesome, color: AkadexColors.primary),
-                      SizedBox(width: 12),
-                      Expanded(
+                      const SizedBox(height: 16),
+                      CircleAvatar(
+                        radius: 44,
+                        backgroundColor: Colors.white,
                         child: Text(
-                          'Akadex IA',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AkadexColors.ink,
+                          user.name.isEmpty
+                              ? '?'
+                              : user.name.characters.first.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.w800,
+                            color: AkadexColors.primary,
                           ),
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SoftCard(
-                  onTap: () => context.push('/calendar'),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.calendar_month_outlined, color: AkadexColors.primary),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Calendrier',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AkadexColors.ink,
-                          ),
+                      const SizedBox(height: 12),
+                      Text(
+                        user.name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ..._menu.map(
-                  (m) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: SoftCard(
-                      onTap: m.$2 == 'Paramètres'
-                          ? () => context.go('/login')
-                          : () {},
-                      child: Row(
+                      Text(
+                        [
+                          if (user.department.isNotEmpty) user.department,
+                          if (user.level.isNotEmpty) user.level,
+                          if (user.university.isNotEmpty) user.university,
+                        ].join(' · '),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      if (user.bio.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          user.bio,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 18),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Icon(m.$1, color: AkadexColors.primary),
-                          const SizedBox(width: 12),
+                          _Stat(
+                            value: formatCount(user.contributions),
+                            label: 'Contributions',
+                          ),
+                          _Stat(
+                            value: formatCount(user.reputation),
+                            label: 'Points',
+                          ),
+                          _Stat(
+                            value: '${user.badges.length}',
+                            label: 'Badges',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                child: Column(
+                  children: [
+                    SoftCard(
+                      onTap: () => context.push('/professor'),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.school_outlined,
+                              color: AkadexColors.primary),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              m.$2,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AkadexColors.ink,
-                              ),
+                              'Espace Professeurs',
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
-                          const Icon(Icons.chevron_right_rounded),
+                          Icon(Icons.chevron_right_rounded),
                         ],
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    SoftCard(
+                      onTap: () => context.push('/rewards'),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.card_giftcard_rounded,
+                              color: AkadexColors.warning),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Récompenses & roue',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SoftCard(
+                      onTap: () => context.push('/ai'),
+                      child: const Row(
+                        children: [
+                          AkadexLogo(size: 32),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Akadex IA',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SoftCard(
+                      onTap: () => context.push('/calendar'),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.calendar_month_outlined,
+                              color: AkadexColors.primary),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Calendrier',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded),
+                        ],
+                      ),
+                    ),
+                    if (user.badges.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: SectionTitle('Badges'),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final b in user.badges) DocTypeTag(b),
+                        ],
+                      ),
+                    ],
+                    const SizedBox(height: 20),
+                    OutlinedButton(
+                      onPressed: () async {
+                        await ref.read(authStateProvider.notifier).logout();
+                        if (context.mounted) context.go('/login');
+                      },
+                      child: const Text('Se déconnecter'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _ProfileStat extends StatelessWidget {
-  const _ProfileStat({required this.value, required this.label});
+class _Stat extends StatelessWidget {
+  const _Stat({required this.value, required this.label});
 
   final String value;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AkadexColors.ink,
-            ),
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
           ),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AkadexColors.inkMuted,
-              fontSize: 12,
-            ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.8),
+            fontSize: 12,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

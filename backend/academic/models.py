@@ -120,7 +120,11 @@ class Course(models.Model):
     prerequisites = models.TextField(blank=True)
     bibliography = models.TextField(blank=True)
     credits = models.PositiveSmallIntegerField(default=0)
-    semester = models.CharField(max_length=32, blank=True)
+    semester = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text='Cycle universitaire RDC : L1, L2, L3, Master 1, Master 2',
+    )
     teachers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -207,6 +211,10 @@ class Document(models.Model):
     rating_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    points_awarded = models.PositiveIntegerField(
+        default=0,
+        help_text='Points déjà crédités à l’auteur après validation.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -215,6 +223,21 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs):
+        was_approved = False
+        if self.pk:
+            was_approved = (
+                type(self)
+                .objects.filter(pk=self.pk)
+                .values_list('is_approved', flat=True)
+                .first()
+            ) or False
+        super().save(*args, **kwargs)
+        if self.is_approved and not was_approved:
+            from academic.rewards import award_approval_points
+
+            award_approval_points(self)
 
     @property
     def size_label(self):
@@ -226,6 +249,69 @@ class Document(models.Model):
                 return f'{size:.1f} {unit}' if unit != 'o' else f'{int(size)} {unit}'
             size /= 1024
         return f'{size:.1f} To'
+
+
+class RewardCategory(models.TextChoices):
+    CASH = 'cash', 'Argent / portefeuille'
+    EBOOK = 'ebook', 'Livre numérique'
+    BOOK = 'book', 'Livre physique'
+    PREMIUM = 'premium', 'Abonnement Premium'
+    TEACHER = 'teacher', 'Contenu professeurs'
+    DISCOUNT = 'discount', 'Réduction partenaire'
+    OTHER = 'other', 'Autre'
+
+
+class RewardPrize(models.Model):
+    """Récompense gagnable via la roue (points de contribution)."""
+
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    category = models.CharField(
+        max_length=20,
+        choices=RewardCategory.choices,
+        default=RewardCategory.OTHER,
+    )
+    min_points = models.PositiveIntegerField(
+        default=100,
+        help_text='Points minimum pour accéder à la roue.',
+    )
+    points_cost = models.PositiveIntegerField(
+        default=100,
+        help_text='Points déduits à chaque tour.',
+    )
+    weight = models.PositiveSmallIntegerField(
+        default=10,
+        help_text='Poids relatif pour le tirage (plus élevé = plus fréquent).',
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['min_points', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class RewardRedemption(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='reward_redemptions',
+    )
+    prize = models.ForeignKey(
+        RewardPrize,
+        on_delete=models.PROTECT,
+        related_name='redemptions',
+    )
+    points_spent = models.PositiveIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user} → {self.prize}'
 
 
 class DocumentComment(models.Model):

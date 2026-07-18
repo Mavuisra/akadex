@@ -18,7 +18,6 @@ dependencies:
   flutter_hooks: ^0.21.2
   go_router: ^15.1.2
   dio: ^5.8.0+1
-  google_fonts: ^6.2.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   cached_network_image: ^3.4.1
@@ -28,6 +27,8 @@ dependencies:
   uuid: ^4.5.1
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
+  video_player: ^2.9.5
+  chewie: ^1.11.3
 
 dev_dependencies:
   flutter_test:
@@ -38,3 +39,37 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/roboto-thin.ttf
+          weight: 100
+        - asset: assets/fonts/roboto-light.ttf
+          weight: 300
+        - asset: assets/fonts/roboto-regular.ttf
+          weight: 400
+        - asset: assets/fonts/roboto-medium.ttf
+          weight: 500
+        - asset: assets/fonts/roboto-bold.ttf
+          weight: 700
+        - asset: assets/fonts/roboto-black.ttf
+          weight: 900
+        - asset: assets/fonts/roboto-thinitalic.ttf
+          weight: 100
+          style: italic
+        - asset: assets/fonts/roboto-lightitalic.ttf
+          weight: 300
+          style: italic
+        - asset: assets/fonts/roboto-italic.ttf
+          weight: 400
+          style: italic
+        - asset: assets/fonts/roboto-mediumitalic.ttf
+          weight: 500
+          style: italic
+        - asset: assets/fonts/roboto-bolditalic.ttf
+          weight: 700
+          style: italic
+        - asset: assets/fonts/roboto-blackitalic.ttf
+          weight: 900
+          style: italic
+

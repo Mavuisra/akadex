@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 export 'akadex_scroll.dart';
 
@@ -26,16 +25,22 @@ abstract final class AkadexColors {
 }
 
 abstract final class AkadexTheme {
-  static ThemeData light() {
-    // Inter ≈ SF Pro pour un rendu iPhone cross-platform
-    final text = GoogleFonts.interTextTheme().apply(
-      bodyColor: AkadexColors.ink,
-      displayColor: AkadexColors.ink,
-    );
+  /// Police Roboto embarquée (offline — pas de fonts.gstatic.com).
+  static const String _fontFamily = 'Roboto';
 
-    return ThemeData(
+  static ThemeData light() {
+    final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: _fontFamily,
+    );
+    final text = base.textTheme.apply(
+      bodyColor: AkadexColors.ink,
+      displayColor: AkadexColors.ink,
+      fontFamily: _fontFamily,
+    );
+
+    return base.copyWith(
       scaffoldBackgroundColor: AkadexColors.background,
       splashFactory: NoSplash.splashFactory,
       highlightColor: Colors.transparent,

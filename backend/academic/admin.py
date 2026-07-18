@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from academic.rewards import award_approval_points
+
 from .models import (
     Announcement,
     CalendarEvent,
@@ -11,6 +13,8 @@ from .models import (
     Faculty,
     Favorite,
     Promotion,
+    RewardPrize,
+    RewardRedemption,
     University,
 )
 
@@ -47,7 +51,7 @@ class DepartmentAdmin(admin.ModelAdmin):
 @admin.register(Promotion)
 class PromotionAdmin(admin.ModelAdmin):
     list_display = ('name', 'department', 'year', 'level')
-    list_filter = ('year', 'department')
+    list_filter = ('year', 'department', 'level')
 
 
 @admin.register(Course)
@@ -66,6 +70,7 @@ class DocumentAdmin(admin.ModelAdmin):
         'author',
         'university',
         'is_approved',
+        'points_awarded',
         'downloads',
         'created_at',
     )
@@ -73,9 +78,14 @@ class DocumentAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     actions = ['approve_documents']
 
-    @admin.action(description='Approuver les documents sélectionnés')
+    @admin.action(description='Approuver les documents (crédite les points)')
     def approve_documents(self, request, queryset):
-        queryset.update(is_approved=True)
+        for doc in queryset.select_related('author'):
+            if not doc.is_approved:
+                doc.is_approved = True
+                doc.save()
+            else:
+                award_approval_points(doc)
 
 
 admin.site.register(DocumentComment)
@@ -92,3 +102,15 @@ class AnnouncementAdmin(admin.ModelAdmin):
 class CalendarEventAdmin(admin.ModelAdmin):
     list_display = ('title', 'university', 'event_type', 'starts_at')
     list_filter = ('university', 'event_type')
+
+
+@admin.register(RewardPrize)
+class RewardPrizeAdmin(admin.ModelAdmin):
+    list_display = ('name', 'category', 'min_points', 'points_cost', 'weight', 'is_active')
+    list_filter = ('category', 'is_active')
+
+
+@admin.register(RewardRedemption)
+class RewardRedemptionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'prize', 'points_spent', 'created_at')
+    list_filter = ('prize__category',)

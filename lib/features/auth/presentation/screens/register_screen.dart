@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/widgets/common_widgets.dart';
+import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
 
-class RegisterScreen extends StatefulWidget {
+class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  bool _loading = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -21,6 +27,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _email.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  Future<void> _submit() async {
+    final name = _name.text.trim();
+    final email = _email.text.trim();
+    if (name.isEmpty || email.isEmpty || _password.text.length < 8) {
+      setState(() => _error = 'Vérifie nom, email et mot de passe (8+ caractères).');
+      return;
+    }
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final username = email.split('@').first.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    await ref.read(authStateProvider.notifier).register(
+          email: email,
+          username: username,
+          password: _password.text,
+          firstName: name.split(' ').first,
+        );
+    if (!mounted) return;
+    final auth = ref.read(authStateProvider);
+    if (auth.hasError) {
+      setState(() {
+        _error = apiErrorMessage(auth.error!);
+        _loading = false;
+      });
+      return;
+    }
+    if (auth.valueOrNull != null) {
+      context.go('/home');
+    } else {
+      setState(() {
+        _error = 'Inscription impossible.';
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -46,16 +89,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
-                          'Akadex',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AkadexColors.primary,
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
+                        const Center(child: AkadexLogo(size: 96)),
+                        const SizedBox(height: 20),
                         const Text(
                           'Créer un compte',
                           textAlign: TextAlign.center,
@@ -94,32 +129,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             prefixIcon: Icon(Icons.lock_outline_rounded),
                           ),
                         ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          initialValue: 'Université de Kinshasa',
-                          decoration: const InputDecoration(
-                            hintText: 'Université',
+                        if (_error != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Color(0xFFC62828)),
                           ),
-                          items: const [
-                            DropdownMenuItem(
-                              value: 'Université de Kinshasa',
-                              child: Text('UNIKIN'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'UPN',
-                              child: Text('UPN'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'ISP',
-                              child: Text('ISP'),
-                            ),
-                          ],
-                          onChanged: (_) {},
-                        ),
-                        const SizedBox(height: 28),
+                        ],
+                        const SizedBox(height: 20),
                         FilledButton(
-                          onPressed: () => context.go('/home'),
-                          child: const Text("S'inscrire"),
+                          onPressed: _loading ? null : _submit,
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text("S'inscrire"),
                         ),
                         const SizedBox(height: 20),
                         Center(
@@ -131,7 +161,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 children: [
                                   TextSpan(text: 'Déjà un compte ? '),
                                   TextSpan(
-                                    text: 'Connexion',
+                                    text: 'Se connecter',
                                     style: TextStyle(
                                       color: AkadexColors.primary,
                                       fontWeight: FontWeight.w700,

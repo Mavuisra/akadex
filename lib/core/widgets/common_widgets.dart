@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import '../constants/app_constants.dart';
 import '../theme/akadex_theme.dart';
 
 /// Carte pressable avec scale soft (feedback iOS).
@@ -133,8 +133,8 @@ class SearchField extends StatelessWidget {
       controller: controller,
       placeholder: hint,
       onChanged: onChanged,
-      style: GoogleFonts.inter(fontSize: 15, color: AkadexColors.ink),
-      placeholderStyle: GoogleFonts.inter(
+      style: const TextStyle(fontSize: 15, color: AkadexColors.ink),
+      placeholderStyle: const TextStyle(
         fontSize: 15,
         color: AkadexColors.inkSoft,
       ),
@@ -289,4 +289,95 @@ class BottomSafePadding extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(height: height);
+}
+
+/// Logo Akadex (`assets/images/logo.png`).
+class AkadexLogo extends StatelessWidget {
+  const AkadexLogo({
+    super.key,
+    this.size = 72,
+    this.borderRadius,
+  });
+
+  final double size;
+  final double? borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = borderRadius ?? size * 0.22;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: Image.asset(
+          AppConstants.logoAsset,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.high,
+        ),
+      ),
+    );
+  }
+}
+
+/// Illustration marketing (`assets/images/presentation.png`).
+class AkadexPresentation extends StatelessWidget {
+  const AkadexPresentation({
+    super.key,
+    this.height,
+  });
+
+  final double? height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      AppConstants.presentationAsset,
+      height: height,
+      width: double.infinity,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.high,
+    );
+  }
+}
+
+/// Logo + nom de marque alignés horizontalement.
+class AkadexBrandHeader extends StatelessWidget {
+  const AkadexBrandHeader({
+    super.key,
+    this.logoSize = 36,
+    this.fontSize = 28,
+    this.color = AkadexColors.ink,
+    this.centered = false,
+  });
+
+  final double logoSize;
+  final double fontSize;
+  final Color color;
+  final bool centered;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AkadexLogo(size: logoSize),
+        SizedBox(width: logoSize * 0.28),
+        Flexible(
+          child: Text(
+            AppConstants.appName,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+              color: color,
+              letterSpacing: -0.4,
+            ),
+          ),
+        ),
+      ],
+    );
+    return centered ? Center(child: row) : row;
+  }
 }

@@ -3,6 +3,8 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from academic.rewards import WHEEL_UNLOCK_POINTS
+
 from .models import (
     Announcement,
     CalendarEvent,
@@ -14,6 +16,8 @@ from .models import (
     Faculty,
     Favorite,
     Promotion,
+    RewardPrize,
+    RewardRedemption,
     University,
 )
 from .serializers import (
@@ -27,6 +31,8 @@ from .serializers import (
     FacultySerializer,
     FavoriteSerializer,
     PromotionSerializer,
+    RewardPrizeSerializer,
+    RewardRedemptionSerializer,
     UniversitySerializer,
 )
 
@@ -224,3 +230,90 @@ class CalendarEventViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['university', 'event_type']
     search_fields = ['title', 'description', 'location']
     ordering_fields = ['starts_at']
+
+
+class RewardPrizeViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = RewardPrizeSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        return RewardPrize.objects.filter(is_active=True)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def status(self, request):
+        user = request.user
+        unlock = WHEEL_UNLOCK_POINTS
+        return Response(
+            {
+                'points': user.reputation,
+                'unlock_points': unlock,
+                'can_spin': user.reputation >= unlock,
+                'history': RewardRedemptionSerializer(
+                    RewardRedemption.objects.filter(user=user).select_related('prize')[:20],
+                    many=True,
+                ).data,
+            }
+        )
+
+    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def spin(self, request):
+        import random
+
+        user = request.user
+        if user.reputation < WHEEL_UNLOCK_POINTS:
+            return Response(
+                {
+                    'detail': (
+                        f'Il te faut au moins {WHEEL_UNLOCK_POINTS} points '
+                        'pour tourner la roue.'
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        prizes = list(
+            RewardPrize.objects.filter(
+                is_active=True,
+                min_points__lte=user.reputation,
+            )
+        )
+        if not prizes:
+            return Response(
+                {'detail': 'Aucune récompense disponible.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Coût : celui du prix le moins cher éligible (ou 100)
+        cost = min(p.points_cost for p in prizes)
+        if user.reputation < cost:
+            return Response(
+                {'detail': 'Points insuffisants pour un tour.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        weights = [max(1, p.weight) for p in prizes]
+        prize = random.choices(prizes, weights=weights, k=1)[0]
+        cost = prize.points_cost
+        if user.reputation < cost:
+            return Response(
+                {'detail': 'Points insuffisants pour cette récompense.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.reputation = F('reputation') - cost
+        user.save(update_fields=['reputation'])
+        user.refresh_from_db()
+
+        redemption = RewardRedemption.objects.create(
+            user=user,
+            prize=prize,
+            points_spent=cost,
+        )
+        return Response(
+            {
+                'prize': RewardPrizeSerializer(prize).data,
+                'points_spent': cost,
+                'points_remaining': user.reputation,
+                'redemption_id': redemption.id,
+            }
+        )

@@ -11,6 +11,8 @@ from .models import (
     Faculty,
     Favorite,
     Promotion,
+    RewardPrize,
+    RewardRedemption,
     University,
 )
 
@@ -240,3 +242,33 @@ class CalendarEventSerializer(serializers.ModelSerializer):
             'location',
             'created_at',
         ]
+
+
+class RewardPrizeSerializer(serializers.ModelSerializer):
+    category_display = serializers.CharField(
+        source='get_category_display',
+        read_only=True,
+    )
+
+    class Meta:
+        model = RewardPrize
+        fields = [
+            'id',
+            'name',
+            'description',
+            'category',
+            'category_display',
+            'min_points',
+            'points_cost',
+            'weight',
+            'is_active',
+        ]
+
+
+class RewardRedemptionSerializer(serializers.ModelSerializer):
+    prize_detail = RewardPrizeSerializer(source='prize', read_only=True)
+
+    class Meta:
+        model = RewardRedemption
+        fields = ['id', 'prize', 'prize_detail', 'points_spent', 'created_at']
+        read_only_fields = ['points_spent', 'created_at']
