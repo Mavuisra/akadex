@@ -45,10 +45,10 @@ jobs:
         run: flutter analyze
 
       - name: Build Android APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://akadex.onrender.com/api/
 
       - name: Build Web
-        run: flutter build web --release
+        run: flutter build web --release --dart-define=API_BASE_URL=https://akadex.onrender.com/api/
 
       - name: Package artifacts
         shell: bash

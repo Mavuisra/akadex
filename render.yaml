@@ -9,7 +9,7 @@ databases:
 
 services:
   - type: web
-    name: akadex-api
+    name: akadex
     runtime: python
     plan: free
     region: oregon
