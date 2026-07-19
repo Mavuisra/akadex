@@ -56,5 +56,11 @@ Détails : [backend/README.md](backend/README.md)
 
 1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Blueprint**
 2. Repo `Mavuisra/akadex` (fichier `render.yaml`)
-3. Apply → l’API sera sur `https://akadex-api.onrender.com`
+3. Apply → l’API est sur **https://akadex.onrender.com/api/**
+
+```bash
+# Flutter pointe déjà vers Render par défaut.
+# Backend local :
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/
+```
 

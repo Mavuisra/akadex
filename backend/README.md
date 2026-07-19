@@ -2,6 +2,22 @@
 
 API REST de la plateforme académique **Akadex**.
 
+## Déploiement PythonAnywhere (recommandé, gratuit)
+
+Guide complet : **[PYTHONANYWHERE.md](PYTHONANYWHERE.md)**
+
+Résumé :
+
+1. Clone le repo sur PythonAnywhere, crée un virtualenv, `pip install -r requirements.txt`
+2. Crée un `.env` (voir [.env.example](.env.example)) avec ton `<username>.pythonanywhere.com`
+3. `migrate` → `collectstatic` → `seed_demo`
+4. Web app manuelle + WSGI (détails dans le guide) + mappings `/static/` et `/media/`
+5. Vérifie : `https://<username>.pythonanywhere.com/api/docs/`
+
+Compte gratuit = **SQLite** (ne pas définir `DATABASE_URL`).
+
+---
+
 ## Déploiement Render
 
 Le fichier `render.yaml` à la racine du repo configure automatiquement :
@@ -17,10 +33,10 @@ Le fichier `render.yaml` à la racine du repo configure automatiquement :
 4. Applique le blueprint (`render.yaml`)
 5. Attends le premier deploy (~5–10 min)
 
-URL typique : `https://akadex-api.onrender.com`
+URL production : **https://akadex.onrender.com**
 
-- Docs : `https://akadex-api.onrender.com/api/docs/`
-- Health : `https://akadex-api.onrender.com/api/universities/`
+- Docs : `https://akadex.onrender.com/api/docs/`
+- Health : `https://akadex.onrender.com/api/universities/`
 
 ### Déploiement manuel (sans blueprint)
 
@@ -69,4 +85,15 @@ python manage.py runserver
 
 ## Flutter → API
 
-Production : `https://akadex-api.onrender.com/api/`
+La base URL se configure avec `--dart-define` (voir `lib/core/constants/app_constants.dart`) :
+
+```bash
+# Production (défaut) → https://akadex.onrender.com/api/
+flutter run
+
+# Backend local
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/
+
+# PythonAnywhere
+flutter run --dart-define=API_BASE_URL=https://<username>.pythonanywhere.com/api/
+```
