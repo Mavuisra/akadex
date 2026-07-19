@@ -131,7 +131,7 @@ class MessagingRepository {
     final res = await _dio.get(
       'conversations/$conversationId/poll/',
       queryParameters: {
-        if (after != null) 'after': after.toUtc().toIso8601String(),
+        'after': ?after?.toUtc().toIso8601String(),
       },
     );
     return ChatPollResult.fromJson(

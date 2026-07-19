@@ -161,7 +161,7 @@ class AcademicRepository {
             'search': query.search!.trim(),
           if (query.docType != null)
             'doc_type': documentTypeToApi(query.docType),
-          if (query.courseId != null) 'course': query.courseId,
+          'course': ?query.courseId,
           if (query.featuredOnly) 'is_featured': true,
           'ordering': query.ordering,
         },
@@ -456,8 +456,8 @@ class CommunityRepository {
       'posts/',
       queryParameters: {
         'ordering': '-created_at',
-        if (scope != null) 'scope': scope,
-        if (authorId != null) 'author': authorId,
+        'scope': ?scope,
+        'author': ?authorId,
       },
     );
     return unwrapList(res.data).map(postFromJson).toList();
@@ -501,7 +501,7 @@ class CommunityRepository {
         'title': title,
         'content': content,
         'kind': kind,
-        if (departmentId != null) 'department': departmentId,
+        'department': ?departmentId,
         if (videoUrl.isNotEmpty) 'video_url': videoUrl,
         'tags': <String>[],
       },

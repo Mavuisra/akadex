@@ -88,7 +88,7 @@ class AuthRepository {
         if (professionalDomain.isNotEmpty)
           'professional_domain': professionalDomain.trim(),
         if (company.isNotEmpty) 'company': company.trim(),
-        if (graduationYear != null) 'graduation_year': graduationYear,
+        'graduation_year': ?graduationYear,
         if (headline.isNotEmpty) 'headline': headline.trim(),
         if (bio.isNotEmpty) 'bio': bio.trim(),
       },
