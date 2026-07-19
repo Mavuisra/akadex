@@ -319,6 +319,69 @@ class Command(BaseCommand):
             reputation=980,
             contributions_count=14,
         )
+        alumni_roxie = ensure_user(
+            'roxie.ntumba@alumni.unikin.ac.cd',
+            'rntumba',
+            'Roxie',
+            'Ntumba',
+            User.Role.ALUMNI,
+            university=unikin,
+            faculty=fac_sciences,
+            department=dept_info,
+            level='Alumni',
+            bio=(
+                'Alumni Informatique — Université de Kinshasa.\n'
+                'Créatrice de contenus éducatifs (@roxientumba sur TikTok). '
+                'J’aide les lycéens et L1 à choisir une faculté, réussir les examens '
+                'et décrocher un premier stage à Kinshasa.\n'
+                'Ex-étudiante passionnée méthodes de travail & soft skills.'
+            ),
+            reputation=2650,
+            contributions_count=48,
+            badges=[
+                'Mentor alumni',
+                'Vidéos conseils',
+                'Top créatrice',
+                'Orientation filière',
+                'TikTok éducatif',
+            ],
+            phone='+243 890 000 042',
+        )
+        alumni_patrick = ensure_user(
+            'patrick.ilunga@alumni.upc.ac.cd',
+            'pilunga',
+            'Patrick',
+            'Ilunga',
+            User.Role.ALUMNI,
+            university=upc,
+            faculty=fac_fasi,
+            department=dept_fasi,
+            level='Alumni',
+            bio=(
+                'Alumni FASI UPC — ingénieur logiciel. Partage retours d’entretiens tech '
+                'et projets open source depuis Kinshasa.'
+            ),
+            reputation=1540,
+            contributions_count=22,
+            badges=['Mentor tech', 'Open source'],
+        )
+        alumni_esther = ensure_user(
+            'esther.kalala@alumni.upn.ac.cd',
+            'ekalala',
+            'Esther',
+            'Kalala',
+            User.Role.ALUMNI,
+            university=upn,
+            faculty=fac_upn,
+            department=dept_upn,
+            level='Alumni',
+            bio=(
+                'Alumni UPN — enseignante. Conseils pédagogiques, TFC et préparation aux concours.'
+            ),
+            reputation=1120,
+            contributions_count=17,
+            badges=['Pédagogie', 'Mentorat'],
+        )
 
         # Associer enseignants aux cours clés
         for code in ('UNI-INF111', 'UNI-INF211', 'UNI-INF221', 'UNI-INF312', 'UNI-INF311'):
@@ -754,7 +817,51 @@ class Command(BaseCommand):
                 18,
                 PostKind.ALUMNI_PATH,
             ),
+            (
+                alumni_roxie,
+                dept_info,
+                'Roxie Ntumba — Comment bien choisir sa faculté',
+                'Conseils concrets pour lycéens et futurs L1 : passions, débouchés, '
+                'réalité des filières en RDC. Vidéo TikTok @roxientumba.',
+                ['orientation', 'faculté', 'TikTok', 'Roxie'],
+                890,
+                152,
+                PostKind.ALUMNI_VIDEO,
+            ),
+            (
+                alumni_patrick,
+                dept_fasi,
+                'Entretien tech à Kin : 5 questions qu’on m’a posées',
+                'Structures de données, SQL, un mini projet Flutter. Je détaille les réponses '
+                'attendues dans la vidéo.',
+                ['emploi', 'FASI', 'TikTok'],
+                188,
+                41,
+                PostKind.ALUMNI_VIDEO,
+            ),
+            (
+                alumni_esther,
+                dept_upn,
+                'Comment cadrer ton TFC dès la 2ᵉ semaine',
+                'Grille de cadrage + checklist promoteur. Méthode que j’utilise avec mes étudiants.',
+                ['TFC', 'UPN'],
+                145,
+                33,
+                PostKind.ALUMNI_TFC,
+            ),
         ]
+        # URLs vidéo pour les posts alumni_video du seed principal
+        video_by_title = {
+            'Ma routine L3 pour passer les examens sans burn-out': (
+                'https://www.youtube.com/watch?v=rfscVS0vtbw'
+            ),
+            'Roxie Ntumba — Comment bien choisir sa faculté': (
+                'https://www.tiktok.com/@roxientumba/video/7663144965132029205'
+            ),
+            'Entretien tech à Kin : 5 questions qu’on m’a posées': (
+                'https://www.tiktok.com/@akadex.demo/video/7234567890123456789'
+            ),
+        }
         created_posts = []
         for author, dept, title, content, tags, likes, comments, kind in posts_spec:
             post, _ = Post.objects.update_or_create(
@@ -768,6 +875,7 @@ class Command(BaseCommand):
                     'comments_count': comments,
                     'is_approved': True,
                     'kind': kind,
+                    'video_url': video_by_title.get(title, ''),
                 },
             )
             created_posts.append(post)
@@ -931,6 +1039,9 @@ class Command(BaseCommand):
             david=david,
             alumni=alumni,
             alumni2=alumni2,
+            alumni_roxie=alumni_roxie,
+            alumni_patrick=alumni_patrick,
+            alumni_esther=alumni_esther,
         )
 
         self.stdout.write(self.style.SUCCESS('Catalogue RDC + démo chargés.'))
@@ -949,4 +1060,8 @@ class Command(BaseCommand):
         self.stdout.write('  fatou.diallo@upn.ac.cd')
         self.stdout.write('  kabongo@unikin.ac.cd')
         self.stdout.write('  marie.kasongo@alumni.unikin.ac.cd (alumni)')
+        self.stdout.write('  jean.mbuyi@alumni.upn.ac.cd (alumni)')
+        self.stdout.write('  roxie.ntumba@alumni.unikin.ac.cd (alumni — Roxie Ntumba)')
+        self.stdout.write('  patrick.ilunga@alumni.upc.ac.cd (alumni)')
+        self.stdout.write('  esther.kalala@alumni.upn.ac.cd (alumni)')
         self.stdout.write('  admin@akadex.app')

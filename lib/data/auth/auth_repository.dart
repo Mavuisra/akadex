@@ -1,5 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/models/models.dart';
@@ -42,6 +46,21 @@ class AuthRepository {
     required String password,
     required String firstName,
     String lastName = '',
+    String postnom = '',
+    String phone = '',
+    String role = 'student',
+    String gender = '',
+    String? birthDate,
+    String matricule = '',
+    String? university,
+    String? faculty,
+    String? department,
+    String? promotion,
+    String professionalDomain = '',
+    String company = '',
+    int? graduationYear,
+    String headline = '',
+    String bio = '',
   }) async {
     await _dio.post(
       'auth/register/',
@@ -52,6 +71,26 @@ class AuthRepository {
         'password_confirm': password,
         'first_name': firstName.trim(),
         'last_name': lastName.trim(),
+        'postnom': postnom.trim(),
+        'phone': phone.trim(),
+        'role': role,
+        if (gender.isNotEmpty) 'gender': gender,
+        if (birthDate != null && birthDate.isNotEmpty) 'birth_date': birthDate,
+        if (matricule.isNotEmpty) 'matricule': matricule.trim(),
+        if (university != null && university.isNotEmpty)
+          'university': int.tryParse(university) ?? university,
+        if (faculty != null && faculty.isNotEmpty)
+          'faculty': int.tryParse(faculty) ?? faculty,
+        if (department != null && department.isNotEmpty)
+          'department': int.tryParse(department) ?? department,
+        if (promotion != null && promotion.isNotEmpty)
+          'promotion': int.tryParse(promotion) ?? promotion,
+        if (professionalDomain.isNotEmpty)
+          'professional_domain': professionalDomain.trim(),
+        if (company.isNotEmpty) 'company': company.trim(),
+        'graduation_year': ?graduationYear,
+        if (headline.isNotEmpty) 'headline': headline.trim(),
+        if (bio.isNotEmpty) 'bio': bio.trim(),
       },
     );
     return login(email, password);
@@ -61,6 +100,74 @@ class AuthRepository {
     if (!hasToken) return null;
     final res = await _dio.get('auth/me/');
     return userFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  /// PATCH `auth/me/`. Si `avatar` / `cover` sont fournis (chemin, [XFile],
+  /// ou bytes), envoie un [FormData] multipart ; sinon JSON.
+  Future<UserProfile> updateProfile(Map<String, dynamic> data) async {
+    final payload = Map<String, dynamic>.from(data);
+    final avatar = payload.remove('avatar');
+    final cover = payload.remove('cover');
+    final hasFiles = avatar != null || cover != null;
+
+    if (hasFiles) {
+      final formMap = <String, dynamic>{};
+      for (final e in payload.entries) {
+        if (e.value == null) continue;
+        formMap[e.key] = e.value is bool || e.value is num
+            ? e.value
+            : e.value.toString();
+      }
+      final form = FormData.fromMap(formMap);
+      if (avatar != null) {
+        form.files.add(
+          MapEntry('avatar', await _toMultipart(avatar, 'avatar.jpg')),
+        );
+      }
+      if (cover != null) {
+        form.files.add(
+          MapEntry('cover', await _toMultipart(cover, 'cover.jpg')),
+        );
+      }
+      final res = await _dio.patch('auth/me/', data: form);
+      return userFromJson(Map<String, dynamic>.from(res.data as Map));
+    }
+
+    payload.removeWhere((_, v) => v == null);
+    final res = await _dio.patch('auth/me/', data: payload);
+    return userFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  Future<MultipartFile> _toMultipart(dynamic value, String fallbackName) async {
+    if (value is MultipartFile) return value;
+    if (value is XFile) {
+      final name = value.name.isNotEmpty ? value.name : fallbackName;
+      if (kIsWeb || value.path.isEmpty) {
+        final bytes = await value.readAsBytes();
+        return MultipartFile.fromBytes(bytes, filename: name);
+      }
+      return MultipartFile.fromFile(value.path, filename: name);
+    }
+    if (value is Uint8List || value is List<int>) {
+      final bytes = value is Uint8List ? value : Uint8List.fromList(value);
+      return MultipartFile.fromBytes(bytes, filename: fallbackName);
+    }
+    final path = value.toString();
+    if (kIsWeb) {
+      throw ArgumentError(
+        'Sur le web, passez un XFile ou des bytes pour $fallbackName',
+      );
+    }
+    final filename = path.split(RegExp(r'[\\/]')).last;
+    return MultipartFile.fromFile(
+      path,
+      filename: filename.isEmpty ? fallbackName : filename,
+    );
+  }
+
+  Future<List<AppNotification>> fetchNotifications() async {
+    final res = await _dio.get('auth/notifications/');
+    return unwrapList(res.data).map(notificationFromJson).toList();
   }
 
   Future<void> logout() async {
@@ -95,6 +202,22 @@ class AuthController extends StateNotifier<AsyncValue<UserProfile?>> {
     required String username,
     required String password,
     required String firstName,
+    String lastName = '',
+    String postnom = '',
+    String phone = '',
+    String role = 'student',
+    String gender = '',
+    String? birthDate,
+    String matricule = '',
+    String? university,
+    String? faculty,
+    String? department,
+    String? promotion,
+    String professionalDomain = '',
+    String company = '',
+    int? graduationYear,
+    String headline = '',
+    String bio = '',
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(
@@ -103,8 +226,29 @@ class AuthController extends StateNotifier<AsyncValue<UserProfile?>> {
         username: username,
         password: password,
         firstName: firstName,
+        lastName: lastName,
+        postnom: postnom,
+        phone: phone,
+        role: role,
+        gender: gender,
+        birthDate: birthDate,
+        matricule: matricule,
+        university: university,
+        faculty: faculty,
+        department: department,
+        promotion: promotion,
+        professionalDomain: professionalDomain,
+        company: company,
+        graduationYear: graduationYear,
+        headline: headline,
+        bio: bio,
       ),
     );
+  }
+
+  Future<void> updateProfile(Map<String, dynamic> data) async {
+    final user = await _repo.updateProfile(data);
+    state = AsyncValue.data(user);
   }
 
   Future<void> logout() async {

@@ -64,6 +64,7 @@ class _RewardsScreenState extends ConsumerState<RewardsScreen> {
     final prizesAsync = ref.watch(rewardsListProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(title: const Text('Récompenses')),
       body: statusAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),

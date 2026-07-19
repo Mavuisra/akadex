@@ -12,6 +12,12 @@ class PostKind(models.TextChoices):
     ALUMNI_VIDEO = 'alumni_video', 'Vidéo de conseil'
 
 
+class ModerationStatus(models.TextChoices):
+    PENDING = 'pending', "En cours d'examen"
+    APPROVED = 'approved', 'Validée'
+    REJECTED = 'rejected', 'Refusée'
+
+
 class Post(models.Model):
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -33,11 +39,18 @@ class Post(models.Model):
         default=PostKind.DISCUSSION,
         db_index=True,
     )
-    video_url = models.URLField(blank=True)
+    video_url = models.URLField(max_length=1000, blank=True)
     tags = models.JSONField(default=list, blank=True)
     likes_count = models.PositiveIntegerField(default=0)
     comments_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=True)
+    moderation_status = models.CharField(
+        max_length=16,
+        choices=ModerationStatus.choices,
+        default=ModerationStatus.APPROVED,
+        db_index=True,
+    )
+    rejection_reason = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -22,14 +22,15 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
   @override
   Widget build(BuildContext context) {
     final unisAsync = ref.watch(universitiesProvider);
-    final depsAsync = ref.watch(departmentsProvider);
+    final depsAsync = ref.watch(departmentsProvider(null));
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
             ref.invalidate(universitiesProvider);
-            ref.invalidate(departmentsProvider);
+            ref.invalidate(departmentsProvider(null));
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(

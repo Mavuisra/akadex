@@ -34,6 +34,9 @@ def enrich_real_content(
     david,
     alumni,
     alumni2,
+    alumni_roxie=None,
+    alumni_patrick=None,
+    alumni_esther=None,
 ):
     """Enrichit la base avec contenus proches du terrain universitaire RDC."""
 
@@ -389,6 +392,48 @@ def enrich_real_content(
             15,
             VIDEO_SAMPLES[0],
         ),
+        (
+            alumni_roxie or alumni,
+            dept_info,
+            'Roxie Ntumba — Comment bien choisir sa faculté (TikTok)',
+            (
+                'Dans cette vidéo TikTok, j’explique comment choisir une faculté '
+                'en RDC : intérêts, débouchés, charges de travail, et erreurs à éviter '
+                'après le diplôme d’État. @roxientumba'
+            ),
+            PostKind.ALUMNI_VIDEO,
+            ['orientation', 'faculté', 'TikTok', 'Roxie'],
+            1204,
+            210,
+            'https://www.tiktok.com/@roxientumba/video/7663144965132029205',
+        ),
+        (
+            alumni_patrick or alumni2,
+            dept_fasi,
+            'Patrick Ilunga — Démo live : repo GitHub qui impressionne un recruteur',
+            (
+                'Structure README, commits propres, un déploiement. Lien vidéo directe (MP4) '
+                'pour visionner hors ligne dans Akadex.'
+            ),
+            PostKind.ALUMNI_VIDEO,
+            ['GitHub', 'carrière'],
+            201,
+            44,
+            VIDEO_SAMPLES[1],
+        ),
+        (
+            alumni_esther or alumni2,
+            dept_upn,
+            'Esther Kalala — Live Facebook : préparer l’oral de TFC',
+            (
+                'Replay de mon live : posture, slides, questions du jury. Lien Facebook Watch.'
+            ),
+            PostKind.ALUMNI_VIDEO,
+            ['TFC', 'oral', 'Facebook'],
+            167,
+            38,
+            'https://www.facebook.com/watch/?v=10153231379946729',
+        ),
     ]:
         video = rest[0] if rest else ''
         Post.objects.update_or_create(
@@ -409,3 +454,11 @@ def enrich_real_content(
     AlumniFollow.objects.get_or_create(follower=aicha, alumni=alumni)
     AlumniFollow.objects.get_or_create(follower=joseph, alumni=alumni)
     AlumniFollow.objects.get_or_create(follower=fatou, alumni=alumni2)
+    if alumni_roxie:
+        AlumniFollow.objects.get_or_create(follower=aicha, alumni=alumni_roxie)
+        AlumniFollow.objects.get_or_create(follower=samuel, alumni=alumni_roxie)
+        AlumniFollow.objects.get_or_create(follower=grace, alumni=alumni_roxie)
+    if alumni_patrick:
+        AlumniFollow.objects.get_or_create(follower=david, alumni=alumni_patrick)
+    if alumni_esther:
+        AlumniFollow.objects.get_or_create(follower=fatou, alumni=alumni_esther)

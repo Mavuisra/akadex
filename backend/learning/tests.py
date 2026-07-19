@@ -154,6 +154,30 @@ class LearningAndAlumniApiTests(APITestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
 
+    def test_student_cannot_create_lesson(self):
+        self._auth(self.student)
+        res = self.client.post(
+            reverse('course-lesson-list'),
+            {
+                'module': self.module.pk,
+                'title': 'Leçon pirate',
+                'content_type': 'video',
+                'order': 99,
+                'video_url': 'https://example.com/x.mp4',
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_alumni_cannot_create_module(self):
+        self._auth(self.alumni)
+        res = self.client.post(
+            reverse('course-module-list'),
+            {'course': self.course.pk, 'title': 'Y', 'order': 8},
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
     def test_alumni_feed_scope(self):
         url = reverse('post-list')
         res = self.client.get(url, {'scope': 'alumni'})

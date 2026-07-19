@@ -8,6 +8,7 @@ import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
+import '../../../../data/repositories/repositories.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,6 +18,7 @@ class ProfileScreen extends ConsumerWidget {
     final auth = ref.watch(authStateProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: auth.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (e, _) => Center(
@@ -79,31 +81,57 @@ class ProfileScreen extends ConsumerWidget {
                   bottom: false,
                   child: Column(
                     children: [
-                      const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          'Mon profil',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Mon profil',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
+                          Material(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            shape: const CircleBorder(),
+                            child: InkWell(
+                              customBorder: const CircleBorder(),
+                              onTap: () => context.push('/profile/edit'),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8),
+                                child: Icon(
+                                  Icons.edit_outlined,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       CircleAvatar(
                         radius: 44,
                         backgroundColor: Colors.white,
-                        child: Text(
-                          user.name.isEmpty
-                              ? '?'
-                              : user.name.characters.first.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w800,
-                            color: AkadexColors.primary,
-                          ),
-                        ),
+                        backgroundImage: user.avatarUrl != null &&
+                                user.avatarUrl!.isNotEmpty
+                            ? NetworkImage(user.avatarUrl!)
+                            : null,
+                        child: user.avatarUrl == null ||
+                                user.avatarUrl!.isEmpty
+                            ? Text(
+                                user.name.isEmpty
+                                    ? '?'
+                                    : user.name.characters.first.toUpperCase(),
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w800,
+                                  color: AkadexColors.primary,
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -163,15 +191,41 @@ class ProfileScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     SoftCard(
-                      onTap: () => context.push('/professor'),
+                      child: Row(
+                        children: [
+                          Icon(
+                            user.usesTeacherShell
+                                ? Icons.school_rounded
+                                : user.isAlumni
+                                    ? Icons.workspace_premium_outlined
+                                    : Icons.person_outline_rounded,
+                            color: AkadexColors.primary,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              user.usesTeacherShell
+                                  ? 'Compte enseignant'
+                                  : user.isAlumni
+                                      ? 'Compte alumni'
+                                      : 'Compte étudiant',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SoftCard(
+                      onTap: () => context.push('/messages'),
                       child: const Row(
                         children: [
-                          Icon(Icons.school_outlined,
+                          Icon(Icons.chat_bubble_outline_rounded,
                               color: AkadexColors.primary),
                           SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Espace Professeurs',
+                              'Messages',
                               style: TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
@@ -180,58 +234,135 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 10),
-                    SoftCard(
-                      onTap: () => context.push('/rewards'),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.card_giftcard_rounded,
-                              color: AkadexColors.warning),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Récompenses & roue',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                    _NotificationsCard(),                    if (user.usesStudentShell) ...[
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.push('/contribute'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.upload_file_rounded,
+                                color: AkadexColors.primary),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Proposer une contribution',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
                             ),
-                          ),
-                          Icon(Icons.chevron_right_rounded),
-                        ],
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    SoftCard(
-                      onTap: () => context.push('/ai'),
-                      child: const Row(
-                        children: [
-                          AkadexLogo(size: 32),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Akadex IA',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.push('/my-contributions'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.folder_shared_outlined,
+                                color: AkadexColors.primary),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Mes contributions',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
                             ),
-                          ),
-                          Icon(Icons.chevron_right_rounded),
-                        ],
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    SoftCard(
-                      onTap: () => context.push('/calendar'),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.calendar_month_outlined,
-                              color: AkadexColors.primary),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Calendrier',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.push('/rewards'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.card_giftcard_rounded,
+                                color: AkadexColors.warning),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Récompenses & roue',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
                             ),
-                          ),
-                          Icon(Icons.chevron_right_rounded),
-                        ],
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.push('/ai'),
+                        child: const Row(
+                          children: [
+                            AkadexLogo(size: 32),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Akadex IA',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.push('/calendar'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined,
+                                color: AkadexColors.primary),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Calendrier',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
+                    ],
+                    if (user.usesTeacherShell) ...[
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.go('/teacher-publish'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.cloud_upload_outlined,
+                                color: AkadexColors.primary),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Publier une leçon',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SoftCard(
+                        onTap: () => context.go('/teacher-calendar'),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.calendar_month_outlined,
+                                color: AkadexColors.primary),
+                            SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Agenda universitaire',
+                                style: TextStyle(fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (user.badges.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Align(
@@ -292,6 +423,109 @@ class _Stat extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _NotificationsCard extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifsAsync = ref.watch(notificationsProvider);
+
+    return SoftCard(
+      child: notifsAsync.when(
+        loading: () => const Row(
+          children: [
+            Icon(Icons.notifications_outlined, color: AkadexColors.primary),
+            SizedBox(width: 12),
+            Text(
+              'Notifications…',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+        error: (_, _) => const Row(
+          children: [
+            Icon(Icons.notifications_outlined, color: AkadexColors.inkMuted),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Notifications indisponibles',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        data: (notifs) {
+          final unread = notifs.where((n) => !n.isRead).length;
+          final latest = notifs.isEmpty ? null : notifs.first;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.notifications_outlined,
+                    color: AkadexColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Notifications',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  if (unread > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AkadexColors.danger,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$unread',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              if (latest != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  latest.title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  latest.message,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AkadexColors.inkMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 8),
+                const Text(
+                  'Aucune notification pour le moment.',
+                  style: TextStyle(
+                    color: AkadexColors.inkMuted,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
     );
   }
 }

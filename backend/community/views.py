@@ -4,7 +4,15 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import AlumniFollow, Post, PostComment, PostKind, PostLike, SavedPost
+from .models import (
+    AlumniFollow,
+    ModerationStatus,
+    Post,
+    PostComment,
+    PostKind,
+    PostLike,
+    SavedPost,
+)
 from .serializers import (
     AlumniFollowSerializer,
     PostCommentSerializer,
@@ -46,9 +54,16 @@ class PostViewSet(viewsets.ModelViewSet):
                 Q(department_id=dept) | Q(author__department_id=dept)
             )
 
-        if self.request.user.is_staff:
+        if self.request.user.is_authenticated and (
+            self.request.user.is_staff or self.request.user.role == User.Role.ADMIN
+        ):
             return qs
-        return qs.filter(is_approved=True)
+        if self.request.user.is_authenticated:
+            return qs.filter(
+                Q(moderation_status=ModerationStatus.APPROVED)
+                | Q(author=self.request.user)
+            ).distinct()
+        return qs.filter(moderation_status=ModerationStatus.APPROVED)
 
     def perform_create(self, serializer):
         kind = serializer.validated_data.get('kind', PostKind.DISCUSSION)
@@ -58,20 +73,83 @@ class PostViewSet(viewsets.ModelViewSet):
             User.Role.ADMIN,
             User.Role.TEACHER,
         ):
-            # Les étudiants peuvent poser des questions, pas publier du contenu alumni
             if kind != PostKind.QUESTION:
                 from rest_framework.exceptions import PermissionDenied
 
                 raise PermissionDenied(
                     'Seuls les alumni peuvent publier ce type de contenu.'
                 )
-        serializer.save(author=user)
+        # Publications alumni → toujours en modération avant visibilité publique
+        needs_moderation = kind in ALUMNI_KINDS or user.role == User.Role.ALUMNI
+        serializer.save(
+            author=user,
+            is_approved=not needs_moderation,
+            moderation_status=(
+                ModerationStatus.PENDING
+                if needs_moderation
+                else ModerationStatus.APPROVED
+            ),
+        )
 
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def approve(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        post = self.get_object()
+        post.is_approved = True
+        post.moderation_status = ModerationStatus.APPROVED
+        post.rejection_reason = ''
+        post.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'rejection_reason',
+                'updated_at',
+            ]
+        )
+        AppNotification.objects.create(
+            user=post.author,
+            kind=AppNotification.Kind.POST_APPROVED,
+            title='Publication validée',
+            message=(
+                f'Félicitations ! Votre publication « {post.title} » a été validée '
+                'et est maintenant visible par toute la communauté.'
+            ),
+        )
+        return Response(PostSerializer(post, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reject(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        post = self.get_object()
+        reason = (request.data.get('reason') or '').strip()
+        post.is_approved = False
+        post.moderation_status = ModerationStatus.REJECTED
+        post.rejection_reason = reason
+        post.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'rejection_reason',
+                'updated_at',
+            ]
+        )
+        AppNotification.objects.create(
+            user=post.author,
+            kind=AppNotification.Kind.POST_REJECTED,
+            title='Publication refusée',
+            message=(
+                f'Votre publication « {post.title} » a été refusée.'
+                + (f' Motif : {reason}' if reason else '')
+            ),
+        )
+        return Response({'status': 'rejected'})
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
     def like(self, request, pk=None):
         post = self.get_object()

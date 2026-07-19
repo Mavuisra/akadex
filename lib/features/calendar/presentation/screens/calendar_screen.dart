@@ -1,13 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/api/api_client.dart';
-import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 
 class CalendarScreen extends ConsumerWidget {
@@ -38,10 +36,7 @@ class CalendarScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
+        automaticallyImplyLeading: Navigator.of(context).canPop(),
         title: const Text('Calendrier'),
       ),
       body: RefreshIndicator(
@@ -84,7 +79,7 @@ class CalendarScreen extends ConsumerWidget {
             return ListView.separated(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
               itemCount: events.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, i) {
                 final e = events[i];
                 final color = _colorFor(e.eventType);

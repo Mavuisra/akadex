@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/role_access.dart';
+import '../../data/auth/auth_repository.dart';
 import '../../domain/models/models.dart';
 import '../../features/ai/presentation/screens/ai_assistant_screen.dart';
+import '../../features/alumni/presentation/screens/alumni_profile_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_publish_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
@@ -14,18 +17,31 @@ import '../../features/calendar/presentation/screens/calendar_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/explorer/presentation/screens/explorer_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/library/presentation/screens/contribute_screen.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
 import '../../features/library/presentation/screens/lesson_player_screen.dart';
 import '../../features/library/presentation/screens/library_screen.dart';
+import '../../features/lmd/presentation/screens/lmd_assistant_screen.dart';
+import '../../features/lmd/presentation/screens/lmd_guide_screen.dart';
+import '../../features/messaging/presentation/screens/chat_screen.dart';
+import '../../features/messaging/presentation/screens/conversations_screen.dart';
 import '../../features/professor/presentation/screens/professor_hub_screen.dart';
 import '../../features/professor/presentation/screens/professor_publish_screen.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/rewards_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
-import '../../features/shell/main_shell.dart';
+import '../../features/shell/student_shell.dart';
+import '../../features/shell/teacher_shell.dart';
 
 final _rootKey = GlobalKey<NavigatorState>();
+
+class _AuthRefresh extends ChangeNotifier {
+  _AuthRefresh(Ref ref) {
+    ref.listen(authStateProvider, (_, _) => notifyListeners());
+  }
+}
 
 CustomTransitionPage<void> _fadeSlide(GoRouterState state, Widget child) {
   return CustomTransitionPage<void>(
@@ -61,9 +77,33 @@ CupertinoPage<void> _cupertino(GoRouterState state, Widget child) {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = _AuthRefresh(ref);
+
   return GoRouter(
     navigatorKey: _rootKey,
     initialLocation: '/onboarding',
+    refreshListenable: refresh,
+    redirect: (context, state) {
+      final loc = state.matchedLocation;
+      final user = ref.read(authStateProvider).valueOrNull;
+      final role = user?.role;
+
+      if (RoleAccess.isPublicLocation(loc)) {
+        if (user != null && (loc == '/login' || loc == '/register')) {
+          return RoleAccess.homeForRole(role);
+        }
+        return null;
+      }
+
+      if (!RoleAccess.canAccess(role: role, location: loc)) {
+        return RoleAccess.redirectForDenied(role: role, location: loc);
+      }
+
+      if (loc == '/professor') return '/teacher';
+      if (loc.startsWith('/professor/publish')) return '/teacher-publish';
+
+      return null;
+    },
     routes: [
       GoRoute(
         path: '/onboarding',
@@ -80,9 +120,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) =>
             _cupertino(state, const RegisterScreen()),
       ),
+
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
-          return MainShell(navigationShell: navigationShell);
+          return StudentShell(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(
@@ -109,54 +150,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/library',
                 pageBuilder: (context, state) =>
                     _fadeSlide(state, const LibraryScreen()),
-                routes: [
-                  GoRoute(
-                    path: 'course/:id',
-                    parentNavigatorKey: _rootKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      CourseDetailScreen(
-                        courseId: state.pathParameters['id']!,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'document/:id',
-                    parentNavigatorKey: _rootKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      DocumentDetailScreen(
-                        documentId: state.pathParameters['id']!,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'lesson/:id/play',
-                    parentNavigatorKey: _rootKey,
-                    pageBuilder: (context, state) {
-                      final extra = state.extra as Map<String, dynamic>?;
-                      final lesson = extra?['lesson'] as CourseLessonItem?;
-                      if (lesson == null) {
-                        return _cupertino(
-                          state,
-                          const Scaffold(
-                            body: Center(child: Text('Leçon introuvable')),
-                          ),
-                        );
-                      }
-                      return _cupertino(
-                        state,
-                        LessonPlayerScreen(
-                          lessonId: state.pathParameters['id']!,
-                          lesson: lesson,
-                          courseId: (extra?['courseId'] ?? '').toString(),
-                          modules: (extra?['modules'] as List<CourseModuleItem>?) ??
-                              const [],
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ),
             ],
           ),
@@ -189,6 +182,105 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
+
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return TeacherShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/teacher',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfessorHubScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/teacher-publish',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfessorPublishScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/teacher-calendar',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const CalendarScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/teacher-profile',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfileScreen()),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      GoRoute(
+        path: '/library/course/:id',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          CourseDetailScreen(courseId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/library/document/:id',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          DocumentDetailScreen(documentId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/library/lesson/:id/play',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          final lesson = extra?['lesson'] as CourseLessonItem?;
+          if (lesson == null) {
+            return _cupertino(
+              state,
+              const Scaffold(
+                body: Center(child: Text('Leçon introuvable')),
+              ),
+            );
+          }
+          return _cupertino(
+            state,
+            LessonPlayerScreen(
+              lessonId: state.pathParameters['id']!,
+              lesson: lesson,
+              courseId: (extra?['courseId'] ?? '').toString(),
+              modules:
+                  (extra?['modules'] as List<CourseModuleItem>?) ?? const [],
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/lmd',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const LmdGuideScreen()),
+      ),
+      GoRoute(
+        path: '/lmd/assistant',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const LmdAssistantScreen()),
+      ),
       GoRoute(
         path: '/search',
         parentNavigatorKey: _rootKey,
@@ -214,22 +306,68 @@ final routerProvider = Provider<GoRouter>((ref) {
             _cupertino(state, const RewardsScreen()),
       ),
       GoRoute(
+        path: '/contribute',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ContributeScreen()),
+      ),
+      GoRoute(
+        path: '/my-contributions',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const MyContributionsScreen()),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const EditProfileScreen()),
+      ),
+      GoRoute(
+        path: '/alumni/profile/:id',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          AlumniProfileScreen(userId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
         path: '/alumni/publish',
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const AlumniPublishScreen()),
       ),
       GoRoute(
-        path: '/professor',
+        path: '/messages',
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
-            _cupertino(state, const ProfessorHubScreen()),
+            _cupertino(state, const ConversationsScreen()),
+      ),
+      GoRoute(
+        path: '/messages/chat/:id',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          ChatScreen(conversationId: state.pathParameters['id']!),
+        ),
+      ),
+      GoRoute(
+        path: '/messages/with/:userId',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          StartConversationScreen(userId: state.pathParameters['userId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/professor',
+        parentNavigatorKey: _rootKey,
+        redirect: (context, state) => '/teacher',
       ),
       GoRoute(
         path: '/professor/publish',
         parentNavigatorKey: _rootKey,
-        pageBuilder: (context, state) =>
-            _cupertino(state, const ProfessorPublishScreen()),
+        redirect: (context, state) => '/teacher-publish',
       ),
     ],
   );

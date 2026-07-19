@@ -70,16 +70,23 @@ String? documentTypeToApi(DocumentType? type) {
 UserProfile userFromJson(Map<String, dynamic> json) {
   final first = (json['first_name'] ?? '').toString();
   final last = (json['last_name'] ?? '').toString();
+  final postnom = (json['postnom'] ?? '').toString();
   final full = (json['full_name'] ?? '').toString().trim();
+  final composed = [first, postnom, last]
+      .where((p) => p.trim().isNotEmpty)
+      .join(' ')
+      .trim();
   final name = full.isNotEmpty
       ? full
-      : ('$first $last').trim().isEmpty
+      : composed.isEmpty
           ? (json['email'] ?? 'Étudiant').toString()
-          : ('$first $last').trim();
+          : composed;
 
   return UserProfile(
     id: json['id'].toString(),
     name: name,
+    firstName: first,
+    lastName: last,
     email: (json['email'] ?? '').toString(),
     university: (json['university_name'] ?? '').toString(),
     faculty: (json['faculty_name'] ?? '').toString(),
@@ -89,10 +96,30 @@ UserProfile userFromJson(Map<String, dynamic> json) {
     role: (json['role'] ?? 'student').toString(),
     bio: (json['bio'] ?? '').toString(),
     avatarUrl: json['avatar']?.toString(),
+    phone: (json['phone'] ?? '').toString(),
     reputation: asInt(json['reputation']),
     contributions: asInt(json['contributions_count']),
     badges: (json['badges'] as List?)?.map((e) => e.toString()).toList() ??
         const [],
+    postnom: postnom,
+    headline: (json['headline'] ?? '').toString(),
+    coverUrl: json['cover']?.toString(),
+    professionalDomain: (json['professional_domain'] ?? '').toString(),
+    company: (json['company'] ?? '').toString(),
+    graduationYear: json['graduation_year'] == null
+        ? null
+        : asInt(json['graduation_year']),
+    universityId: (json['university'] ?? '').toString(),
+    facultyId: (json['faculty'] ?? '').toString(),
+    departmentId: (json['department'] ?? '').toString(),
+    promotionId: (json['promotion'] ?? '').toString(),
+    gender: (json['gender'] ?? '').toString(),
+    birthDate: DateTime.tryParse(json['birth_date']?.toString() ?? ''),
+    matricule: (json['matricule'] ?? '').toString(),
+    followersCount: asInt(json['followers_count']),
+    followingCount: asInt(json['following_count']),
+    postsCount: asInt(json['posts_count']),
+    pendingEmail: (json['pending_email'] ?? '').toString(),
   );
 }
 
@@ -116,6 +143,13 @@ AcademicDocument documentFromJson(Map<String, dynamic> json) {
     favorites: asInt(json['favorites_count']),
     rating: asDouble(json['rating_avg']),
     description: (json['description'] ?? '').toString(),
+    isApproved: json['is_approved'] != false,
+    moderationStatus: (json['moderation_status'] ??
+            (json['is_approved'] == true ? 'approved' : 'pending'))
+        .toString(),
+    rejectionReason: (json['rejection_reason'] ?? '').toString(),
+    pointsAwarded: asInt(json['points_awarded']),
+    externalUrl: (json['external_url'] ?? '').toString(),
   );
 }
 
@@ -145,6 +179,7 @@ CommunityPost postFromJson(Map<String, dynamic> json) {
     author: (json['author_name'] ?? '').toString(),
     authorId: (json['author_id'] ?? json['author'] ?? '').toString(),
     authorRole: (json['author_role'] ?? 'student').toString(),
+    authorAvatarUrl: (json['author_avatar'] ?? '').toString(),
     department: (json['department_name'] ?? '').toString(),
     title: (json['title'] ?? '').toString(),
     content: (json['content'] ?? '').toString(),
@@ -160,6 +195,9 @@ CommunityPost postFromJson(Map<String, dynamic> json) {
     isLiked: json['is_liked'] == true,
     isSaved: json['is_saved'] == true,
     isFollowingAuthor: json['is_following_author'] == true,
+    isApproved: json['is_approved'] != false,
+    moderationStatus: (json['moderation_status'] ?? 'approved').toString(),
+    rejectionReason: (json['rejection_reason'] ?? '').toString(),
   );
 }
 
@@ -293,12 +331,14 @@ class DepartmentItem {
     required this.name,
     required this.facultyName,
     required this.universityId,
+    this.facultyId = '',
   });
 
   final String id;
   final String name;
   final String facultyName;
   final String universityId;
+  final String facultyId;
 }
 
 DepartmentItem departmentFromJson(Map<String, dynamic> json) {
@@ -307,8 +347,75 @@ DepartmentItem departmentFromJson(Map<String, dynamic> json) {
     name: (json['name'] ?? '').toString(),
     facultyName: (json['faculty_name'] ?? '').toString(),
     universityId: json['university'].toString(),
+    facultyId: (json['faculty'] ?? '').toString(),
   );
 }
+
+class FacultyItem {
+  const FacultyItem({
+    required this.id,
+    required this.name,
+    required this.universityId,
+  });
+
+  final String id;
+  final String name;
+  final String universityId;
+}
+
+FacultyItem facultyFromJson(Map<String, dynamic> json) {
+  return FacultyItem(
+    id: json['id'].toString(),
+    name: (json['name'] ?? '').toString(),
+    universityId: (json['university'] ?? '').toString(),
+  );
+}
+
+class PromotionItem {
+  const PromotionItem({
+    required this.id,
+    required this.name,
+    required this.departmentId,
+    this.year = 0,
+    this.level = '',
+  });
+
+  final String id;
+  final String name;
+  final String departmentId;
+  final int year;
+  final String level;
+}
+
+PromotionItem promotionFromJson(Map<String, dynamic> json) {
+  return PromotionItem(
+    id: json['id'].toString(),
+    name: (json['name'] ?? '').toString(),
+    departmentId: (json['department'] ?? '').toString(),
+    year: asInt(json['year']),
+    level: (json['level'] ?? '').toString(),
+  );
+}
+
+AppNotification notificationFromJson(Map<String, dynamic> json) {
+  return AppNotification(
+    id: json['id'].toString(),
+    kind: (json['kind'] ?? '').toString(),
+    title: (json['title'] ?? '').toString(),
+    message: (json['message'] ?? '').toString(),
+    points: asInt(json['points']),
+    isRead: json['is_read'] == true,
+    createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        DateTime.now(),
+  );
+}
+
+String moderationStatusLabel(String status) => switch (status) {
+      'pending' => "En cours d'examen",
+      'approved' => 'Validée',
+      'rejected' => 'Refusée',
+      _ => status,
+    };
 
 String _formatSize(int bytes) {
   if (bytes <= 0) return '—';

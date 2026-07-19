@@ -21,6 +21,20 @@ DOCUMENT_APPROVAL_POINTS = {
 
 WHEEL_UNLOCK_POINTS = 100
 
+DOC_TYPE_LABELS = {
+    'support_cours': 'PDF de cours',
+    'resume': 'résumé de cours',
+    'fiche_revision': 'fiche de révision',
+    'examen': 'examen',
+    'corrige': 'TP corrigé',
+    'tp': 'TP',
+    'interrogation': 'interrogation',
+    'tutoriel': 'tutoriel',
+    'livre': 'livre',
+    'projet': 'projet',
+    'memoire': 'mémoire',
+}
+
 
 def points_for_document(doc_type: str) -> int:
     return DOCUMENT_APPROVAL_POINTS.get(
@@ -43,5 +57,21 @@ def award_approval_points(document) -> int:
     User = get_user_model()
     User.objects.filter(pk=document.author_id).update(
         reputation=F('reputation') + pts,
+    )
+
+    label = DOC_TYPE_LABELS.get(document.doc_type, 'contribution')
+    from accounts.models import AppNotification
+
+    AppNotification.objects.create(
+        user_id=document.author_id,
+        kind=AppNotification.Kind.DOCUMENT_APPROVED,
+        title='Contribution validée',
+        message=(
+            f'Félicitations ! Votre contribution ({label}) « {document.title} » '
+            f'a été validée. Vous avez obtenu {pts} points. '
+            'Continuez à partager des ressources de qualité pour aider '
+            'la communauté universitaire.'
+        ),
+        points=pts,
     )
     return pts
