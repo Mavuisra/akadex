@@ -1,10 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/moderation_chip.dart';
+import '../../../../core/widgets/post_detail_sheet.dart';
 import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 
@@ -22,8 +26,10 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(postsProvider('community'));
+    final me = ref.watch(authStateProvider).valueOrNull;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -62,7 +68,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                     children: [
                       Text(apiErrorMessage(e), textAlign: TextAlign.center),
                       TextButton(
-                        onPressed: () => ref.invalidate(postsProvider('community')),
+                        onPressed: () =>
+                            ref.invalidate(postsProvider('community')),
                         child: const Text('Réessayer'),
                       ),
                     ],
@@ -71,13 +78,14 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                 data: (posts) {
                   final filtered = switch (_tab) {
                     'Questions' => posts
-                        .where((p) =>
-                            p.title.contains('?') ||
-                            p.tags.any((t) => t.contains('exam')))
+                        .where(
+                          (p) =>
+                              p.title.contains('?') ||
+                              p.tags.any((t) => t.contains('exam')),
+                        )
                         .toList(),
-                    'Discussions' => posts
-                        .where((p) => !p.title.contains('?'))
-                        .toList(),
+                    'Discussions' =>
+                      posts.where((p) => !p.title.contains('?')).toList(),
                     _ => posts,
                   };
                   if (filtered.isEmpty) {
@@ -92,47 +100,93 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: SoftCard(
+                            onTap: () => showPostDetailSheet(
+                              context,
+                              post: p,
+                              ref: ref,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 18,
-                                      backgroundColor: AkadexColors.primarySoft,
-                                      child: Text(
-                                        p.author.isEmpty
-                                            ? '?'
-                                            : p.author.characters.first
-                                                .toUpperCase(),
-                                        style: const TextStyle(
-                                          color: AkadexColors.primary,
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                    GestureDetector(
+                                      onTap: p.authorId.isEmpty
+                                          ? null
+                                          : () {
+                                              if (me?.id == p.authorId) {
+                                                context.go('/profile');
+                                              } else {
+                                                context.push(
+                                                  '/alumni/profile/${p.authorId}',
+                                                );
+                                              }
+                                            },
+                                      child: CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor:
+                                            AkadexColors.primarySoft,
+                                        backgroundImage:
+                                            p.authorAvatarUrl.isNotEmpty
+                                                ? NetworkImage(
+                                                    p.authorAvatarUrl,
+                                                  )
+                                                : null,
+                                        child: p.authorAvatarUrl.isNotEmpty
+                                            ? null
+                                            : Text(
+                                                p.author.isEmpty
+                                                    ? '?'
+                                                    : p.author.characters.first
+                                                        .toUpperCase(),
+                                                style: const TextStyle(
+                                                  color: AkadexColors.primary,
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            p.author,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w700,
+                                      child: GestureDetector(
+                                        onTap: p.authorId.isEmpty
+                                            ? null
+                                            : () {
+                                                if (me?.id == p.authorId) {
+                                                  context.go('/profile');
+                                                } else {
+                                                  context.push(
+                                                    '/alumni/profile/${p.authorId}',
+                                                  );
+                                                }
+                                              },
+                                        behavior: HitTestBehavior.opaque,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              p.author,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                              ),
                                             ),
-                                          ),
-                                          Text(
-                                            '${p.department} · ${timeAgo(p.createdAt)}',
-                                            style: const TextStyle(
-                                              color: AkadexColors.inkMuted,
-                                              fontSize: 12,
+                                            Text(
+                                              '${p.department} · ${timeAgo(p.createdAt)}',
+                                              style: const TextStyle(
+                                                color: AkadexColors.inkMuted,
+                                                fontSize: 12,
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
+                                    if (p.needsModerationBadge ||
+                                        me?.id == p.authorId)
+                                      ModerationChip(
+                                        status: p.moderationStatus,
+                                      ),
                                   ],
                                 ),
                                 const SizedBox(height: 10),

@@ -31,6 +31,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final coursesAsync = ref.watch(coursesProvider);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async => ref.invalidate(coursesProvider),

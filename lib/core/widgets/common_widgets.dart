@@ -5,20 +5,22 @@ import 'package:flutter/services.dart';
 import '../constants/app_constants.dart';
 import '../theme/akadex_theme.dart';
 
-/// Carte pressable avec scale soft (feedback iOS).
+/// Carte pressable avec scale soft + bordure légère.
 class SoftCard extends StatefulWidget {
   const SoftCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(14),
+    this.padding = const EdgeInsets.all(16),
     this.onTap,
     this.delay = Duration.zero,
+    this.accentBorder = false,
   });
 
   final Widget child;
   final EdgeInsets padding;
   final VoidCallback? onTap;
   final Duration delay;
+  final bool accentBorder;
 
   @override
   State<SoftCard> createState() => _SoftCardState();
@@ -38,7 +40,7 @@ class _SoftCardState extends State<SoftCard>
       duration: const Duration(milliseconds: 110),
       reverseDuration: const Duration(milliseconds: 180),
     );
-    _scale = Tween<double>(begin: 1, end: 0.97).animate(
+    _scale = Tween<double>(begin: 1, end: 0.975).animate(
       CurvedAnimation(parent: _press, curve: Curves.easeOutCubic),
     );
     if (widget.delay == Duration.zero) {
@@ -61,9 +63,7 @@ class _SoftCardState extends State<SoftCard>
     _press.forward();
   }
 
-  void _up([_]) {
-    _press.reverse();
-  }
+  void _up([_]) => _press.reverse();
 
   void _tap() {
     if (widget.onTap == null) return;
@@ -80,7 +80,7 @@ class _SoftCardState extends State<SoftCard>
       child: AnimatedSlide(
         offset: _visible || widget.delay == Duration.zero
             ? Offset.zero
-            : const Offset(0, 0.06),
+            : const Offset(0, 0.05),
         duration: const Duration(milliseconds: 420),
         curve: Curves.easeOutCubic,
         child: ScaleTransition(
@@ -92,13 +92,23 @@ class _SoftCardState extends State<SoftCard>
             onTap: widget.onTap == null ? null : _tap,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: widget.accentBorder
+                      ? AkadexColors.primary.withValues(alpha: 0.22)
+                      : AkadexColors.border.withValues(alpha: 0.85),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: AkadexColors.primary.withValues(alpha: 0.06),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -138,13 +148,27 @@ class SearchField extends StatelessWidget {
         fontSize: 15,
         color: AkadexColors.inkSoft,
       ),
-      backgroundColor: const Color(0xFFEEF0F4),
-      borderRadius: BorderRadius.circular(12),
+      backgroundColor: Colors.white,
+      borderRadius: BorderRadius.circular(14),
       prefixIcon: const Icon(
         CupertinoIcons.search,
-        color: AkadexColors.inkSoft,
+        color: AkadexColors.primary,
         size: 18,
       ),
+    );
+
+    final wrapped = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: AkadexColors.primary.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: field,
     );
 
     if (readOnly && onTap != null) {
@@ -153,10 +177,10 @@ class SearchField extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap!();
         },
-        child: AbsorbPointer(child: field),
+        child: AbsorbPointer(child: wrapped),
       );
     }
-    return field;
+    return wrapped;
   }
 }
 
@@ -175,7 +199,7 @@ class FilterChipBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 40,
+      height: 42,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
@@ -190,30 +214,33 @@ class FilterChipBar extends StatelessWidget {
               onSelected(item);
             },
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
+              duration: const Duration(milliseconds: 240),
               curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isSelected ? AkadexColors.primary : Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                gradient: isSelected ? AkadexColors.brandGradient : null,
+                color: isSelected ? null : Colors.white,
+                borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isSelected ? AkadexColors.primary : AkadexColors.border,
+                  color: isSelected
+                      ? Colors.transparent
+                      : AkadexColors.border,
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AkadexColors.primary.withValues(alpha: 0.25),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: isSelected
+                        ? AkadexColors.primary.withValues(alpha: 0.28)
+                        : Colors.black.withValues(alpha: 0.03),
+                    blurRadius: isSelected ? 12 : 6,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Text(
                 item,
                 style: TextStyle(
                   color: isSelected ? Colors.white : AkadexColors.ink,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
               ),
@@ -236,8 +263,22 @@ class SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
+        Container(
+          width: 4,
+          height: 20,
+          margin: const EdgeInsets.only(right: 10),
+          decoration: BoxDecoration(
+            gradient: AkadexColors.brandGradient,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        ),
         Expanded(
-          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+          ),
         ),
         if (action != null)
           CupertinoButton(
@@ -247,8 +288,8 @@ class SectionTitle extends StatelessWidget {
               action!,
               style: const TextStyle(
                 color: AkadexColors.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
               ),
             ),
           ),
@@ -265,16 +306,24 @@ class DocTypeTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: AkadexColors.primarySoft,
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          colors: [
+            AkadexColors.primarySoft,
+            AkadexColors.accentSoft.withValues(alpha: 0.55),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: AkadexColors.primary.withValues(alpha: 0.12),
+        ),
       ),
       child: Text(
         label,
         style: const TextStyle(
-          color: AkadexColors.primary,
-          fontWeight: FontWeight.w700,
+          color: AkadexColors.primaryDark,
+          fontWeight: FontWeight.w800,
           fontSize: 12,
         ),
       ),
@@ -291,7 +340,6 @@ class BottomSafePadding extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(height: height);
 }
 
-/// Logo Akadex (`assets/images/logo.png`).
 class AkadexLogo extends StatelessWidget {
   const AkadexLogo({
     super.key,
@@ -305,9 +353,19 @@ class AkadexLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? size * 0.22;
-    return SizedBox(
+    return Container(
       width: size,
       height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: AkadexColors.primary.withValues(alpha: 0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: Image.asset(
@@ -322,7 +380,6 @@ class AkadexLogo extends StatelessWidget {
   }
 }
 
-/// Illustration marketing (`assets/images/presentation.png`).
 class AkadexPresentation extends StatelessWidget {
   const AkadexPresentation({
     super.key,
@@ -343,7 +400,6 @@ class AkadexPresentation extends StatelessWidget {
   }
 }
 
-/// Logo + nom de marque alignés horizontalement.
 class AkadexBrandHeader extends StatelessWidget {
   const AkadexBrandHeader({
     super.key,
@@ -370,14 +426,68 @@ class AkadexBrandHeader extends StatelessWidget {
             AppConstants.appName,
             style: TextStyle(
               fontSize: fontSize,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
               color: color,
-              letterSpacing: -0.4,
+              letterSpacing: -0.5,
             ),
           ),
         ),
       ],
     );
     return centered ? Center(child: row) : row;
+  }
+}
+
+/// Tuile d’accès rapide animée.
+class QuickAccessTile extends StatelessWidget {
+  const QuickAccessTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SoftCard(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AkadexColors.primarySoft,
+                  AkadexColors.accentSoft.withValues(alpha: 0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: AkadexColors.primary, size: 22),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AkadexColors.ink,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

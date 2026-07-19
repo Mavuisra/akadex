@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/akadex_theme.dart';
+import '../../core/widgets/living_ui.dart';
 
-class MainShell extends StatelessWidget {
-  const MainShell({super.key, required this.navigationShell});
+/// Navigation campus : Accueil, Explorer, Bibliothèque, Communauté, Alumni, Profil.
+class StudentShell extends StatelessWidget {
+  const StudentShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
@@ -20,22 +22,21 @@ class MainShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: AkadexColors.background,
+    return PageAtmosphere(
       child: Scaffold(
-        backgroundColor: AkadexColors.background,
+        backgroundColor: Colors.transparent,
         body: navigationShell,
-        bottomNavigationBar: DecoratedBox(
+        bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
+            color: Colors.white.withValues(alpha: 0.94),
             border: const Border(
-              top: BorderSide(color: Color(0xFFE5E5EA), width: 0.5),
+              top: BorderSide(color: AkadexColors.border, width: 0.6),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, -2),
+                color: AkadexColors.primary.withValues(alpha: 0.08),
+                blurRadius: 18,
+                offset: const Offset(0, -4),
               ),
             ],
           ),

@@ -31,6 +31,8 @@ class UniversitySerializer(serializers.ModelSerializer):
             'accent_color',
             'description',
             'is_active',
+            'is_verified',
+            'is_user_suggested',
         ]
 
 
@@ -53,6 +55,8 @@ class FacultySerializer(serializers.ModelSerializer):
             'name',
             'slug',
             'description',
+            'is_verified',
+            'is_user_suggested',
         ]
 
 
@@ -70,13 +74,23 @@ class DepartmentSerializer(serializers.ModelSerializer):
             'name',
             'slug',
             'description',
+            'is_verified',
+            'is_user_suggested',
         ]
 
 
 class PromotionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Promotion
-        fields = ['id', 'department', 'name', 'year', 'level']
+        fields = [
+            'id',
+            'department',
+            'name',
+            'year',
+            'level',
+            'is_verified',
+            'is_user_suggested',
+        ]
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -171,8 +185,11 @@ class DocumentSerializer(serializers.ModelSerializer):
             'rating_avg',
             'rating_count',
             'is_approved',
+            'moderation_status',
+            'rejection_reason',
             'is_featured',
             'is_favorited',
+            'points_awarded',
             'created_at',
             'updated_at',
         ]
@@ -184,6 +201,9 @@ class DocumentSerializer(serializers.ModelSerializer):
             'rating_avg',
             'rating_count',
             'is_approved',
+            'moderation_status',
+            'rejection_reason',
+            'points_awarded',
             'created_at',
             'updated_at',
         ]

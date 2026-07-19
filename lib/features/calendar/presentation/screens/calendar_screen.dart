@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
@@ -38,10 +37,7 @@ class CalendarScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
+        automaticallyImplyLeading: Navigator.of(context).canPop(),
         title: const Text('Calendrier'),
       ),
       body: RefreshIndicator(

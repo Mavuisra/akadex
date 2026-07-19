@@ -50,12 +50,14 @@ class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UniversitySerializer
     lookup_field = 'slug'
     search_fields = ['name', 'city', 'country']
+    pagination_class = None
 
 
 class CampusViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Campus.objects.select_related('university')
     serializer_class = CampusSerializer
     filterset_fields = ['university']
+    pagination_class = None
 
 
 class FacultyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -63,6 +65,7 @@ class FacultyViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FacultySerializer
     filterset_fields = ['university', 'campus']
     search_fields = ['name']
+    pagination_class = None
 
 
 class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
@@ -70,12 +73,14 @@ class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DepartmentSerializer
     filterset_fields = ['faculty', 'faculty__university']
     search_fields = ['name']
+    pagination_class = None
 
 
 class PromotionViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Promotion.objects.select_related('department')
     serializer_class = PromotionSerializer
     filterset_fields = ['department', 'year', 'level']
+    pagination_class = None
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -100,6 +105,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
         'course',
         'academic_year',
         'is_featured',
+        'author',
+        'moderation_status',
+        'is_approved',
     ]
     search_fields = ['title', 'description', 'author__first_name', 'author__last_name']
     ordering_fields = ['created_at', 'downloads', 'views', 'rating_avg', 'favorites_count']
@@ -124,13 +132,54 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        doc = serializer.save(author=self.request.user, is_approved=False)
+        doc = serializer.save(
+            author=self.request.user,
+            is_approved=False,
+            moderation_status='pending',
+        )
         user = self.request.user
         user.contributions_count = F('contributions_count') + 1
-        user.reputation = F('reputation') + 10
-        user.save(update_fields=['contributions_count', 'reputation'])
+        user.save(update_fields=['contributions_count'])
         user.refresh_from_db()
         return doc
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def approve(self, request, pk=None):
+        doc = self.get_object()
+        doc.is_approved = True
+        doc.moderation_status = 'approved'
+        doc.rejection_reason = ''
+        doc.save()
+        return Response(DocumentSerializer(doc, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reject(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        doc = self.get_object()
+        reason = (request.data.get('reason') or '').strip()
+        doc.is_approved = False
+        doc.moderation_status = 'rejected'
+        doc.rejection_reason = reason
+        doc.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'rejection_reason',
+                'updated_at',
+            ]
+        )
+        if doc.author_id:
+            AppNotification.objects.create(
+                user_id=doc.author_id,
+                kind=AppNotification.Kind.DOCUMENT_REJECTED,
+                title='Contribution refusée',
+                message=(
+                    f'Votre contribution « {doc.title} » a été refusée.'
+                    + (f' Motif : {reason}' if reason else '')
+                ),
+            )
+        return Response({'status': 'rejected'})
 
     @action(detail=True, methods=['post'])
     def view(self, request, pk=None):

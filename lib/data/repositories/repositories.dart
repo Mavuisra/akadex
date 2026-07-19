@@ -4,10 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/document_type.dart';
 import '../../domain/models/models.dart';
 import '../api/api_client.dart';
+import '../auth/auth_repository.dart';
+import '../local/local_academic_store.dart';
 import '../mappers/mappers.dart';
+import '../sync/sync_service.dart';
 
 final academicRepositoryProvider = Provider<AcademicRepository>((ref) {
-  return AcademicRepository(ref.watch(dioProvider));
+  return AcademicRepository(
+    ref.watch(dioProvider),
+    ref.watch(localStoreProvider),
+  );
 });
 
 final communityRepositoryProvider = Provider<CommunityRepository>((ref) {
@@ -36,8 +42,34 @@ final universitiesProvider = FutureProvider<List<UniversityItem>>((ref) {
   return ref.watch(academicRepositoryProvider).fetchUniversities();
 });
 
-final departmentsProvider = FutureProvider<List<DepartmentItem>>((ref) {
-  return ref.watch(academicRepositoryProvider).fetchDepartments();
+final departmentsProvider =
+    FutureProvider.family<List<DepartmentItem>, String?>((ref, universityId) {
+  return ref
+      .watch(academicRepositoryProvider)
+      .fetchDepartments(universityId: universityId);
+});
+
+final facultiesProvider =
+    FutureProvider.family<List<FacultyItem>, String?>((ref, universityId) {
+  return ref
+      .watch(academicRepositoryProvider)
+      .fetchFaculties(universityId: universityId);
+});
+
+final promotionsProvider =
+    FutureProvider.family<List<PromotionItem>, String?>((ref, departmentId) {
+  return ref
+      .watch(academicRepositoryProvider)
+      .fetchPromotions(departmentId: departmentId);
+});
+
+final notificationsProvider = FutureProvider<List<AppNotification>>((ref) {
+  return ref.watch(authRepositoryProvider).fetchNotifications();
+});
+
+final postCommentsProvider =
+    FutureProvider.family<List<CourseCommentItem>, String>((ref, postId) {
+  return ref.watch(communityRepositoryProvider).fetchPostComments(postId);
 });
 
 final eventsProvider = FutureProvider<List<CalendarEventItem>>((ref) {
@@ -56,6 +88,19 @@ final postsProvider = FutureProvider.family<List<CommunityPost>, String?>((
   return ref.watch(communityRepositoryProvider).fetchPosts(scope: scope);
 });
 
+final alumniProfileProvider =
+    FutureProvider.family<UserProfile, String>((ref, userId) {
+  return ref.watch(communityRepositoryProvider).fetchUser(userId);
+});
+
+final alumniPostsByAuthorProvider =
+    FutureProvider.family<List<CommunityPost>, String>((ref, authorId) {
+  return ref.watch(communityRepositoryProvider).fetchPosts(
+        scope: 'alumni',
+        authorId: authorId,
+      );
+});
+
 final courseOutlineProvider =
     FutureProvider.family<CourseOutline, String>((ref, id) {
   return ref.watch(academicRepositoryProvider).fetchCourseOutline(id);
@@ -64,6 +109,12 @@ final courseOutlineProvider =
 final courseCommentsProvider =
     FutureProvider.family<List<CourseCommentItem>, String>((ref, courseId) {
   return ref.watch(academicRepositoryProvider).fetchCourseComments(courseId);
+});
+
+final myDocumentsProvider = FutureProvider<List<AcademicDocument>>((ref) {
+  final user = ref.watch(authStateProvider).valueOrNull;
+  if (user == null) return Future.value(const []);
+  return ref.watch(academicRepositoryProvider).fetchMyDocuments(user.id);
 });
 
 class DocumentQuery {
@@ -96,38 +147,100 @@ class DocumentQuery {
 }
 
 class AcademicRepository {
-  AcademicRepository(this._dio);
+  AcademicRepository(this._dio, this._store);
 
   final Dio _dio;
+  final LocalAcademicStore _store;
 
   Future<List<AcademicDocument>> fetchDocuments(DocumentQuery query) async {
+    try {
+      final res = await _dio.get(
+        'documents/',
+        queryParameters: {
+          if (query.search != null && query.search!.trim().isNotEmpty)
+            'search': query.search!.trim(),
+          if (query.docType != null)
+            'doc_type': documentTypeToApi(query.docType),
+          if (query.courseId != null) 'course': query.courseId,
+          if (query.featuredOnly) 'is_featured': true,
+          'ordering': query.ordering,
+        },
+      );
+      final raw = unwrapList(res.data);
+      await _store.upsertDocuments(raw);
+      return raw.map(documentFromJson).toList();
+    } catch (_) {
+      return _store.getDocuments(
+        search: query.search,
+        docType: query.docType,
+        courseId: query.courseId,
+        featuredOnly: query.featuredOnly,
+      );
+    }
+  }
+
+  Future<AcademicDocument> fetchDocument(String id) async {
+    try {
+      final res = await _dio.get('documents/$id/');
+      final raw = Map<String, dynamic>.from(res.data as Map);
+      await _store.upsertDocuments([raw]);
+      return documentFromJson(raw);
+    } catch (_) {
+      final local = await _store.getDocument(id);
+      if (local != null) return local;
+      rethrow;
+    }
+  }
+
+  Future<List<AcademicDocument>> fetchMyDocuments(String authorId) async {
     final res = await _dio.get(
       'documents/',
       queryParameters: {
-        if (query.search != null && query.search!.trim().isNotEmpty)
-          'search': query.search!.trim(),
-        if (query.docType != null) 'doc_type': documentTypeToApi(query.docType),
-        if (query.courseId != null) 'course': query.courseId,
-        if (query.featuredOnly) 'is_featured': true,
-        'ordering': query.ordering,
+        'author': authorId,
+        'ordering': '-created_at',
       },
     );
     return unwrapList(res.data).map(documentFromJson).toList();
   }
 
-  Future<AcademicDocument> fetchDocument(String id) async {
-    final res = await _dio.get('documents/$id/');
+  Future<AcademicDocument> createDocument(Map<String, dynamic> data) async {
+    final res = await _dio.post('documents/', data: data);
     return documentFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
   Future<List<Course>> fetchCourses() async {
-    final res = await _dio.get('courses/', queryParameters: {'ordering': 'code'});
-    return unwrapList(res.data).map(courseFromJson).toList();
+    try {
+      final all = <Map<String, dynamic>>[];
+      var path = 'courses/?ordering=code';
+      while (true) {
+        final res = await _dio.get(path);
+        all.addAll(unwrapList(res.data));
+        final next = res.data is Map ? res.data['next'] : null;
+        if (next == null) break;
+        final uri = Uri.parse(next.toString());
+        path = uri.path.contains('/api/')
+            ? next.toString().split('/api/').last
+            : 'courses/?${uri.query}';
+        if (all.length > 2000) break;
+      }
+      await _store.upsertCourses(all);
+      return all.map(courseFromJson).toList();
+    } catch (_) {
+      return _store.getCourses();
+    }
   }
 
   Future<Course> fetchCourse(String id) async {
-    final res = await _dio.get('courses/$id/');
-    return courseFromJson(Map<String, dynamic>.from(res.data as Map));
+    try {
+      final res = await _dio.get('courses/$id/');
+      final raw = Map<String, dynamic>.from(res.data as Map);
+      await _store.upsertCourses([raw]);
+      return courseFromJson(raw);
+    } catch (_) {
+      final local = await _store.getCourse(id);
+      if (local != null) return local;
+      rethrow;
+    }
   }
 
   Future<CourseOutline> fetchCourseOutline(String id) async {
@@ -144,10 +257,15 @@ class AcademicRepository {
   }
 
   Future<void> postCourseComment(String courseId, String content) async {
-    await _dio.post(
-      'course-comments/',
-      data: {'course': int.tryParse(courseId) ?? courseId, 'content': content},
-    );
+    final payload = {
+      'course': int.tryParse(courseId) ?? courseId,
+      'content': content,
+    };
+    try {
+      await _dio.post('course-comments/', data: payload);
+    } catch (_) {
+      await _store.enqueueOp('course_comment', payload);
+    }
   }
 
   Future<CourseLessonItem> createLesson(Map<String, dynamic> data) async {
@@ -165,33 +283,145 @@ class AcademicRepository {
     required int positionSeconds,
     bool completed = false,
   }) async {
-    await _dio.post(
-      'course-lessons/$lessonId/progress/',
-      data: {
-        'position_seconds': positionSeconds,
-        'completed': completed,
-      },
+    await _store.saveProgressLocal(
+      lessonId,
+      positionSeconds: positionSeconds,
+      completed: completed,
+      dirty: true,
     );
+    try {
+      await _dio.post(
+        'course-lessons/$lessonId/progress/',
+        data: {
+          'position_seconds': positionSeconds,
+          'completed': completed,
+        },
+      );
+      await _store.markProgressClean(lessonId);
+    } catch (_) {
+      // Resté dirty → sync ultérieure
+    }
   }
 
   Future<Map<String, dynamic>?> fetchLessonProgress(String lessonId) async {
-    final res = await _dio.get(
-      'lesson-progress/',
-      queryParameters: {'lesson': lessonId},
-    );
-    final list = unwrapList(res.data);
-    if (list.isEmpty) return null;
-    return list.first;
+    final local = await _store.getProgress(lessonId);
+    if (local != null) return Map<String, dynamic>.from(local);
+    try {
+      final res = await _dio.get(
+        'lesson-progress/',
+        queryParameters: {'lesson': lessonId},
+      );
+      final list = unwrapList(res.data);
+      if (list.isEmpty) return null;
+      final row = list.first;
+      await _store.saveProgressLocal(
+        lessonId,
+        positionSeconds: asInt(row['position_seconds']),
+        completed: row['completed'] == true,
+        dirty: false,
+      );
+      return row;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<List<UniversityItem>> fetchUniversities() async {
-    final res = await _dio.get('universities/');
-    return unwrapList(res.data).map(universityFromJson).toList();
+    try {
+      final res = await _dio.get('universities/');
+      final raw = unwrapList(res.data);
+      await _store.upsertUniversities(raw);
+      return raw.map(universityFromJson).toList();
+    } catch (_) {
+      return _store.getUniversities();
+    }
   }
 
-  Future<List<DepartmentItem>> fetchDepartments() async {
-    final res = await _dio.get('departments/');
+  Future<List<DepartmentItem>> fetchDepartments({String? universityId}) async {
+    final res = await _dio.get(
+      'departments/',
+      queryParameters: {
+        if (universityId != null && universityId.isNotEmpty)
+          'faculty__university': universityId,
+      },
+    );
     return unwrapList(res.data).map(departmentFromJson).toList();
+  }
+
+  Future<List<FacultyItem>> fetchFaculties({String? universityId}) async {
+    final res = await _dio.get(
+      'faculties/',
+      queryParameters: {
+        if (universityId != null && universityId.isNotEmpty)
+          'university': universityId,
+      },
+    );
+    return unwrapList(res.data).map(facultyFromJson).toList();
+  }
+
+  Future<List<PromotionItem>> fetchPromotions({String? departmentId}) async {
+    final res = await _dio.get(
+      'promotions/',
+      queryParameters: {
+        if (departmentId != null && departmentId.isNotEmpty)
+          'department': departmentId,
+      },
+    );
+    return unwrapList(res.data).map(promotionFromJson).toList();
+  }
+
+  Future<String> suggestUniversity(String name) async {
+    final res = await _dio.post(
+      'suggest/university/',
+      data: {'name': name.trim()},
+    );
+    return res.data['id'].toString();
+  }
+
+  Future<String> suggestFaculty({
+    required String name,
+    required String universityId,
+  }) async {
+    final res = await _dio.post(
+      'suggest/faculty/',
+      data: {
+        'name': name.trim(),
+        'university': int.tryParse(universityId) ?? universityId,
+      },
+    );
+    return res.data['id'].toString();
+  }
+
+  Future<String> suggestDepartment({
+    required String name,
+    String? facultyId,
+    String? universityId,
+  }) async {
+    final res = await _dio.post(
+      'suggest/department/',
+      data: {
+        'name': name.trim(),
+        if (facultyId != null && facultyId.isNotEmpty)
+          'faculty': int.tryParse(facultyId) ?? facultyId,
+        if (universityId != null && universityId.isNotEmpty)
+          'university': int.tryParse(universityId) ?? universityId,
+      },
+    );
+    return res.data['id'].toString();
+  }
+
+  Future<String> suggestPromotion({
+    required String name,
+    required String departmentId,
+  }) async {
+    final res = await _dio.post(
+      'suggest/promotion/',
+      data: {
+        'name': name.trim(),
+        'department': int.tryParse(departmentId) ?? departmentId,
+      },
+    );
+    return res.data['id'].toString();
   }
 
   Future<List<CalendarEventItem>> fetchEvents() async {
@@ -221,15 +451,21 @@ class CommunityRepository {
 
   final Dio _dio;
 
-  Future<List<CommunityPost>> fetchPosts({String? scope}) async {
+  Future<List<CommunityPost>> fetchPosts({String? scope, String? authorId}) async {
     final res = await _dio.get(
       'posts/',
       queryParameters: {
         'ordering': '-created_at',
         if (scope != null) 'scope': scope,
+        if (authorId != null) 'author': authorId,
       },
     );
     return unwrapList(res.data).map(postFromJson).toList();
+  }
+
+  Future<UserProfile> fetchUser(String id) async {
+    final res = await _dio.get('auth/users/$id/');
+    return userFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
   Future<CommunityPost> likePost(String id) async {
@@ -281,5 +517,13 @@ class CommunityRepository {
         'content': content,
       },
     );
+  }
+
+  Future<List<CourseCommentItem>> fetchPostComments(String postId) async {
+    final res = await _dio.get(
+      'post-comments/',
+      queryParameters: {'post': postId},
+    );
+    return unwrapList(res.data).map(courseCommentFromJson).toList();
   }
 }

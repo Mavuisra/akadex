@@ -1,6 +1,12 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .suggest_views import (
+    SuggestDepartmentView,
+    SuggestFacultyView,
+    SuggestPromotionView,
+    SuggestUniversityView,
+)
 from .views import (
     AnnouncementViewSet,
     CalendarEventViewSet,
@@ -31,5 +37,25 @@ router.register('events', CalendarEventViewSet, basename='event')
 router.register('rewards', RewardPrizeViewSet, basename='reward')
 
 urlpatterns = [
+    path(
+        'suggest/university/',
+        SuggestUniversityView.as_view(),
+        name='suggest-university',
+    ),
+    path(
+        'suggest/faculty/',
+        SuggestFacultyView.as_view(),
+        name='suggest-faculty',
+    ),
+    path(
+        'suggest/department/',
+        SuggestDepartmentView.as_view(),
+        name='suggest-department',
+    ),
+    path(
+        'suggest/promotion/',
+        SuggestPromotionView.as_view(),
+        name='suggest-promotion',
+    ),
     path('', include(router.urls)),
 ]

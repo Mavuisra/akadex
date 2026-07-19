@@ -5,6 +5,7 @@ from .models import AlumniFollow, Post, PostComment, SavedPost
 
 class PostCommentSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
+    author_avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = PostComment
@@ -13,6 +14,7 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'post',
             'author',
             'author_name',
+            'author_avatar',
             'content',
             'parent',
             'created_at',
@@ -22,9 +24,19 @@ class PostCommentSerializer(serializers.ModelSerializer):
     def get_author_name(self, obj):
         return obj.author.get_full_name() or obj.author.email
 
+    def get_author_avatar(self, obj):
+        request = self.context.get('request')
+        if not obj.author.avatar:
+            return ''
+        url = obj.author.avatar.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
+
 
 class PostSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
+    author_avatar = serializers.SerializerMethodField()
     author_role = serializers.CharField(source='author.role', read_only=True)
     author_id = serializers.IntegerField(source='author.id', read_only=True)
     department_name = serializers.CharField(
@@ -44,6 +56,7 @@ class PostSerializer(serializers.ModelSerializer):
             'author',
             'author_id',
             'author_name',
+            'author_avatar',
             'author_role',
             'department',
             'department_name',
@@ -56,6 +69,8 @@ class PostSerializer(serializers.ModelSerializer):
             'likes_count',
             'comments_count',
             'is_approved',
+            'moderation_status',
+            'rejection_reason',
             'is_liked',
             'is_saved',
             'is_following_author',
@@ -67,12 +82,23 @@ class PostSerializer(serializers.ModelSerializer):
             'likes_count',
             'comments_count',
             'is_approved',
+            'moderation_status',
+            'rejection_reason',
             'created_at',
             'updated_at',
         ]
 
     def get_author_name(self, obj):
         return obj.author.get_full_name() or obj.author.email
+
+    def get_author_avatar(self, obj):
+        request = self.context.get('request')
+        if not obj.author.avatar:
+            return ''
+        url = obj.author.avatar.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
 
     def get_is_liked(self, obj):
         request = self.context.get('request')
@@ -98,6 +124,7 @@ class PostSerializer(serializers.ModelSerializer):
 
 class AlumniFollowSerializer(serializers.ModelSerializer):
     alumni_name = serializers.SerializerMethodField()
+    alumni_avatar = serializers.SerializerMethodField()
     alumni_role = serializers.CharField(source='alumni.role', read_only=True)
     alumni_bio = serializers.CharField(source='alumni.bio', read_only=True)
     alumni_department = serializers.CharField(
@@ -112,6 +139,7 @@ class AlumniFollowSerializer(serializers.ModelSerializer):
             'id',
             'alumni',
             'alumni_name',
+            'alumni_avatar',
             'alumni_role',
             'alumni_bio',
             'alumni_department',
@@ -121,6 +149,15 @@ class AlumniFollowSerializer(serializers.ModelSerializer):
 
     def get_alumni_name(self, obj):
         return obj.alumni.get_full_name() or obj.alumni.email
+
+    def get_alumni_avatar(self, obj):
+        request = self.context.get('request')
+        if not obj.alumni.avatar:
+            return ''
+        url = obj.alumni.avatar.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
 
 
 class SavedPostSerializer(serializers.ModelSerializer):

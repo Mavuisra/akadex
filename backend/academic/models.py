@@ -12,6 +12,11 @@ class University(models.Model):
     accent_color = models.CharField(max_length=7, default='#E09B2D')
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    is_verified = models.BooleanField(
+        default=True,
+        help_text='False = suggestion utilisateur en attente de validation.',
+    )
+    is_user_suggested = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -56,6 +61,8 @@ class Faculty(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     description = models.TextField(blank=True)
+    is_verified = models.BooleanField(default=True)
+    is_user_suggested = models.BooleanField(default=False)
 
     class Meta:
         verbose_name_plural = 'faculties'
@@ -75,6 +82,8 @@ class Department(models.Model):
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     description = models.TextField(blank=True)
+    is_verified = models.BooleanField(default=True)
+    is_user_suggested = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('faculty', 'slug')
@@ -97,6 +106,8 @@ class Promotion(models.Model):
     name = models.CharField(max_length=255)
     year = models.PositiveIntegerField()
     level = models.CharField(max_length=64, blank=True)
+    is_verified = models.BooleanField(default=True)
+    is_user_suggested = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('department', 'name', 'year')
@@ -211,6 +222,17 @@ class Document(models.Model):
     rating_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    moderation_status = models.CharField(
+        max_length=16,
+        choices=[
+            ('pending', "En cours d'examen"),
+            ('approved', 'Validée'),
+            ('rejected', 'Refusée'),
+        ],
+        default='pending',
+        db_index=True,
+    )
+    rejection_reason = models.CharField(max_length=500, blank=True)
     points_awarded = models.PositiveIntegerField(
         default=0,
         help_text='Points déjà crédités à l’auteur après validation.',
@@ -233,6 +255,10 @@ class Document(models.Model):
                 .values_list('is_approved', flat=True)
                 .first()
             ) or False
+        if self.is_approved:
+            self.moderation_status = 'approved'
+        elif self.moderation_status != 'rejected':
+            self.moderation_status = 'pending'
         super().save(*args, **kwargs)
         if self.is_approved and not was_approved:
             from academic.rewards import award_approval_points

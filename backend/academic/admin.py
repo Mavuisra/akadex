@@ -69,23 +69,53 @@ class DocumentAdmin(admin.ModelAdmin):
         'doc_type',
         'author',
         'university',
+        'moderation_status',
         'is_approved',
         'points_awarded',
         'downloads',
         'created_at',
     )
-    list_filter = ('doc_type', 'is_approved', 'university', 'academic_year')
+    list_filter = (
+        'doc_type',
+        'moderation_status',
+        'is_approved',
+        'university',
+        'academic_year',
+    )
     search_fields = ('title', 'description')
-    actions = ['approve_documents']
+    actions = ['approve_documents', 'reject_documents']
 
     @admin.action(description='Approuver les documents (crédite les points)')
     def approve_documents(self, request, queryset):
         for doc in queryset.select_related('author'):
             if not doc.is_approved:
                 doc.is_approved = True
+                doc.moderation_status = 'approved'
                 doc.save()
             else:
                 award_approval_points(doc)
+
+    @admin.action(description='Refuser les documents')
+    def reject_documents(self, request, queryset):
+        from accounts.models import AppNotification
+
+        for doc in queryset.select_related('author'):
+            doc.is_approved = False
+            doc.moderation_status = 'rejected'
+            doc.save(
+                update_fields=[
+                    'is_approved',
+                    'moderation_status',
+                    'updated_at',
+                ]
+            )
+            if doc.author_id:
+                AppNotification.objects.create(
+                    user_id=doc.author_id,
+                    kind=AppNotification.Kind.DOCUMENT_REJECTED,
+                    title='Contribution refusée',
+                    message=f'Votre contribution « {doc.title} » a été refusée.',
+                )
 
 
 admin.site.register(DocumentComment)
