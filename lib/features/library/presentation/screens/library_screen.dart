@@ -39,35 +39,42 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
             children: [
-              Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Bibliothèque',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
+              Padding(
+                padding: kFeedInset,
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Bibliothèque',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => context.push('/search'),
-                    icon: const Icon(Icons.search_rounded),
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () => context.push('/search'),
+                      icon: const Icon(Icons.search_rounded),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
-              FilterChipBar(
-                items: _filters,
-                selected: _filter,
-                onSelected: (v) => setState(() => _filter = v),
+              Padding(
+                padding: kFeedInset,
+                child: FilterChipBar(
+                  items: _filters,
+                  selected: _filter,
+                  onSelected: (v) => setState(() => _filter = v),
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               coursesAsync.when(
                 loading: () => const ListFeedSkeleton(count: 6),
                 error: (e, _) => SoftCard(
+                  fullBleed: true,
                   child: Column(
                     children: [
                       Text(apiErrorMessage(e), textAlign: TextAlign.center),
@@ -83,59 +90,58 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       ? courses
                       : courses.where((c) => c.semester == _filter).toList();
                   if (filtered.isEmpty) {
-                    return const Text(
-                      'Aucun cours trouvé.',
-                      style: TextStyle(color: AkadexColors.inkMuted),
+                    return const Padding(
+                      padding: kFeedInset,
+                      child: Text(
+                        'Aucun cours trouvé.',
+                        style: TextStyle(color: AkadexColors.inkMuted),
+                      ),
                     );
                   }
                   return Column(
                     children: [
                       for (final c in filtered)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: SoftCard(
-                            onTap: () =>
-                                context.push('/library/course/${c.id}'),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: AkadexColors.primarySoft,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(
-                                    Icons.menu_book_rounded,
-                                    color: AkadexColors.primary,
-                                  ),
+                        SoftCard(
+                          fullBleed: true,
+                          onTap: () => context.push('/library/course/${c.id}'),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: AkadexColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${c.code} — ${c.title}',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: AkadexColors.ink,
-                                        ),
-                                      ),
-                                      Text(
-                                        '${c.department} · ${c.semester} · ${c.documentCount} docs',
-                                        style: const TextStyle(
-                                          color: AkadexColors.inkMuted,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                child: const Icon(
+                                  Icons.menu_book_rounded,
+                                  color: AkadexColors.primary,
                                 ),
-                                const Icon(Icons.chevron_right_rounded),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${c.code} — ${c.title}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: AkadexColors.ink,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${c.department} · ${c.semester} · ${c.documentCount} docs',
+                                      style: const TextStyle(
+                                        color: AkadexColors.inkMuted,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded),
+                            ],
                           ),
                         ),
                     ],

@@ -118,7 +118,9 @@ abstract final class AkadexTheme {
         style: FilledButton.styleFrom(
           backgroundColor: AkadexColors.primary,
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(52),
+          // Ne pas utiliser Size.fromHeight (largeur infinie) :
+          // ça casse les FilledButton dans un Row → écran blanc.
+          minimumSize: const Size(64, 52),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -129,7 +131,7 @@ abstract final class AkadexTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: Colors.white,
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size(64, 52),
           side: const BorderSide(color: Colors.white, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),

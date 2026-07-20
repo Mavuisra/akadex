@@ -184,9 +184,14 @@ class CommunityPost extends Equatable {
     this.authorId = '',
     this.authorRole = 'student',
     this.authorAvatarUrl = '',
+    this.authorUniversity = '',
+    this.authorPromotion = '',
     this.kind = 'discussion',
     this.kindDisplay = '',
     this.videoUrl = '',
+    this.attachmentUrl = '',
+    this.imageUrl = '',
+    this.pageCount = 0,
     this.likes = 0,
     this.comments = 0,
     this.tags = const [],
@@ -196,6 +201,7 @@ class CommunityPost extends Equatable {
     this.isApproved = true,
     this.moderationStatus = 'approved',
     this.rejectionReason = '',
+    this.backgroundColor = '',
   });
 
   final String id;
@@ -203,12 +209,17 @@ class CommunityPost extends Equatable {
   final String authorId;
   final String authorRole;
   final String authorAvatarUrl;
+  final String authorUniversity;
+  final String authorPromotion;
   final String department;
   final String title;
   final String content;
   final String kind;
   final String kindDisplay;
   final String videoUrl;
+  final String attachmentUrl;
+  final String imageUrl;
+  final int pageCount;
   final DateTime createdAt;
   final int likes;
   final int comments;
@@ -219,12 +230,62 @@ class CommunityPost extends Equatable {
   final bool isApproved;
   final String moderationStatus;
   final String rejectionReason;
+  final String backgroundColor;
 
   bool get isAlumniContent => kind.startsWith('alumni_');
   bool get needsModerationBadge => moderationStatus != 'approved';
+  bool get hasPdf => attachmentUrl.trim().isNotEmpty;
+  bool get hasImage => imageUrl.trim().isNotEmpty;
+  bool get hasVideo => videoUrl.trim().isNotEmpty;
+  bool get hasMedia => hasPdf || hasImage || hasVideo;
+  bool get isAcademicShare => const {
+        'tp',
+        'summary',
+        'exam',
+        'notes',
+        'support',
+      }.contains(kind);
+
+  CommunityPost copyWith({
+    int? likes,
+    int? comments,
+    bool? isLiked,
+    bool? isSaved,
+  }) {
+    return CommunityPost(
+      id: id,
+      author: author,
+      department: department,
+      title: title,
+      content: content,
+      createdAt: createdAt,
+      authorId: authorId,
+      authorRole: authorRole,
+      authorAvatarUrl: authorAvatarUrl,
+      authorUniversity: authorUniversity,
+      authorPromotion: authorPromotion,
+      kind: kind,
+      kindDisplay: kindDisplay,
+      videoUrl: videoUrl,
+      attachmentUrl: attachmentUrl,
+      imageUrl: imageUrl,
+      pageCount: pageCount,
+      likes: likes ?? this.likes,
+      comments: comments ?? this.comments,
+      tags: tags,
+      isLiked: isLiked ?? this.isLiked,
+      isSaved: isSaved ?? this.isSaved,
+      isFollowingAuthor: isFollowingAuthor,
+      isApproved: isApproved,
+      moderationStatus: moderationStatus,
+      rejectionReason: rejectionReason,
+      backgroundColor: backgroundColor,
+    );
+  }
 
   @override
-  List<Object?> get props => [id];
+  List<Object?> get props =>
+      [id, likes, comments, isLiked, isSaved, backgroundColor];
 }
 
 class CourseLessonItem extends Equatable {

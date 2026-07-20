@@ -52,11 +52,11 @@ class PostSkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AkadexColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AkadexColors.border),
+        border: Border(bottom: BorderSide(color: AkadexColors.border)),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,11 +112,7 @@ class PostFeedSkeleton extends StatelessWidget {
     return AkadexShimmer(
       child: Column(
         children: [
-          for (var i = 0; i < count; i++)
-            Padding(
-              padding: EdgeInsets.only(bottom: i == count - 1 ? 0 : 12),
-              child: const PostSkeletonCard(),
-            ),
+          for (var i = 0; i < count; i++) const PostSkeletonCard(),
         ],
       ),
     );
@@ -130,11 +126,11 @@ class ListRowSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AkadexColors.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AkadexColors.border),
+        border: Border(bottom: BorderSide(color: AkadexColors.border)),
       ),
       child: const Row(
         children: [
@@ -166,11 +162,7 @@ class ListFeedSkeleton extends StatelessWidget {
     return AkadexShimmer(
       child: Column(
         children: [
-          for (var i = 0; i < count; i++)
-            Padding(
-              padding: EdgeInsets.only(bottom: i == count - 1 ? 0 : 10),
-              child: const ListRowSkeleton(),
-            ),
+          for (var i = 0; i < count; i++) const ListRowSkeleton(),
         ],
       ),
     );

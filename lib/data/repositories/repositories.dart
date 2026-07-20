@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -86,6 +88,96 @@ final postsProvider = FutureProvider.family<List<CommunityPost>, String?>((
   scope,
 ) {
   return ref.watch(communityRepositoryProvider).fetchPosts(scope: scope);
+});
+
+/// Fil d’accueil : posts étudiants (TP, résumés, examens…).
+class TimelineQuery {
+  const TimelineQuery({
+    this.kind,
+    this.universityId,
+    this.facultyId,
+    this.departmentId,
+    this.promotionId,
+    this.tag,
+    this.year,
+  });
+
+  final String? kind;
+  final String? universityId;
+  final String? facultyId;
+  final String? departmentId;
+  final String? promotionId;
+  final String? tag;
+  final String? year;
+
+  static const empty = TimelineQuery();
+
+  TimelineQuery copyWith({
+    String? kind,
+    String? universityId,
+    String? facultyId,
+    String? departmentId,
+    String? promotionId,
+    String? tag,
+    String? year,
+    bool clearKind = false,
+    bool clearUniversity = false,
+    bool clearFaculty = false,
+    bool clearDepartment = false,
+    bool clearPromotion = false,
+    bool clearTag = false,
+    bool clearYear = false,
+  }) {
+    return TimelineQuery(
+      kind: clearKind ? null : (kind ?? this.kind),
+      universityId:
+          clearUniversity ? null : (universityId ?? this.universityId),
+      facultyId: clearFaculty ? null : (facultyId ?? this.facultyId),
+      departmentId:
+          clearDepartment ? null : (departmentId ?? this.departmentId),
+      promotionId: clearPromotion ? null : (promotionId ?? this.promotionId),
+      tag: clearTag ? null : (tag ?? this.tag),
+      year: clearYear ? null : (year ?? this.year),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TimelineQuery &&
+        other.kind == kind &&
+        other.universityId == universityId &&
+        other.facultyId == facultyId &&
+        other.departmentId == departmentId &&
+        other.promotionId == promotionId &&
+        other.tag == tag &&
+        other.year == year;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        kind,
+        universityId,
+        facultyId,
+        departmentId,
+        promotionId,
+        tag,
+        year,
+      );
+}
+
+final timelinePostsProvider =
+    FutureProvider.family<List<CommunityPost>, TimelineQuery>((ref, query) {
+  final kind = (query.kind == null || query.kind == 'all') ? null : query.kind;
+  return ref.watch(communityRepositoryProvider).fetchPosts(
+        scope: 'timeline',
+        kind: kind,
+        universityId: query.universityId,
+        facultyId: query.facultyId,
+        departmentId: query.departmentId,
+        promotionId: query.promotionId,
+        tag: query.tag,
+        year: query.year,
+      );
 });
 
 final alumniProfileProvider =
@@ -451,13 +543,30 @@ class CommunityRepository {
 
   final Dio _dio;
 
-  Future<List<CommunityPost>> fetchPosts({String? scope, String? authorId}) async {
+  Future<List<CommunityPost>> fetchPosts({
+    String? scope,
+    String? authorId,
+    String? kind,
+    String? tag,
+    String? universityId,
+    String? facultyId,
+    String? departmentId,
+    String? promotionId,
+    String? year,
+  }) async {
     final res = await _dio.get(
       'posts/',
       queryParameters: {
         'ordering': '-created_at',
         'scope': ?scope,
         'author': ?authorId,
+        'kind': ?kind,
+        'tag': ?tag,
+        'university': ?universityId,
+        'faculty': ?facultyId,
+        'department': ?departmentId,
+        'promotion': ?promotionId,
+        'year': ?year,
       },
     );
     return unwrapList(res.data).map(postFromJson).toList();
@@ -494,18 +603,89 @@ class CommunityRepository {
     required String kind,
     int? departmentId,
     String videoUrl = '',
+    String fileUrl = '',
+    int pageCount = 0,
+    List<String> tags = const [],
+    String backgroundColor = '',
+    String? filePath,
+    String? imagePath,
+    List<int>? fileBytes,
+    String? fileName,
+    List<int>? imageBytes,
+    String? imageName,
   }) async {
-    final res = await _dio.post(
-      'posts/',
-      data: {
+    final hasFile = (fileBytes != null && fileBytes.isNotEmpty) ||
+        (filePath != null && filePath.isNotEmpty);
+    final hasImage = (imageBytes != null && imageBytes.isNotEmpty) ||
+        (imagePath != null && imagePath.isNotEmpty);
+
+    late final Response res;
+    if (hasFile || hasImage) {
+      MultipartFile? filePart;
+      if (fileBytes != null && fileBytes.isNotEmpty) {
+        final name = fileName ?? 'document.pdf';
+        filePart = MultipartFile.fromBytes(
+          fileBytes,
+          filename: name,
+          contentType: _mediaTypeFor(name, fallback: DioMediaType('application', 'pdf')),
+        );
+      } else if (filePath != null && filePath.isNotEmpty) {
+        final name = fileName ?? filePath.split(RegExp(r'[\\/]')).last;
+        filePart = await MultipartFile.fromFile(
+          filePath,
+          filename: name,
+          contentType: _mediaTypeFor(name, fallback: DioMediaType('application', 'pdf')),
+        );
+      }
+
+      MultipartFile? imagePart;
+      if (imageBytes != null && imageBytes.isNotEmpty) {
+        final name = imageName ?? 'image.jpg';
+        imagePart = MultipartFile.fromBytes(
+          imageBytes,
+          filename: name,
+          contentType: _mediaTypeFor(name, fallback: DioMediaType('image', 'jpeg')),
+        );
+      } else if (imagePath != null && imagePath.isNotEmpty) {
+        final name = imageName ?? imagePath.split(RegExp(r'[\\/]')).last;
+        imagePart = await MultipartFile.fromFile(
+          imagePath,
+          filename: name,
+          contentType: _mediaTypeFor(name, fallback: DioMediaType('image', 'jpeg')),
+        );
+      }
+
+      final form = FormData.fromMap({
         'title': title,
         'content': content,
         'kind': kind,
-        'department': ?departmentId,
+        if (departmentId != null) 'department': departmentId,
         if (videoUrl.isNotEmpty) 'video_url': videoUrl,
-        'tags': <String>[],
-      },
-    );
+        if (fileUrl.isNotEmpty) 'file_url': fileUrl,
+        if (pageCount > 0) 'page_count': pageCount,
+        if (backgroundColor.isNotEmpty) 'background_color': backgroundColor,
+        // Multipart : JSONField exige une chaîne JSON valide.
+        'tags': jsonEncode(tags),
+        if (filePart != null) 'file': filePart,
+        if (imagePart != null) 'image': imagePart,
+      });
+      res = await _dio.post('posts/', data: form);
+    } else {
+      res = await _dio.post(
+        'posts/',
+        data: {
+          'title': title,
+          'content': content,
+          'kind': kind,
+          'department': ?departmentId,
+          if (videoUrl.isNotEmpty) 'video_url': videoUrl,
+          if (fileUrl.isNotEmpty) 'file_url': fileUrl,
+          if (pageCount > 0) 'page_count': pageCount,
+          if (backgroundColor.isNotEmpty) 'background_color': backgroundColor,
+          'tags': tags,
+        },
+      );
+    }
     return postFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
@@ -526,4 +706,16 @@ class CommunityRepository {
     );
     return unwrapList(res.data).map(courseCommentFromJson).toList();
   }
+}
+
+DioMediaType _mediaTypeFor(String filename, {required DioMediaType fallback}) {
+  final lower = filename.toLowerCase();
+  if (lower.endsWith('.png')) return DioMediaType('image', 'png');
+  if (lower.endsWith('.gif')) return DioMediaType('image', 'gif');
+  if (lower.endsWith('.webp')) return DioMediaType('image', 'webp');
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+    return DioMediaType('image', 'jpeg');
+  }
+  if (lower.endsWith('.pdf')) return DioMediaType('application', 'pdf');
+  return fallback;
 }

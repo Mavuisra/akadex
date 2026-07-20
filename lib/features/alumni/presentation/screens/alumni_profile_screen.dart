@@ -125,10 +125,14 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(3),
+                                    padding: const EdgeInsets.all(3.5),
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: const Color(0xFF1877F2),
+                                        width: 3.5,
+                                      ),
                                       boxShadow: [
                                         BoxShadow(
                                           color: Colors.black
@@ -173,8 +177,8 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                           ),
                                           const SizedBox(width: 8),
                                           SizedBox(
-                                            height: 32,
-                                            child: FilledButton(
+                                            height: 36,
+                                            child: FilledButton.icon(
                                               onPressed: () {
                                                 if (me == null) {
                                                   context.push('/login');
@@ -186,25 +190,23 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                               },
                                               style: FilledButton.styleFrom(
                                                 backgroundColor:
-                                                    AkadexColors.primary,
+                                                    const Color(0xFF1877F2),
                                                 foregroundColor: Colors.white,
                                                 padding:
                                                     const EdgeInsets.symmetric(
                                                   horizontal: 14,
                                                 ),
-                                                minimumSize: const Size(0, 32),
-                                                tapTargetSize:
-                                                    MaterialTapTargetSize
-                                                        .shrinkWrap,
-                                                visualDensity:
-                                                    VisualDensity.compact,
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
-                                                      BorderRadius.circular(16),
+                                                      BorderRadius.circular(8),
                                                 ),
                                               ),
-                                              child: const Text(
-                                                'Contacter',
+                                              icon: const Icon(
+                                                Icons.chat_bubble_outline,
+                                                size: 16,
+                                              ),
+                                              label: const Text(
+                                                'Message',
                                                 style: TextStyle(
                                                   fontSize: 13,
                                                   fontWeight: FontWeight.w700,
@@ -222,13 +224,24 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                             Text(
                               user.name,
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 26,
                                 fontWeight: FontWeight.w800,
-                                letterSpacing: -0.4,
+                                letterSpacing: -0.3,
+                                color: Color(0xFF050505),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${formatCount(user.followersCount)} followers · '
+                              '${formatCount(user.followingCount)} suivi(e)s · '
+                              '${formatCount(user.postsCount > 0 ? user.postsCount : user.contributions)} publications',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF65676B),
                               ),
                             ),
                             if (user.headline.isNotEmpty) ...[
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 8),
                               Text(
                                 user.headline,
                                 style: const TextStyle(
@@ -237,7 +250,19 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                 ),
                               ),
                             ],
-                            const SizedBox(height: 4),
+                            if (user.bio.isNotEmpty) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                user.bio,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
                             Text(
                               [
                                 if (user.role == 'alumni') 'Alumni · Mentor',
@@ -251,44 +276,50 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              [
-                                if (user.university.isNotEmpty)
-                                  user.university,
-                                if (user.department.isNotEmpty)
-                                  user.department,
-                                if (user.promotion.isNotEmpty)
-                                  user.promotion,
-                                if (user.graduationYear != null)
-                                  'Diplômé ${user.graduationYear}',
-                              ].join(' · '),
-                              style: const TextStyle(
-                                color: AkadexColors.inkSoft,
-                                fontSize: 13,
+                            if (user.university.isNotEmpty)
+                              Row(
+                                children: [
+                                  const Icon(Icons.location_on_outlined,
+                                      size: 16, color: Color(0xFF65676B)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      [
+                                        user.university,
+                                        if (user.department.isNotEmpty)
+                                          user.department,
+                                        if (user.promotion.isNotEmpty)
+                                          user.promotion,
+                                        if (user.graduationYear != null)
+                                          'Diplômé ${user.graduationYear}',
+                                      ].join(' · '),
+                                      style: const TextStyle(
+                                        color: Color(0xFF65676B),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
                             if (isRoxie) ...[
                               const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AkadexColors.accentSoft,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Text(
-                                  'Créatrice TikTok @roxientumba',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 12,
-                                    color: Color(0xFF8A5A00),
+                              const Row(
+                                children: [
+                                  Icon(Icons.alternate_email,
+                                      size: 16, color: Color(0xFF65676B)),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'roxientumba',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
                             ],
                             const SizedBox(height: 16),
+                            // keep stats row below - need to find and not duplicate
                             Row(
                               children: [
                                 _StatPill(

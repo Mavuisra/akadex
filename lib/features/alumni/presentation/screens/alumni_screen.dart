@@ -43,7 +43,7 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
       body: SafeArea(
         child: postsAsync.when(
           loading: () => const Padding(
-            padding: EdgeInsets.fromLTRB(20, 24, 20, 40),
+            padding: EdgeInsets.fromLTRB(0, 24, 0, 40),
             child: PostFeedSkeleton(count: 4),
           ),
           error: (e, _) => Center(child: Text(apiErrorMessage(e))),
@@ -65,31 +65,32 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
               ),
               slivers: [
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FadeSlideIn(
-                          child: LivingHeroBanner(
-                            title: 'Espace Alumni',
-                            subtitle:
-                                'Mentorat, parcours et vidéos des diplômés — dont Roxie Ntumba.',
-                            ctaLabel: auth.valueOrNull?.isAlumni == true
-                                ? 'Publier une vidéo'
-                                : 'Poser une question',
-                            onCta: () => context.push('/alumni/publish'),
-                            trailing: const Icon(
-                              Icons.school_rounded,
-                              color: Colors.white70,
-                              size: 48,
-                            ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      FadeSlideIn(
+                        child: LivingHeroBanner(
+                          fullBleed: true,
+                          title: 'Espace Alumni',
+                          subtitle:
+                              'Mentorat, parcours et vidéos des diplômés — dont Roxie Ntumba.',
+                          ctaLabel: auth.valueOrNull?.isAlumni == true
+                              ? 'Publier une vidéo'
+                              : 'Poser une question',
+                          onCta: () => context.push('/alumni/publish'),
+                          trailing: const Icon(
+                            Icons.school_rounded,
+                            color: Colors.white70,
+                            size: 48,
                           ),
                         ),
-                        if (mentors.isNotEmpty) ...[
-                          const SizedBox(height: 20),
-                          const FadeSlideIn(
-                            delay: Duration(milliseconds: 80),
+                      ),
+                      if (mentors.isNotEmpty) ...[
+                        const SizedBox(height: 20),
+                        const FadeSlideIn(
+                          delay: Duration(milliseconds: 80),
+                          child: Padding(
+                            padding: kFeedInset,
                             child: Text(
                               'Mentors à suivre',
                               style: TextStyle(
@@ -98,16 +99,18 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10),
-                          FadeSlideIn(
-                            delay: const Duration(milliseconds: 100),
-                            child: SizedBox(
-                              height: 96,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: mentors.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 12),
+                        ),
+                        const SizedBox(height: 10),
+                        FadeSlideIn(
+                          delay: const Duration(milliseconds: 100),
+                          child: SizedBox(
+                            height: 96,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding: kFeedInset,
+                              itemCount: mentors.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(width: 12),
                                 itemBuilder: (_, i) {
                                   final m = mentors[i];
                                   return _MentorAvatar(
@@ -148,8 +151,10 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 16),
-                        SizedBox(
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: kFeedInset,
+                        child: SizedBox(
                           height: 40,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
@@ -168,9 +173,9 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
                             },
                           ),
                         ),
-                        const SizedBox(height: 8),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                   ),
                 ),
                 if (filtered.isEmpty)
@@ -180,10 +185,10 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 100),
                     sliver: SliverList.separated(
                       itemCount: filtered.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      separatorBuilder: (_, _) => const SizedBox.shrink(),
                       itemBuilder: (context, i) {
                         final post = filtered[i];
                         final me = auth.valueOrNull;
@@ -454,6 +459,7 @@ class _AlumniPostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasVideo = post.videoUrl.trim().isNotEmpty;
     return SoftCard(
+      fullBleed: true,
       padding: EdgeInsets.zero,
       onTap: onOpen,
       child: Column(

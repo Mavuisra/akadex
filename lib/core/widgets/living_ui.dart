@@ -169,6 +169,7 @@ class LivingHeroBanner extends StatefulWidget {
     this.ctaLabel,
     this.onCta,
     this.trailing,
+    this.fullBleed = false,
   });
 
   final String title;
@@ -176,6 +177,7 @@ class LivingHeroBanner extends StatefulWidget {
   final String? ctaLabel;
   final VoidCallback? onCta;
   final Widget? trailing;
+  final bool fullBleed;
 
   @override
   State<LivingHeroBanner> createState() => _LivingHeroBannerState();
@@ -207,6 +209,7 @@ class _LivingHeroBannerState extends State<LivingHeroBanner>
       builder: (context, child) {
         final shift = _shine.value;
         return Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -219,14 +222,18 @@ class _LivingHeroBannerState extends State<LivingHeroBanner>
                 Color(0xFF1A47B8),
               ],
             ),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: AkadexColors.primary.withValues(alpha: 0.28),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            borderRadius: widget.fullBleed
+                ? BorderRadius.zero
+                : BorderRadius.circular(22),
+            boxShadow: widget.fullBleed
+                ? null
+                : [
+                    BoxShadow(
+                      color: AkadexColors.primary.withValues(alpha: 0.28),
+                      blurRadius: 24,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
           ),
           child: child,
         );

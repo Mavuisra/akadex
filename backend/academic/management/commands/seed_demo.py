@@ -757,6 +757,56 @@ class Command(BaseCommand):
                 PostKind.QUESTION,
             ),
             (
+                aicha,
+                dept_info,
+                'Examen corrigé de Programmation Orientée Objet',
+                'Voici les corrigés complets de l’examen 2025.\n\nBonne préparation à tous.',
+                ['POO', 'examen', 'L2'],
+                128,
+                34,
+                PostKind.EXAM,
+            ),
+            (
+                samuel,
+                dept_info,
+                'TP Réseaux — Configuration VLAN et ACL (corrigé)',
+                'Scénario Packet Tracer avec 3 VLANs, trunk et ACL. J’ai ajouté les captures d’écran clés.',
+                ['TP', 'réseaux', 'L3'],
+                86,
+                19,
+                PostKind.TP,
+            ),
+            (
+                grace,
+                dept_gest,
+                'Résumé Comptabilité générale — Chapitre bilan',
+                'Synthèse claire pour réviser avant l’interro. Formules + exemples chiffrés.',
+                ['résumé', 'compta', 'L1'],
+                64,
+                12,
+                PostKind.SUMMARY,
+            ),
+            (
+                joseph,
+                dept_info,
+                'Notes de cours — Algorithmique L1 (complexité)',
+                'Mes notes propres sur la notation grand O, avec 6 exemples types d’examens.',
+                ['notes', 'algo', 'L1'],
+                73,
+                15,
+                PostKind.NOTES,
+            ),
+            (
+                david,
+                dept_fasi,
+                'Support de cours — Bases de données relationnelles',
+                'Slides du cours + exercices sur la normalisation (1NF → 3NF).',
+                ['support', 'BDD', 'FASI'],
+                51,
+                9,
+                PostKind.SUPPORT,
+            ),
+            (
                 fatou,
                 dept_upn,
                 'Ressources didactique numérique UPN',
@@ -862,8 +912,32 @@ class Command(BaseCommand):
                 'https://www.tiktok.com/@akadex.demo/video/7234567890123456789'
             ),
         }
+        # URLs PDF démo (aperçu LinkedIn dans le fil)
+        pdf_by_title = {
+            'Examen corrigé de Programmation Orientée Objet': (
+                'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                14,
+            ),
+            'TP Réseaux — Configuration VLAN et ACL (corrigé)': (
+                'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                8,
+            ),
+            'Résumé Comptabilité générale — Chapitre bilan': (
+                'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                5,
+            ),
+            'Notes de cours — Algorithmique L1 (complexité)': (
+                'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                6,
+            ),
+            'Support de cours — Bases de données relationnelles': (
+                'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
+                12,
+            ),
+        }
         created_posts = []
         for author, dept, title, content, tags, likes, comments, kind in posts_spec:
+            pdf = pdf_by_title.get(title)
             post, _ = Post.objects.update_or_create(
                 title=title,
                 department=dept,
@@ -876,6 +950,8 @@ class Command(BaseCommand):
                     'is_approved': True,
                     'kind': kind,
                     'video_url': video_by_title.get(title, ''),
+                    'file_url': pdf[0] if pdf else '',
+                    'page_count': pdf[1] if pdf else 0,
                 },
             )
             created_posts.append(post)

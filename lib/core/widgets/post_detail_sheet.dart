@@ -11,6 +11,7 @@ import '../../domain/models/models.dart';
 import '../theme/akadex_theme.dart';
 import 'alumni_video_card.dart';
 import 'moderation_chip.dart';
+import 'status_text_block.dart';
 
 Future<void> showPostDetailSheet(
   BuildContext context, {
@@ -222,18 +223,12 @@ class _PostDetailBodyState extends ConsumerState<_PostDetailBody> {
                 ],
               ),
               const SizedBox(height: 16),
-              Text(
-                _post.title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 20,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _post.content,
-                style: const TextStyle(height: 1.5, fontSize: 15),
+              PostBodyText(
+                content: _post.content,
+                backgroundColor: _post.backgroundColor,
+                tags: _post.tags,
+                hasMedia: _post.hasMedia,
+                padded: false,
               ),
               if (_post.rejectionReason.isNotEmpty &&
                   _post.moderationStatus == 'rejected') ...[
@@ -371,33 +366,59 @@ class _PostDetailBodyState extends ConsumerState<_PostDetailBody> {
               ),
               const SizedBox(height: 12),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _commentCtrl,
-                      decoration: const InputDecoration(
-                        hintText: 'Écrire un commentaire…',
-                        filled: true,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AkadexColors.primarySoft,
+                    child: Text(
+                      (ref.watch(authStateProvider).valueOrNull?.name ?? '?')
+                          .characters
+                          .first
+                          .toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AkadexColors.primary,
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  IconButton.filled(
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F2F5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: TextField(
+                        controller: _commentCtrl,
+                        minLines: 1,
+                        maxLines: 4,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: (_) => _sendComment(),
+                        decoration: const InputDecoration(
+                          hintText: 'Écrire un commentaire…',
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
                     onPressed: _sending ? null : _sendComment,
                     icon: _sending
                         ? const SizedBox(
                             width: 18,
                             height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.send_rounded),
+                        : const Icon(
+                            Icons.send_rounded,
+                            color: Color(0xFF1877F2),
+                          ),
                   ),
                 ],
               ),

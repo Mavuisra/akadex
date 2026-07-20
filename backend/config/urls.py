@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
-from django.conf.urls.static import static
+from django.urls import include, path, re_path
+from django.views.static import serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 
@@ -22,7 +22,10 @@ urlpatterns = [
     path('api/', include('community.urls')),
     path('api/', include('messaging.urls')),
     path('api/', include('learning.urls')),
+    # Render tourne avec DEBUG=False : sans ça, les photos uploadées sont en 404.
+    re_path(
+        r'^media/(?P<path>.*)$',
+        serve,
+        {'document_root': settings.MEDIA_ROOT},
+    ),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

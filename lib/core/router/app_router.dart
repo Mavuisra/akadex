@@ -14,9 +14,11 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
+import '../../features/community/presentation/screens/community_publish_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/explorer/presentation/screens/explorer_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/home/presentation/screens/pdf_reader_screen.dart';
 import '../../features/library/presentation/screens/contribute_screen.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
@@ -29,6 +31,7 @@ import '../../features/messaging/presentation/screens/conversations_screen.dart'
 import '../../features/professor/presentation/screens/professor_hub_screen.dart';
 import '../../features/professor/presentation/screens/professor_publish_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/my_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/rewards_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
@@ -324,6 +327,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             _cupertino(state, const EditProfileScreen()),
       ),
       GoRoute(
+        path: '/profile/me',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const MyProfileScreen()),
+      ),
+      GoRoute(
         path: '/alumni/profile/:id',
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) => _cupertino(
@@ -336,6 +345,28 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const AlumniPublishScreen()),
+      ),
+      GoRoute(
+        path: '/community/publish',
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const CommunityPublishScreen(),
+      ),
+      GoRoute(
+        path: '/pdf-reader',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          var url = '';
+          var title = 'Document';
+          if (extra is Map) {
+            url = (extra['url'] ?? '').toString();
+            title = (extra['title'] ?? 'Document').toString();
+          }
+          return _cupertino(
+            state,
+            PdfReaderScreen(url: url, title: title),
+          );
+        },
       ),
       GoRoute(
         path: '/messages',

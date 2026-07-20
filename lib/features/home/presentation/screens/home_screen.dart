@@ -1,423 +1,688 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
-import '../../../../core/widgets/living_ui.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
+import '../../../../core/widgets/timeline_post_card.dart';
 import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
-import '../../../../data/sync/sync_service.dart';
-import '../../../../domain/models/document_type.dart';
+import '../../../../domain/models/models.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
-  static const _quick = [
-    (Icons.account_balance_rounded, 'LMD', '/lmd'),
-    (Icons.menu_book_rounded, 'Cours', '/search'),
-    (Icons.assignment_rounded, 'Examens', '/search'),
-    (Icons.science_rounded, 'TP / TD', '/search'),
-    (Icons.auto_stories_rounded, 'Livres', '/search'),
-    (Icons.play_circle_rounded, 'Vidéos', '/search'),
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  TimelineQuery _query = TimelineQuery.empty;
+  String? _uniLabel;
+  String? _facLabel;
+  String? _deptLabel;
+  String? _promoLabel;
+  String? _tagLabel;
+  String? _yearLabel;
+
+  static const _kinds = <(String, String)>[
+    ('all', 'Pour toi'),
+    ('exam', 'Examens'),
+    ('tp', 'TP / TD'),
+    ('summary', 'Résumés'),
+    ('notes', 'Notes'),
+    ('support', 'Supports'),
+    ('discussion', 'Discussions'),
+    ('question', 'Questions'),
   ];
 
+  static const _domains = [
+    'Informatique',
+    'Réseaux',
+    'Mathématiques',
+    'Gestion',
+    'Pédagogie',
+  ];
+
+  static const _subjects = [
+    'POO',
+    'Algorithmique',
+    'Bases de données',
+    'Compta',
+    'Probabilités',
+  ];
+
+  static const _years = ['2026', '2025', '2024', '2023'];
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final docsAsync = ref.watch(
-      documentsProvider(const DocumentQuery(featuredOnly: true)),
-    );
-    final announcementsAsync = ref.watch(announcementsProvider);
-    final sync = ref.watch(syncStateProvider);
+  Widget build(BuildContext context) {
+    final me = ref.watch(authStateProvider).valueOrNull;
+    final postsAsync = ref.watch(timelinePostsProvider(_query));
+    final kindSelected = _query.kind ?? 'all';
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: PageAtmosphere(
-        child: SafeArea(
-          child: RefreshIndicator(
-            color: AkadexColors.primary,
-            onRefresh: () async {
-              await ref.read(syncStateProvider.notifier).syncNow(force: true);
-              ref.invalidate(documentsProvider);
-              ref.invalidate(announcementsProvider);
-            },
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+      backgroundColor: TimelineTokens.feedBg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _TimelineHeader(user: me),
+            _KindFilterBar(
+              filters: _kinds,
+              selected: kindSelected,
+              onSelected: (v) {
+                setState(() {
+                  _query = v == 'all'
+                      ? _query.copyWith(clearKind: true)
+                      : _query.copyWith(kind: v);
+                });
+              },
+            ),
+            _AcademicFilterBar(
+              uniLabel: _uniLabel,
+              facLabel: _facLabel,
+              deptLabel: _deptLabel,
+              promoLabel: _promoLabel,
+              tagLabel: _tagLabel,
+              yearLabel: _yearLabel,
+              onPickUniversity: () => _pickUniversity(),
+              onPickFaculty: () => _pickFaculty(),
+              onPickDepartment: () => _pickDepartment(),
+              onPickPromotion: () => _pickPromotion(),
+              onPickDomain: () => _pickChipList(
+                title: 'Domaine',
+                items: _domains,
+                onPick: (v) => setState(() {
+                  _tagLabel = v;
+                  _query = _query.copyWith(tag: v);
+                }),
               ),
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
-              children: [
-                FadeSlideIn(
-                  child: Row(
-                    children: [
-                      const Expanded(
-                        child: AkadexBrandHeader(logoSize: 34, fontSize: 26),
+              onPickSubject: () => _pickChipList(
+                title: 'Matière',
+                items: _subjects,
+                onPick: (v) => setState(() {
+                  _tagLabel = v;
+                  _query = _query.copyWith(tag: v);
+                }),
+              ),
+              onPickYear: () => _pickChipList(
+                title: 'Année académique',
+                items: _years,
+                onPick: (v) => setState(() {
+                  _yearLabel = v;
+                  _query = _query.copyWith(year: v);
+                }),
+              ),
+              onClear: () => setState(() {
+                _query = TimelineQuery(
+                  kind: _query.kind,
+                );
+                _uniLabel = null;
+                _facLabel = null;
+                _deptLabel = null;
+                _promoLabel = null;
+                _tagLabel = null;
+                _yearLabel = null;
+              }),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                color: AkadexColors.primary,
+                onRefresh: () async {
+                  ref.invalidate(timelinePostsProvider(_query));
+                  await ref.read(timelinePostsProvider(_query).future);
+                },
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _ComposerCard(
+                        user: me,
+                        onTap: () {
+                          if (me == null) {
+                            context.push('/login');
+                            return;
+                          }
+                          context.push('/community/publish');
+                        },
                       ),
-                      _SyncChip(sync: sync),
-                      const SizedBox(width: 8),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AkadexColors.border),
+                    ),
+                    postsAsync.when(
+                      loading: () => const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(0, 4, 0, 100),
+                          child: PostFeedSkeleton(count: 4),
                         ),
-                        child: IconButton(
-                          onPressed: () => context.push('/calendar'),
-                          icon: const Icon(
-                            Icons.notifications_none_rounded,
-                            color: AkadexColors.primary,
+                      ),
+                      error: (e, _) => SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            children: [
+                              Text(
+                                apiErrorMessage(e),
+                                textAlign: TextAlign.center,
+                              ),
+                              TextButton(
+                                onPressed: () => ref
+                                    .invalidate(timelinePostsProvider(_query)),
+                                child: const Text('Réessayer'),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 60),
-                  child: SearchField(
-                    hint: 'Rechercher un cours, document, prof…',
-                    readOnly: true,
-                    onTap: () => context.push('/search'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 120),
-                  child: LivingHeroBanner(
-                    title: 'Bienvenue sur Akadex',
-                    subtitle:
-                        'Cours, examens et mentorat — ton campus numérique en un geste.',
-                    ctaLabel: 'Explorer',
-                    onCta: () => context.go('/library'),
-                    trailing: const AkadexLogo(size: 68),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const FadeSlideIn(
-                  delay: Duration(milliseconds: 160),
-                  child: SectionTitle('Accès rapide'),
-                ),
-                const SizedBox(height: 12),
-                FadeSlideIn(
-                  delay: const Duration(milliseconds: 200),
-                  child: SizedBox(
-                    height: 108,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _quick.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (_, i) {
-                        final q = _quick[i];
-                        return SizedBox(
-                          width: 88,
-                          child: QuickAccessTile(
-                            icon: q.$1,
-                            label: q.$2,
-                            onTap: () => context.push(q.$3),
+                      data: (posts) {
+                        if (posts.isEmpty) {
+                          return const SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(28),
+                                child: Text(
+                                  'Aucune publication pour ces filtres.\nPartage un TP, un résumé ou un examen corrigé.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: AkadexColors.inkMuted,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                        return SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 110),
+                          sliver: SliverList.builder(
+                            itemCount: posts.length,
+                            itemBuilder: (_, i) {
+                              return TimelinePostCard(post: posts[i]);
+                            },
                           ),
                         );
                       },
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickUniversity() async {
+    final list = await ref.read(universitiesProvider.future);
+    if (!mounted) return;
+    final picked = await _showPickerSheet<UniversityItem>(
+      title: 'Université',
+      items: list,
+      labelOf: (u) => u.name,
+    );
+    if (picked == null) return;
+    setState(() {
+      _uniLabel = picked.name;
+      _facLabel = null;
+      _deptLabel = null;
+      _promoLabel = null;
+      _query = _query.copyWith(
+        universityId: picked.id,
+        clearFaculty: true,
+        clearDepartment: true,
+        clearPromotion: true,
+      );
+    });
+  }
+
+  Future<void> _pickFaculty() async {
+    final list = await ref.read(
+      facultiesProvider(_query.universityId).future,
+    );
+    if (!mounted) return;
+    final picked = await _showPickerSheet<FacultyItem>(
+      title: 'Faculté',
+      items: list,
+      labelOf: (f) => f.name,
+    );
+    if (picked == null) return;
+    setState(() {
+      _facLabel = picked.name;
+      _deptLabel = null;
+      _promoLabel = null;
+      _query = _query.copyWith(
+        facultyId: picked.id,
+        universityId: picked.universityId.isNotEmpty
+            ? picked.universityId
+            : _query.universityId,
+        clearDepartment: true,
+        clearPromotion: true,
+      );
+    });
+  }
+
+  Future<void> _pickDepartment() async {
+    final list = await ref.read(
+      departmentsProvider(_query.universityId).future,
+    );
+    if (!mounted) return;
+    var filtered = list;
+    if (_query.facultyId != null) {
+      filtered = list
+          .where((d) => d.facultyId == _query.facultyId || d.facultyId.isEmpty)
+          .toList();
+      if (filtered.isEmpty) filtered = list;
+    }
+    final picked = await _showPickerSheet<DepartmentItem>(
+      title: 'Département / Filière',
+      items: filtered,
+      labelOf: (d) => d.name,
+    );
+    if (picked == null) return;
+    setState(() {
+      _deptLabel = picked.name;
+      _promoLabel = null;
+      _query = _query.copyWith(
+        departmentId: picked.id,
+        clearPromotion: true,
+      );
+    });
+  }
+
+  Future<void> _pickPromotion() async {
+    final list = await ref.read(
+      promotionsProvider(_query.departmentId).future,
+    );
+    if (!mounted) return;
+    final picked = await _showPickerSheet<PromotionItem>(
+      title: 'Promotion',
+      items: list,
+      labelOf: (p) => p.level.isNotEmpty ? '${p.name} (${p.level})' : p.name,
+    );
+    if (picked == null) return;
+    setState(() {
+      _promoLabel = picked.name;
+      _query = _query.copyWith(promotionId: picked.id);
+    });
+  }
+
+  Future<void> _pickChipList({
+    required String title,
+    required List<String> items,
+    required ValueChanged<String> onPick,
+  }) async {
+    final picked = await _showPickerSheet<String>(
+      title: title,
+      items: items,
+      labelOf: (s) => s,
+    );
+    if (picked != null) onPick(picked);
+  }
+
+  Future<T?> _showPickerSheet<T>({
+    required String title,
+    required List<T> items,
+    required String Function(T) labelOf,
+  }) {
+    return showModalBottomSheet<T>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 24),
-                const SectionTitle('Documents populaires'),
-                const SizedBox(height: 12),
-                docsAsync.when(
-                  loading: () => const ListFeedSkeleton(count: 4),
-                  error: (e, _) => _ErrorBox(
-                    message: apiErrorMessage(e),
-                    onRetry: () => ref.invalidate(documentsProvider),
-                  ),
-                  data: (docs) {
-                    if (docs.isEmpty) {
-                      return const Text(
-                        'Aucun document pour le moment.',
-                        style: TextStyle(color: AkadexColors.inkMuted),
-                      );
-                    }
-                    return Column(
-                      children: [
-                        for (var i = 0; i < docs.take(5).length; i++)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: SoftCard(
-                              delay: Duration(milliseconds: 40 * i),
-                              onTap: () => context.push(
-                                '/library/document/${docs[i].id}',
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 48,
-                                    height: 48,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          AkadexColors.primarySoft,
-                                          AkadexColors.accentSoft
-                                              .withValues(alpha: 0.65),
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(14),
-                                    ),
-                                    child: const Icon(
-                                      Icons.description_rounded,
-                                      color: AkadexColors.primary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          docs[i].title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w800,
-                                            color: AkadexColors.ink,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${docs[i].type.label} · ${formatCount(docs[i].downloads)} téléch.',
-                                          style: const TextStyle(
-                                            color: AkadexColors.inkMuted,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: AkadexColors.inkSoft,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
+              ),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (_, i) {
+                    final item = items[i];
+                    return ListTile(
+                      title: Text(labelOf(item)),
+                      onTap: () => Navigator.pop(ctx, item),
                     );
                   },
                 ),
-                const SizedBox(height: 16),
-                SoftCard(
-                  accentBorder: true,
-                  onTap: () => context.push('/ai'),
-                  padding: const EdgeInsets.all(16),
-                  child: const Row(
-                    children: [
-                      AkadexLogo(size: 40),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Akadex IA',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: AkadexColors.ink,
-                              ),
-                            ),
-                            Text(
-                              'Ton assistant d’étude intelligent',
-                              style: TextStyle(
-                                color: AkadexColors.inkMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TimelineHeader extends StatelessWidget {
+  const _TimelineHeader({required this.user});
+
+  final UserProfile? user;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = user?.avatarUrl;
+    final name = user?.name ?? '';
+
+    return Container(
+      height: TimelineTokens.headerHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => context.push('/profile/me'),
+            child: Padding(
+              padding: const EdgeInsets.all(6),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: AkadexColors.primarySoft,
+                backgroundImage: avatar != null && avatar.isNotEmpty
+                    ? CachedNetworkImageProvider(avatar)
+                    : null,
+                child: avatar != null && avatar.isNotEmpty
+                    ? null
+                    : Text(
+                        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+                        style: const TextStyle(
+                          color: AkadexColors.primary,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => context.push('/search'),
+              child: Container(
+                height: 36,
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: TimelineTokens.feedBg,
+                  borderRadius:
+                      BorderRadius.circular(TimelineTokens.searchRadius),
                 ),
-                const SizedBox(height: 10),
-                SoftCard(
-                  onTap: () => context.push('/calendar'),
-                  padding: const EdgeInsets.all(16),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.calendar_month_rounded,
-                          color: AkadexColors.primary),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Calendrier',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w800,
-                                color: AkadexColors.ink,
-                              ),
-                            ),
-                            Text(
-                              'Examens, délibérations, événements',
-                              style: TextStyle(
-                                color: AkadexColors.inkMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                child: const Row(
+                  children: [
+                    Icon(Icons.search_rounded,
+                        size: 18, color: TimelineTokens.meta),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Rechercher sur Akadex',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: TimelineTokens.meta,
+                          fontSize: 15,
                         ),
                       ),
-                      Icon(Icons.chevron_right_rounded),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                const SectionTitle('Annonces'),
-                const SizedBox(height: 12),
-                announcementsAsync.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, _) => const SizedBox.shrink(),
-                  data: (items) => Column(
-                    children: [
-                      for (final a in items.take(3))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: SoftCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                DocTypeTag(a.category),
-                                const SizedBox(height: 8),
-                                Text(
-                                  a.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  a.body,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AkadexColors.inkMuted,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
-                            ),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Notifications',
+            onPressed: () => context.push('/calendar'),
+            icon: const Icon(Icons.notifications_none_rounded, size: 26),
+          ),
+          IconButton(
+            tooltip: 'Messages',
+            onPressed: () => context.push('/messages'),
+            icon: const Icon(Icons.messenger_outline_rounded, size: 24),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _KindFilterBar extends StatelessWidget {
+  const _KindFilterBar({
+    required this.filters,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final List<(String, String)> filters;
+  final String selected;
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: TimelineTokens.filterHeight,
+      color: Colors.white,
+      alignment: Alignment.centerLeft,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        itemCount: filters.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
+        itemBuilder: (_, i) {
+          final f = filters[i];
+          final active = f.$1 == selected;
+          return FilterChip(
+            label: Text(f.$2),
+            selected: active,
+            onSelected: (_) => onSelected(f.$1),
+            selectedColor: const Color(0xFFE7F3FF),
+            checkmarkColor: TimelineTokens.likeActive,
+            labelStyle: TextStyle(
+              color: active ? TimelineTokens.likeActive : const Color(0xFF050505),
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+            backgroundColor: TimelineTokens.feedBg,
+            side: BorderSide(
+              color: active ? TimelineTokens.likeActive : Colors.transparent,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
+            ),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AcademicFilterBar extends StatelessWidget {
+  const _AcademicFilterBar({
+    required this.onPickUniversity,
+    required this.onPickFaculty,
+    required this.onPickDepartment,
+    required this.onPickPromotion,
+    required this.onPickDomain,
+    required this.onPickSubject,
+    required this.onPickYear,
+    required this.onClear,
+    this.uniLabel,
+    this.facLabel,
+    this.deptLabel,
+    this.promoLabel,
+    this.tagLabel,
+    this.yearLabel,
+  });
+
+  final VoidCallback onPickUniversity;
+  final VoidCallback onPickFaculty;
+  final VoidCallback onPickDepartment;
+  final VoidCallback onPickPromotion;
+  final VoidCallback onPickDomain;
+  final VoidCallback onPickSubject;
+  final VoidCallback onPickYear;
+  final VoidCallback onClear;
+  final String? uniLabel;
+  final String? facLabel;
+  final String? deptLabel;
+  final String? promoLabel;
+  final String? tagLabel;
+  final String? yearLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <(String, VoidCallback, bool)>[
+      (uniLabel ?? 'Université', onPickUniversity, uniLabel != null),
+      (facLabel ?? 'Faculté', onPickFaculty, facLabel != null),
+      (deptLabel ?? 'Département', onPickDepartment, deptLabel != null),
+      (promoLabel ?? 'Promotion', onPickPromotion, promoLabel != null),
+      (tagLabel ?? 'Domaine', onPickDomain, tagLabel != null),
+      ('Matière', onPickSubject, false),
+      (yearLabel ?? 'Année', onPickYear, yearLabel != null),
+    ];
+
+    return Container(
+      height: TimelineTokens.filterHeight,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              itemCount: chips.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 6),
+              itemBuilder: (_, i) {
+                final c = chips[i];
+                return ActionChip(
+                  label: Text(c.$1),
+                  onPressed: c.$2,
+                  backgroundColor:
+                      c.$3 ? const Color(0xFFE7F3FF) : TimelineTokens.feedBg,
+                  labelStyle: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: c.$3
+                        ? TimelineTokens.likeActive
+                        : const Color(0xFF050505),
+                  ),
+                  side: BorderSide(
+                    color: c.$3
+                        ? TimelineTokens.likeActive
+                        : const Color(0xFFCED0D4),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius:
+                        BorderRadius.circular(TimelineTokens.chipRadius),
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              },
+            ),
+          ),
+          IconButton(
+            tooltip: 'Réinitialiser les filtres',
+            onPressed: onClear,
+            icon: const Icon(Icons.filter_alt_off_outlined, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ComposerCard extends StatelessWidget {
+  const _ComposerCard({required this.user, required this.onTap});
+
+  final UserProfile? user;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final avatar = user?.avatarUrl;
+    final name = user?.name ?? '';
+    final pad = TimelineTokens.feedHorizontal(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(pad.left, 8, pad.right, 8),
+      child: Material(
+        color: Colors.white,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: AkadexColors.primarySoft,
+                  backgroundImage: avatar != null && avatar.isNotEmpty
+                      ? CachedNetworkImageProvider(avatar)
+                      : null,
+                  child: avatar != null && avatar.isNotEmpty
+                      ? null
+                      : Text(
+                          name.isEmpty
+                              ? '?'
+                              : name.characters.first.toUpperCase(),
+                          style: const TextStyle(
+                            color: AkadexColors.primary,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
-                    ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: TimelineTokens.feedBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      'Quoi de neuf ? Partage un TP, résumé, examen…',
+                      style: TextStyle(
+                        color: TimelineTokens.meta,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SyncChip extends ConsumerWidget {
-  const _SyncChip({required this.sync});
-
-  final SyncState sync;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final (icon, label, color) = switch (sync.status) {
-      SyncStatus.syncing => (
-          Icons.sync_rounded,
-          'Sync…',
-          AkadexColors.primary,
-        ),
-      SyncStatus.offline => (
-          Icons.cloud_off_rounded,
-          'Hors ligne',
-          Colors.orange.shade700,
-        ),
-      SyncStatus.error => (
-          Icons.sync_problem_rounded,
-          'Cache',
-          Colors.orange.shade800,
-        ),
-      SyncStatus.online => (
-          Icons.cloud_done_rounded,
-          'À jour',
-          Colors.teal.shade700,
-        ),
-      SyncStatus.idle => (
-          Icons.cloud_outlined,
-          sync.localCourses > 0 ? 'Local' : 'Sync',
-          AkadexColors.inkMuted,
-        ),
-    };
-
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => ref.read(syncStateProvider.notifier).syncNow(force: true),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AkadexColors.border),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (sync.status == SyncStatus.syncing)
-                SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: color,
-                  ),
-                )
-              else
-                Icon(icon, size: 16, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBox extends StatelessWidget {
-  const _ErrorBox({required this.message, this.onRetry});
-
-  final String message;
-  final VoidCallback? onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return SoftCard(
-      child: Column(
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          if (onRetry != null) ...[
-            const SizedBox(height: 8),
-            TextButton(onPressed: onRetry, child: const Text('Réessayer')),
-          ],
-        ],
       ),
     );
   }

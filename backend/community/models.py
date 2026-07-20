@@ -5,11 +5,25 @@ from django.db import models
 class PostKind(models.TextChoices):
     DISCUSSION = 'discussion', 'Discussion'
     QUESTION = 'question', 'Question'
+    TP = 'tp', 'TP / TD'
+    SUMMARY = 'summary', 'Résumé de cours'
+    EXAM = 'exam', 'Examen corrigé'
+    NOTES = 'notes', 'Notes de cours'
+    SUPPORT = 'support', 'Support de cours'
     ALUMNI_ADVICE = 'alumni_advice', 'Conseil académique'
     ALUMNI_PATH = 'alumni_path', 'Parcours universitaire'
     ALUMNI_CAREER = 'alumni_career', 'Parcours professionnel'
     ALUMNI_TFC = 'alumni_tfc', 'Stages / mémoire / TFC'
     ALUMNI_VIDEO = 'alumni_video', 'Vidéo de conseil'
+
+
+ACADEMIC_SHARE_KINDS = {
+    PostKind.TP,
+    PostKind.SUMMARY,
+    PostKind.EXAM,
+    PostKind.NOTES,
+    PostKind.SUPPORT,
+}
 
 
 class ModerationStatus(models.TextChoices):
@@ -40,7 +54,13 @@ class Post(models.Model):
         db_index=True,
     )
     video_url = models.URLField(max_length=1000, blank=True)
+    file = models.FileField(upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(upload_to='posts/images/', blank=True, null=True)
+    file_url = models.URLField(max_length=1000, blank=True)
+    page_count = models.PositiveSmallIntegerField(default=0)
     tags = models.JSONField(default=list, blank=True)
+    # Fond style Facebook pour posts texte courts (ex: #1877F2).
+    background_color = models.CharField(max_length=16, blank=True, default='')
     likes_count = models.PositiveIntegerField(default=0)
     comments_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=True)

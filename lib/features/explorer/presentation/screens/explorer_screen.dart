@@ -36,84 +36,93 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
             physics: const AlwaysScrollableScrollPhysics(
               parent: BouncingScrollPhysics(),
             ),
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 100),
+            padding: const EdgeInsets.fromLTRB(0, 8, 0, 100),
             children: [
-              const Text(
-                'Explorer',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+              const Padding(
+                padding: kFeedInset,
+                child: Text(
+                  'Explorer',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+                ),
               ),
               const SizedBox(height: 8),
-              SearchField(
-                hint: 'Rechercher…',
-                readOnly: true,
-                onTap: () => context.push('/search'),
+              Padding(
+                padding: kFeedInset,
+                child: SearchField(
+                  hint: 'Rechercher…',
+                  readOnly: true,
+                  onTap: () => context.push('/search'),
+                ),
               ),
               const SizedBox(height: 12),
-              FilterChipBar(
-                items: _filters,
-                selected: _filter,
-                onSelected: (v) => setState(() => _filter = v),
+              Padding(
+                padding: kFeedInset,
+                child: FilterChipBar(
+                  items: _filters,
+                  selected: _filter,
+                  onSelected: (v) => setState(() => _filter = v),
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               if (_filter == 'Universités')
                 unisAsync.when(
                   loading: () => const ListFeedSkeleton(count: 6),
-                  error: (e, _) => Text(apiErrorMessage(e)),
+                  error: (e, _) => Padding(
+                    padding: kFeedInset,
+                    child: Text(apiErrorMessage(e)),
+                  ),
                   data: (unis) => Column(
                     children: [
                       for (final u in unis)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: SoftCard(
-                            onTap: () => context.go('/library'),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: AkadexColors.primarySoft,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Center(
-                                      child: Text(
-                                      (u.slug.length >= 3
-                                              ? u.slug.substring(0, 3)
-                                              : u.slug)
-                                          .toUpperCase(),
-                                      style: const TextStyle(
-                                        color: AkadexColors.primary,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 11,
-                                      ),
+                        SoftCard(
+                          fullBleed: true,
+                          onTap: () => context.go('/library'),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: AkadexColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    (u.slug.length >= 3
+                                            ? u.slug.substring(0, 3)
+                                            : u.slug)
+                                        .toUpperCase(),
+                                    style: const TextStyle(
+                                      color: AkadexColors.primary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        u.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      u.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
                                       ),
-                                      Text(
-                                        '${u.city}, ${u.country}',
-                                        style: const TextStyle(
-                                          color: AkadexColors.inkMuted,
-                                          fontSize: 13,
-                                        ),
+                                    ),
+                                    Text(
+                                      '${u.city}, ${u.country}',
+                                      style: const TextStyle(
+                                        color: AkadexColors.inkMuted,
+                                        fontSize: 13,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                const Icon(Icons.chevron_right_rounded),
-                              ],
-                            ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded),
+                            ],
                           ),
                         ),
                     ],
@@ -122,53 +131,53 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
               else
                 depsAsync.when(
                   loading: () => const ListFeedSkeleton(count: 6),
-                  error: (e, _) => Text(apiErrorMessage(e)),
+                  error: (e, _) => Padding(
+                    padding: kFeedInset,
+                    child: Text(apiErrorMessage(e)),
+                  ),
                   data: (deps) => Column(
                     children: [
                       for (final d in deps)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: SoftCard(
-                            onTap: () => context.go('/library'),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: AkadexColors.primarySoft,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.account_tree_outlined,
-                                    color: AkadexColors.primary,
-                                  ),
+                        SoftCard(
+                          fullBleed: true,
+                          onTap: () => context.go('/library'),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: AkadexColors.primarySoft,
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        d.name,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      Text(
-                                        d.facultyName,
-                                        style: const TextStyle(
-                                          color: AkadexColors.inkMuted,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                child: const Icon(
+                                  Icons.account_tree_outlined,
+                                  color: AkadexColors.primary,
                                 ),
-                                const Icon(Icons.chevron_right_rounded),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      d.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    Text(
+                                      d.facultyName,
+                                      style: const TextStyle(
+                                        color: AkadexColors.inkMuted,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.chevron_right_rounded),
+                            ],
                           ),
                         ),
                     ],

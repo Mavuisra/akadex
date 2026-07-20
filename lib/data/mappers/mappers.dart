@@ -1,3 +1,4 @@
+import '../../core/theme/status_backgrounds.dart';
 import '../../domain/models/document_type.dart';
 import '../../domain/models/models.dart';
 
@@ -174,30 +175,41 @@ Course courseFromJson(Map<String, dynamic> json) {
 }
 
 CommunityPost postFromJson(Map<String, dynamic> json) {
+  final tags = (json['tags'] as List?)?.map((e) => e.toString()).toList() ??
+      const <String>[];
+  var backgroundColor = (json['background_color'] ?? '').toString();
+  if (backgroundColor.trim().isEmpty) {
+    backgroundColor = StatusBackgrounds.hexFromTags(tags) ?? '';
+  }
   return CommunityPost(
     id: json['id'].toString(),
     author: (json['author_name'] ?? '').toString(),
     authorId: (json['author_id'] ?? json['author'] ?? '').toString(),
     authorRole: (json['author_role'] ?? 'student').toString(),
     authorAvatarUrl: (json['author_avatar'] ?? '').toString(),
+    authorUniversity: (json['author_university'] ?? '').toString(),
+    authorPromotion: (json['author_promotion'] ?? '').toString(),
     department: (json['department_name'] ?? '').toString(),
     title: (json['title'] ?? '').toString(),
     content: (json['content'] ?? '').toString(),
     kind: (json['kind'] ?? 'discussion').toString(),
     kindDisplay: (json['kind_display'] ?? '').toString(),
     videoUrl: (json['video_url'] ?? '').toString(),
+    attachmentUrl: (json['attachment_url'] ?? json['file_url'] ?? '').toString(),
+    imageUrl: (json['image_url'] ?? '').toString(),
+    pageCount: asInt(json['page_count']),
     createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
         DateTime.now(),
     likes: asInt(json['likes_count']),
     comments: asInt(json['comments_count']),
-    tags: (json['tags'] as List?)?.map((e) => e.toString()).toList() ??
-        const [],
+    tags: tags,
     isLiked: json['is_liked'] == true,
     isSaved: json['is_saved'] == true,
     isFollowingAuthor: json['is_following_author'] == true,
     isApproved: json['is_approved'] != false,
     moderationStatus: (json['moderation_status'] ?? 'approved').toString(),
     rejectionReason: (json['rejection_reason'] ?? '').toString(),
+    backgroundColor: backgroundColor,
   );
 }
 

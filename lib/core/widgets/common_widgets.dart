@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import '../constants/app_constants.dart';
 import '../theme/akadex_theme.dart';
 
+/// Marge intérieure pour titres / textes quand le feed est plein largeur.
+const EdgeInsets kFeedInset = EdgeInsets.symmetric(horizontal: 16);
+
 /// Carte pressable avec scale soft + bordure légère.
 class SoftCard extends StatefulWidget {
   const SoftCard({
@@ -14,6 +17,8 @@ class SoftCard extends StatefulWidget {
     this.onTap,
     this.delay = Duration.zero,
     this.accentBorder = false,
+    /// Style Facebook : bord à bord, coins droits, séparateur bas.
+    this.fullBleed = false,
   });
 
   final Widget child;
@@ -21,6 +26,7 @@ class SoftCard extends StatefulWidget {
   final VoidCallback? onTap;
   final Duration delay;
   final bool accentBorder;
+  final bool fullBleed;
 
   @override
   State<SoftCard> createState() => _SoftCardState();
@@ -92,25 +98,37 @@ class _SoftCardState extends State<SoftCard>
             onTap: widget.onTap == null ? null : _tap,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.94),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: widget.accentBorder
-                      ? AkadexColors.primary.withValues(alpha: 0.22)
-                      : AkadexColors.border.withValues(alpha: 0.85),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AkadexColors.primary.withValues(alpha: 0.06),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                color: Colors.white.withValues(alpha: widget.fullBleed ? 1 : 0.94),
+                borderRadius: widget.fullBleed
+                    ? BorderRadius.zero
+                    : BorderRadius.circular(18),
+                border: widget.fullBleed
+                    ? Border(
+                        bottom: BorderSide(
+                          color: widget.accentBorder
+                              ? AkadexColors.primary.withValues(alpha: 0.22)
+                              : AkadexColors.border,
+                        ),
+                      )
+                    : Border.all(
+                        color: widget.accentBorder
+                            ? AkadexColors.primary.withValues(alpha: 0.22)
+                            : AkadexColors.border.withValues(alpha: 0.85),
+                      ),
+                boxShadow: widget.fullBleed
+                    ? null
+                    : [
+                        BoxShadow(
+                          color: AkadexColors.primary.withValues(alpha: 0.06),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
               ),
               child: Padding(padding: widget.padding, child: widget.child),
             ),

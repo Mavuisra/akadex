@@ -38,7 +38,13 @@ class PostViewSet(viewsets.ModelViewSet):
     ordering_fields = ['created_at', 'likes_count', 'comments_count']
 
     def get_queryset(self):
-        qs = Post.objects.select_related('author', 'department', 'author__department')
+        qs = Post.objects.select_related(
+            'author',
+            'department',
+            'author__department',
+            'author__university',
+            'author__promotion',
+        )
         scope = self.request.query_params.get('scope')
         if scope == 'alumni':
             qs = qs.filter(
@@ -46,6 +52,46 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         elif scope == 'community':
             qs = qs.exclude(kind__in=ALUMNI_KINDS)
+        elif scope == 'timeline':
+            qs = qs.exclude(kind__in=ALUMNI_KINDS)
+
+        kind = self.request.query_params.get('kind')
+        if kind:
+            qs = qs.filter(kind=kind)
+
+        tag = self.request.query_params.get('tag')
+        if tag:
+            qs = qs.filter(tags__contains=[tag])
+
+        university = self.request.query_params.get('university')
+        if university:
+            qs = qs.filter(
+                Q(author__university_id=university)
+                | Q(department__faculty__university_id=university)
+            )
+
+        faculty = self.request.query_params.get('faculty')
+        if faculty:
+            qs = qs.filter(
+                Q(author__faculty_id=faculty)
+                | Q(department__faculty_id=faculty)
+            )
+
+        department = self.request.query_params.get('department')
+        if department:
+            qs = qs.filter(
+                Q(department_id=department) | Q(author__department_id=department)
+            )
+
+        promotion = self.request.query_params.get('promotion')
+        if promotion:
+            qs = qs.filter(author__promotion_id=promotion)
+
+        year = self.request.query_params.get('year')
+        if year:
+            qs = qs.filter(
+                Q(tags__contains=[year]) | Q(created_at__year=year)
+            )
 
         # Recommandations faculté / département
         dept = self.request.query_params.get('recommend_department')
