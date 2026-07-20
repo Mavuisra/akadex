@@ -17,7 +17,12 @@ SECRET_KEY = os.getenv(
     'django-insecure-akadex-dev-change-me-in-production-2026',
 )
 
-DEBUG = os.getenv('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+_ON_RENDER = bool(os.getenv('RENDER')) or bool(os.getenv('RENDER_EXTERNAL_HOSTNAME'))
+
+DEBUG = os.getenv(
+    'DEBUG',
+    'False' if _ON_RENDER else 'True',
+).lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = [
     h.strip()
@@ -82,7 +87,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# SQLite en local, Postgres sur Render via DATABASE_URL
+# SQLite en local, Postgres obligatoire sur Render
+if _ON_RENDER and not os.getenv('DATABASE_URL'):
+    raise RuntimeError(
+        'DATABASE_URL manquant sur Render. '
+        'Dans le dashboard : Web Service → Environment → '
+        'ajoute DATABASE_URL depuis ta base Postgres (Internal Database URL), '
+        'puis Manual Deploy.'
+    )
+
 if os.getenv('DATABASE_URL'):
     try:
         import dj_database_url

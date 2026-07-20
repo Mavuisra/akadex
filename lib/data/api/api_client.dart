@@ -80,17 +80,26 @@ List<Map<String, dynamic>> unwrapList(dynamic data) {
 
 String apiErrorMessage(Object error) {
   if (error is DioException) {
+    final status = error.response?.statusCode;
     final data = error.response?.data;
     if (data is Map) {
       if (data['detail'] != null) return data['detail'].toString();
       final first = data.values.whereType<List>().expand((e) => e);
       if (first.isNotEmpty) return first.first.toString();
     }
+    if (status != null && status >= 500) {
+      return 'Le serveur Akadex est temporairement indisponible '
+          '(erreur $status). Réessaie dans une minute.';
+    }
     if (error.type == DioExceptionType.connectionError ||
         error.type == DioExceptionType.connectionTimeout) {
-      return 'Impossible de joindre le serveur. Vérifie que l’API tourne.';
+      return 'Impossible de joindre le serveur. Vérifie ta connexion.';
     }
     return error.message ?? 'Erreur réseau';
   }
-  return error.toString();
+  final text = error.toString();
+  if (text.contains('status code of 500') || text.contains('500')) {
+    return 'Le serveur Akadex est temporairement indisponible. Réessaie bientôt.';
+  }
+  return text;
 }
