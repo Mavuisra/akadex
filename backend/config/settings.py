@@ -87,15 +87,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# SQLite en local, Postgres obligatoire sur Render
-if _ON_RENDER and not os.getenv('DATABASE_URL'):
-    raise RuntimeError(
-        'DATABASE_URL manquant sur Render. '
-        'Dans le dashboard : Web Service → Environment → '
-        'ajoute DATABASE_URL depuis ta base Postgres (Internal Database URL), '
-        'puis Manual Deploy.'
-    )
-
+# Postgres si DATABASE_URL, sinon SQLite (ok sur Render pour démo).
+# Sur Render free, le disque est éphémère : migrate+seed au démarrage (start.sh).
 if os.getenv('DATABASE_URL'):
     try:
         import dj_database_url

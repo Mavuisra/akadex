@@ -1,11 +1,8 @@
-# Blueprint Render — Akadex API
+# Blueprint Render — Akadex API (SQLite par défaut, simple pour démo)
 # Docs: https://render.com/docs/blueprint-spec
-
-databases:
-  - name: akadex-db
-    plan: free
-    databaseName: akadex
-    user: akadex
+#
+# Note: sur le plan free, le disque est éphémère.
+# start.sh refait migrate + seed_demo à chaque démarrage.
 
 services:
   - type: web
@@ -14,8 +11,8 @@ services:
     plan: free
     region: oregon
     rootDir: backend
-    buildCommand: chmod +x build.sh && ./build.sh
-    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT
+    buildCommand: chmod +x build.sh start.sh && ./build.sh
+    startCommand: ./start.sh
     healthCheckPath: /api/universities/
     envVars:
       - key: PYTHON_VERSION
@@ -24,10 +21,6 @@ services:
         value: "False"
       - key: SECRET_KEY
         generateValue: true
-      - key: DATABASE_URL
-        fromDatabase:
-          name: akadex-db
-          property: connectionString
       - key: ALLOWED_HOSTS
         value: ".onrender.com,localhost,127.0.0.1"
       - key: CORS_ALLOW_ALL_ORIGINS
