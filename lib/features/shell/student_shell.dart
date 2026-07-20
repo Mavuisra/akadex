@@ -6,7 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/akadex_theme.dart';
 import '../../core/widgets/living_ui.dart';
 
-/// Navigation campus : Accueil, Explorer, Bibliothèque, Communauté, Alumni, Profil.
+/// Navigation campus verrouillée pour tous :
+/// Accueil · Apprendre · Bibliothèque · Communauté · Alumni · Profil
 class StudentShell extends StatelessWidget {
   const StudentShell({super.key, required this.navigationShell});
 
@@ -54,9 +55,9 @@ class StudentShell extends StatelessWidget {
                 label: 'Accueil',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.compass),
-                activeIcon: Icon(CupertinoIcons.compass_fill),
-                label: 'Explorer',
+                icon: Icon(CupertinoIcons.lightbulb),
+                activeIcon: Icon(CupertinoIcons.lightbulb_fill),
+                label: 'Apprendre',
               ),
               BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.book),

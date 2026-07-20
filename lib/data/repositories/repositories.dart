@@ -187,8 +187,8 @@ final alumniProfileProvider =
 
 final alumniPostsByAuthorProvider =
     FutureProvider.family<List<CommunityPost>, String>((ref, authorId) {
+  // Toutes les pubs de l’auteur (pas seulement scope alumni).
   return ref.watch(communityRepositoryProvider).fetchPosts(
-        scope: 'alumni',
         authorId: authorId,
       );
 });

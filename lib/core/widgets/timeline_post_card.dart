@@ -13,8 +13,8 @@ import '../../domain/models/models.dart';
 import '../theme/akadex_theme.dart';
 import '../theme/timeline_tokens.dart';
 import 'moderation_chip.dart';
-import 'post_detail_sheet.dart';
 import 'post_media_carousel.dart';
+import 'post_viewer_screens.dart';
 import 'status_text_block.dart';
 
 class TimelinePostCard extends ConsumerStatefulWidget {
@@ -214,7 +214,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                         ? null
                         : () {
                             if (me?.id == _post.authorId) {
-                              context.go('/profile');
+                              context.push('/profile/me');
                             } else {
                               context.push('/alumni/profile/${_post.authorId}');
                             }
@@ -282,21 +282,28 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
             ),
             if (_post.content.trim().isNotEmpty) ...[
               const SizedBox(height: 8),
-              PostBodyText(
-                content: _post.content,
-                backgroundColor: _post.backgroundColor,
-                tags: _post.tags,
-                hasMedia: _post.hasMedia,
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => openPostViewer(context, post: _post),
+                child: PostBodyText(
+                  content: _post.content,
+                  backgroundColor: _post.backgroundColor,
+                  tags: _post.tags,
+                  hasMedia: _post.hasMedia,
+                ),
               ),
             ],
             if (_post.hasImage || _post.hasPdf) ...[
               const SizedBox(height: 10),
-              PostMediaCarousel(
-                imageUrl: _post.imageUrl,
-                pdfUrl: _post.attachmentUrl,
-                pdfPageCount: _post.pageCount,
-                onOpenPdf: _post.hasPdf ? _openPdf : null,
-                height: 280,
+              GestureDetector(
+                onTap: () => openPostViewer(context, post: _post),
+                child: PostMediaCarousel(
+                  imageUrl: _post.imageUrl,
+                  pdfUrl: _post.attachmentUrl,
+                  pdfPageCount: _post.pageCount,
+                  onOpenPdf: _post.hasPdf ? _openPdf : null,
+                  height: 280,
+                ),
               ),
             ],
             Padding(
@@ -400,11 +407,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                       for (final c in preview) _CommentBubble(comment: c),
                       if (comments.length > 2)
                         TextButton(
-                          onPressed: () => showPostDetailSheet(
-                            context,
-                            post: _post,
-                            ref: ref,
-                          ),
+                          onPressed: () => openPostViewer(context, post: _post),
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: Size.zero,

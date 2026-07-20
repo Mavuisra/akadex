@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/moderation_chip.dart';
-import '../../../../core/widgets/post_detail_sheet.dart';
+import '../../../../core/widgets/post_viewer_screens.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../core/widgets/status_text_block.dart';
 import '../../../../data/api/api_client.dart';
@@ -114,11 +114,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                       for (final p in filtered)
                         SoftCard(
                           fullBleed: true,
-                          onTap: () => showPostDetailSheet(
-                            context,
-                            post: p,
-                            ref: ref,
-                          ),
+                          onTap: () => openPostViewer(context, post: p),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -129,7 +125,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                                         ? null
                                         : () {
                                             if (me?.id == p.authorId) {
-                                              context.go('/profile');
+                                              context.push('/profile/me');
                                             } else {
                                               context.push(
                                                 '/alumni/profile/${p.authorId}',
@@ -164,7 +160,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
                                           ? null
                                           : () {
                                               if (me?.id == p.authorId) {
-                                                context.go('/profile');
+                                                context.push('/profile/me');
                                               } else {
                                                 context.push(
                                                   '/alumni/profile/${p.authorId}',

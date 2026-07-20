@@ -4,16 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
-import '../../../../core/widgets/alumni_video_card.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/follow_chip.dart';
-import '../../../../core/widgets/moderation_chip.dart';
-import '../../../../core/widgets/post_detail_sheet.dart';
+import '../../../../core/widgets/timeline_post_card.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
-import '../../../../domain/models/models.dart';
 
 class AlumniProfileScreen extends ConsumerStatefulWidget {
   const AlumniProfileScreen({super.key, required this.userId});
@@ -439,88 +436,10 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                     ),
                                   );
                                 }
-                                CommunityPost? featuredVideo;
-                                for (final p in posts) {
-                                  if (p.videoUrl.trim().isNotEmpty) {
-                                    featuredVideo = p;
-                                    break;
-                                  }
-                                }
-                                final textPosts = posts
-                                    .where(
-                                      (p) => p.videoUrl.trim().isEmpty,
-                                    )
-                                    .toList();
-
                                 return Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    if (featuredVideo != null) ...[
-                                      SoftCard(
-                                        onTap: () => showPostDetailSheet(
-                                          context,
-                                          post: featuredVideo!,
-                                          ref: ref,
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Text(
-                                                  'Vidéo mise en avant',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w700,
-                                                    color: AkadexColors.primary,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                const Spacer(),
-                                                if (featuredVideo
-                                                        .needsModerationBadge ||
-                                                    me?.id ==
-                                                        featuredVideo
-                                                            .authorId)
-                                                  ModerationChip(
-                                                    status: featuredVideo
-                                                        .moderationStatus,
-                                                  ),
-                                              ],
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              featuredVideo.title,
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 10),
-                                            AlumniVideoCard(
-                                              url: featuredVideo.videoUrl,
-                                              title: featuredVideo.title,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                    ],
-                                    for (final p in textPosts) ...[
-                                      _ProfilePostCard(
-                                        post: p,
-                                        showModeration:
-                                            p.needsModerationBadge ||
-                                                me?.id == p.authorId,
-                                        onTap: () => showPostDetailSheet(
-                                          context,
-                                          post: p,
-                                          ref: ref,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                    ],
+                                    for (final p in posts)
+                                      TimelinePostCard(post: p),
                                   ],
                                 );
                               },
@@ -597,63 +516,6 @@ class _StatPill extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ProfilePostCard extends StatelessWidget {
-  const _ProfilePostCard({
-    required this.post,
-    required this.onTap,
-    this.showModeration = false,
-  });
-
-  final CommunityPost post;
-  final VoidCallback onTap;
-  final bool showModeration;
-
-  @override
-  Widget build(BuildContext context) {
-    return SoftCard(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (post.kindDisplay.isNotEmpty)
-                Text(
-                  post.kindDisplay,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AkadexColors.primary,
-                  ),
-                ),
-              const Spacer(),
-              if (showModeration)
-                ModerationChip(status: post.moderationStatus),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            post.title,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            post.content,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(height: 1.4),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${post.likes} j’aime · ${post.comments} commentaires',
-            style: const TextStyle(fontSize: 12, color: AkadexColors.inkMuted),
-          ),
-        ],
       ),
     );
   }

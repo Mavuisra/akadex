@@ -16,10 +16,11 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
 import '../../features/community/presentation/screens/community_publish_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
-import '../../features/explorer/presentation/screens/explorer_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/pdf_reader_screen.dart';
+import '../../features/learn/presentation/screens/learn_screen.dart';
 import '../../features/library/presentation/screens/contribute_screen.dart';
+import '../../core/widgets/post_viewer_screens.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
 import '../../features/library/presentation/screens/lesson_player_screen.dart';
@@ -104,6 +105,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (loc == '/professor') return '/teacher';
       if (loc.startsWith('/professor/publish')) return '/teacher-publish';
+      if (loc == '/explorer' || loc.startsWith('/explorer/')) return '/learn';
 
       return null;
     },
@@ -141,9 +143,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/explorer',
+                path: '/learn',
                 pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ExplorerScreen()),
+                    _fadeSlide(state, const LearnScreen()),
               ),
             ],
           ),
@@ -350,6 +352,38 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/community/publish',
         parentNavigatorKey: _rootKey,
         builder: (context, state) => const CommunityPublishScreen(),
+      ),
+      GoRoute(
+        path: '/posts/:id',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          if (extra is! CommunityPost) {
+            return _cupertino(
+              state,
+              const Scaffold(
+                body: Center(child: Text('Publication introuvable')),
+              ),
+            );
+          }
+          return _cupertino(state, TextPostViewerScreen(post: extra));
+        },
+      ),
+      GoRoute(
+        path: '/posts/:id/media',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          if (extra is! CommunityPost) {
+            return _cupertino(
+              state,
+              const Scaffold(
+                body: Center(child: Text('Publication introuvable')),
+              ),
+            );
+          }
+          return _cupertino(state, MediaPostViewerScreen(post: extra));
+        },
       ),
       GoRoute(
         path: '/pdf-reader',

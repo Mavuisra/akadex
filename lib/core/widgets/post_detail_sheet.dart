@@ -62,7 +62,7 @@ class _PostDetailBodyState extends ConsumerState<_PostDetailBody> {
     Navigator.pop(context);
     final me = widget.parentRef.read(authStateProvider).valueOrNull;
     if (me != null && me.id == _post.authorId) {
-      context.go('/profile');
+      context.push('/profile/me');
     } else {
       context.push('/alumni/profile/${_post.authorId}');
     }

@@ -5,7 +5,7 @@ abstract final class RoleAccess {
   /// Préfixes / chemins réservés au campus étudiant (interdit aux enseignants).
   static const studentOnlyPrefixes = <String>[
     '/home',
-    '/explorer',
+    '/learn',
     '/community',
     '/alumni',
     '/rewards',

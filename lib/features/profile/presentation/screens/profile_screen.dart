@@ -167,8 +167,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   _MenuItem(
                     icon: Icons.explore_outlined,
-                    label: 'Explorer',
-                    onTap: () => context.go('/explorer'),
+                    label: 'Apprendre',
+                    onTap: () => context.go('/learn'),
                   ),
                   if (user.usesTeacherShell)
                     _MenuItem(
