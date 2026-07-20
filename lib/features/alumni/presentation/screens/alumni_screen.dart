@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +9,7 @@ import '../../../../core/widgets/follow_chip.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../core/widgets/post_detail_sheet.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -42,7 +42,10 @@ class _AlumniScreenState extends ConsumerState<AlumniScreen> {
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: postsAsync.when(
-          loading: () => const Center(child: CupertinoActivityIndicator()),
+          loading: () => const Padding(
+            padding: EdgeInsets.fromLTRB(20, 24, 20, 40),
+            child: PostFeedSkeleton(count: 4),
+          ),
           error: (e, _) => Center(child: Text(apiErrorMessage(e))),
           data: (posts) {
             final mentors = _uniqueMentors(posts);

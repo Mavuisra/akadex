@@ -1,10 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
 
@@ -57,7 +57,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
               const SizedBox(height: 16),
               if (_filter == 'Universités')
                 unisAsync.when(
-                  loading: () => const Center(child: CupertinoActivityIndicator()),
+                  loading: () => const ListFeedSkeleton(count: 6),
                   error: (e, _) => Text(apiErrorMessage(e)),
                   data: (unis) => Column(
                     children: [
@@ -121,7 +121,7 @@ class _ExplorerScreenState extends ConsumerState<ExplorerScreen> {
                 )
               else
                 depsAsync.when(
-                  loading: () => const Center(child: CupertinoActivityIndicator()),
+                  loading: () => const ListFeedSkeleton(count: 6),
                   error: (e, _) => Text(apiErrorMessage(e)),
                   data: (deps) => Column(
                     children: [

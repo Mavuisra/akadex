@@ -1,10 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -90,7 +90,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
           Expanded(
             child: docsAsync.when(
-              loading: () => const Center(child: CupertinoActivityIndicator()),
+              loading: () => const Padding(
+                padding: EdgeInsets.fromLTRB(20, 12, 20, 40),
+                child: ListFeedSkeleton(count: 6),
+              ),
               error: (e, _) => Center(child: Text(apiErrorMessage(e))),
               data: (docs) {
                 if (docs.isEmpty) {

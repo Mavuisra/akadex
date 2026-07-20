@@ -1,4 +1,3 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,7 @@ import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../core/widgets/post_detail_sheet.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
@@ -59,10 +59,7 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen> {
               ),
               const SizedBox(height: 16),
               postsAsync.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(40),
-                  child: Center(child: CupertinoActivityIndicator()),
-                ),
+                loading: () => const PostFeedSkeleton(count: 4),
                 error: (e, _) => SoftCard(
                   child: Column(
                     children: [

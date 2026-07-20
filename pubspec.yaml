@@ -35,7 +35,7 @@ dependencies:
   path: ^1.9.1
   connectivity_plus: ^6.1.4
   image_picker: ^1.1.2
-  record: ^7.1.1
+  record: ^6.2.1
   just_audio: ^0.10.6
   permission_handler: ^12.0.3
 
@@ -43,6 +43,25 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/images/logo.png
+  adaptive_icon_background: "#1A47B8"
+  adaptive_icon_foreground: assets/images/logo.png
+  remove_alpha_ios: true
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: assets/images/logo.png
+    background_color: "#1A47B8"
+    theme_color: "#1A47B8"
+  windows:
+    generate: true
+    image_path: assets/images/logo.png
+    icon_size: 256
 
 flutter:
   uses-material-design: true
