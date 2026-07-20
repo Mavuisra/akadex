@@ -4,7 +4,8 @@ Plateforme académique et communautaire multiplateforme (Flutter + Django REST).
 
 ## Télécharger (GitHub Releases)
 
-Les builds sont publiés automatiquement à chaque tag `v*` :
+Les builds sont publiés **automatiquement à chaque push sur `main`**
+(version bump + APK + ZIP web) :
 
 **https://github.com/Mavuisra/akadex/releases**
 
@@ -13,14 +14,10 @@ Les builds sont publiés automatiquement à chaque tag `v*` :
 | `akadex-android-vX.Y.Z.apk` | Installer sur Android |
 | `akadex-web-vX.Y.Z.zip` | Build web à héberger |
 
-Créer une nouvelle release :
+La version dans `pubspec.yaml` est incrémentée à chaque release
+(ex. `1.1.0+2` → `1.1.1+3`).
 
-```bash
-git tag v1.0.1
-git push origin v1.0.1
-```
-
-Ou : Actions → **Release** → *Run workflow*.
+Pour sauter une release sur un commit : ajoute `[skip release]` dans le message.
 
 ## Applications
 
