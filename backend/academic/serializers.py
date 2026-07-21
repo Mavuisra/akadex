@@ -159,6 +159,75 @@ class PromotionSerializer(serializers.ModelSerializer):
         ]
 
 
+class CourseListSerializer(serializers.ModelSerializer):
+    """Payload léger pour listes (Apprendre / Ma Fac) — sans bios ni textes longs."""
+
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    faculty_name = serializers.CharField(
+        source='department.faculty.name',
+        read_only=True,
+        default='',
+    )
+    university_name = serializers.CharField(
+        source='department.faculty.university.name',
+        read_only=True,
+        default='',
+    )
+    document_count = serializers.SerializerMethodField()
+    teacher_names = serializers.SerializerMethodField()
+    teacher_full_name = serializers.SerializerMethodField()
+    promotion = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = [
+            'id',
+            'department',
+            'department_name',
+            'faculty_name',
+            'university_name',
+            'code',
+            'title',
+            'credits',
+            'semester',
+            'promotion',
+            'cover_url',
+            'level_label',
+            'estimated_hours',
+            'teacher_names',
+            'teacher_full_name',
+            'document_count',
+        ]
+
+    def get_document_count(self, obj):
+        annotated = getattr(obj, 'approved_document_count', None)
+        if annotated is not None:
+            return annotated
+        return obj.documents.filter(is_approved=True).count()
+
+    def get_teacher_names(self, obj):
+        return [u.get_full_name() or u.email for u in obj.teachers.all()]
+
+    def get_teacher_full_name(self, obj):
+        teachers = list(obj.teachers.all())
+        if not teachers:
+            return ''
+        return teachers[0].get_full_name() or teachers[0].email
+
+    def get_promotion(self, obj):
+        s = (obj.semester or '').strip()
+        mapping = {
+            'L1': 'L1',
+            'L2': 'L2',
+            'L3': 'L3',
+            'Master 1': 'M1',
+            'Master 2': 'M2',
+            'M1': 'M1',
+            'M2': 'M2',
+        }
+        return mapping.get(s, s)
+
+
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
     faculty_name = serializers.CharField(
@@ -171,7 +240,7 @@ class CourseSerializer(serializers.ModelSerializer):
         read_only=True,
         default='',
     )
-    document_count = serializers.IntegerField(read_only=True)
+    document_count = serializers.SerializerMethodField()
     teacher_names = serializers.SerializerMethodField()
     teacher_title = serializers.SerializerMethodField()
     teacher_full_name = serializers.SerializerMethodField()
@@ -217,29 +286,40 @@ class CourseSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at']
 
+    def get_document_count(self, obj):
+        annotated = getattr(obj, 'approved_document_count', None)
+        if annotated is not None:
+            return annotated
+        return obj.documents.filter(is_approved=True).count()
+
     def get_teacher_names(self, obj):
         return [u.get_full_name() or u.email for u in obj.teachers.all()]
 
+    def _teacher(self, obj):
+        if not hasattr(obj, '_akadex_teacher_payload'):
+            obj._akadex_teacher_payload = teacher_payload(obj)
+        return obj._akadex_teacher_payload
+
     def get_teacher_title(self, obj):
-        return teacher_payload(obj)['teacher_title']
+        return self._teacher(obj)['teacher_title']
 
     def get_teacher_full_name(self, obj):
-        return teacher_payload(obj)['teacher_full_name']
+        return self._teacher(obj)['teacher_full_name']
 
     def get_teacher_headline(self, obj):
-        return teacher_payload(obj)['teacher_headline']
+        return self._teacher(obj)['teacher_headline']
 
     def get_teacher_bio(self, obj):
-        return teacher_payload(obj)['teacher_bio']
+        return self._teacher(obj)['teacher_bio']
 
     def get_teacher_specialty(self, obj):
-        return teacher_payload(obj)['teacher_specialty']
+        return self._teacher(obj)['teacher_specialty']
 
     def get_teacher_avatar_url(self, obj):
-        return teacher_payload(obj)['teacher_avatar_url']
+        return self._teacher(obj)['teacher_avatar_url']
 
     def get_teacher_university(self, obj):
-        return teacher_payload(obj)['teacher_university']
+        return self._teacher(obj)['teacher_university']
 
     def get_promotion(self, obj):
         s = (obj.semester or '').strip()

@@ -45,20 +45,35 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
   Widget build(BuildContext context) {
     final me = ref.watch(authStateProvider).valueOrNull;
     final coursesAsync = ref.watch(coursesProvider);
-    final docsAsync = ref.watch(
-      documentsProvider(
-        DocumentQuery(
-          universityId:
-              me?.universityId.isNotEmpty == true ? me!.universityId : null,
-          departmentId:
-              me?.departmentId.isNotEmpty == true ? me!.departmentId : null,
-          facultyId: me?.facultyId.isNotEmpty == true ? me!.facultyId : null,
-          ordering: '-created_at',
-        ),
-      ),
-    );
-    final eventsAsync = ref.watch(eventsProvider);
-    final announcementsAsync = ref.watch(announcementsProvider);
+    final allCourses = coursesAsync.valueOrNull ?? const <Course>[];
+    final coursesBusy = coursesAsync.isLoading && allCourses.isEmpty;
+    final coursesError = coursesAsync.hasError && allCourses.isEmpty;
+
+    // Docs / agenda : chargés dès que l’onglet en a besoin (pas au 1er paint).
+    final needDocs = _tab == 0 || _tab == 2 || _tab == 4;
+    final needAgenda = _tab == 0 || _tab == 3;
+    final docsAsync = needDocs
+        ? ref.watch(
+            documentsProvider(
+              DocumentQuery(
+                universityId: me?.universityId.isNotEmpty == true
+                    ? me!.universityId
+                    : null,
+                departmentId: me?.departmentId.isNotEmpty == true
+                    ? me!.departmentId
+                    : null,
+                facultyId:
+                    me?.facultyId.isNotEmpty == true ? me!.facultyId : null,
+                ordering: '-created_at',
+              ),
+            ),
+          )
+        : const AsyncValue<List<AcademicDocument>>.data([]);
+    final eventsAsync =
+        needAgenda ? ref.watch(eventsProvider) : const AsyncValue.data(<CalendarEventItem>[]);
+    final announcementsAsync = needAgenda
+        ? ref.watch(announcementsProvider)
+        : const AsyncValue.data(<UniversityAnnouncement>[]);
     final deptsAsync = ref.watch(departmentsProvider(me?.universityId));
     final promosAsync = ref.watch(
       promotionsProvider(
@@ -67,17 +82,15 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
       ),
     );
 
-    return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
-      body: SafeArea(
-        bottom: false,
-        child: coursesAsync.when(
-          loading: () => const LearnScreenSkeleton(cardCount: 2),
-          error: (e, _) => Center(
+    if (coursesError) {
+      return Scaffold(
+        backgroundColor: TimelineTokens.feedBg,
+        body: SafeArea(
+          child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(apiErrorMessage(e)),
+                Text(apiErrorMessage(coursesAsync.error!)),
                 TextButton(
                   onPressed: () => ref.invalidate(coursesProvider),
                   child: const Text('Réessayer'),
@@ -85,133 +98,133 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
               ],
             ),
           ),
-          data: (allCourses) {
-            final facName = me?.faculty.isNotEmpty == true
-                ? me!.faculty
-                : 'Ma faculté';
-            final docs = docsAsync.valueOrNull ?? const <AcademicDocument>[];
-            final events =
-                eventsAsync.valueOrNull ?? const <CalendarEventItem>[];
-            final announcements = announcementsAsync.valueOrNull ??
-                const <UniversityAnnouncement>[];
-            final career = CareerOutlets.forProfile(me);
+        ),
+      );
+    }
 
-            // Départements de la faculté de l’étudiant
-            final allDepts = deptsAsync.valueOrNull ?? const <DepartmentItem>[];
-            final facId = me?.facultyId ?? '';
-            final facLabel = (me?.faculty ?? '').toLowerCase();
-            var depts = allDepts.where((d) {
-              if (facId.isNotEmpty && d.facultyId == facId) return true;
-              if (facLabel.isNotEmpty &&
-                  d.facultyName.toLowerCase().contains(facLabel.split(' ').first)) {
-                return true;
-              }
-              return false;
-            }).toList();
-            if (depts.isEmpty) depts = allDepts;
+    final facName =
+        me?.faculty.isNotEmpty == true ? me!.faculty : 'Ma faculté';
+    final docs = docsAsync.valueOrNull ?? const <AcademicDocument>[];
+    final events = eventsAsync.valueOrNull ?? const <CalendarEventItem>[];
+    final announcements =
+        announcementsAsync.valueOrNull ?? const <UniversityAnnouncement>[];
+    final career = CareerOutlets.forProfile(me);
 
-            // Sélection auto département profil
-            final activeDeptId = _selectedDeptId ??
-                (me?.departmentId.isNotEmpty == true
-                    ? me!.departmentId
-                    : (depts.isNotEmpty ? depts.first.id : null));
+    final allDepts = deptsAsync.valueOrNull ?? const <DepartmentItem>[];
+    final facId = me?.facultyId ?? '';
+    final facLabel = (me?.faculty ?? '').toLowerCase();
+    var depts = allDepts.where((d) {
+      if (facId.isNotEmpty && d.facultyId == facId) return true;
+      if (facLabel.isNotEmpty &&
+          d.facultyName.toLowerCase().contains(facLabel.split(' ').first)) {
+        return true;
+      }
+      return false;
+    }).toList();
+    if (depts.isEmpty) depts = allDepts;
 
-            final promos =
-                promosAsync.valueOrNull ?? const <PromotionItem>[];
-            final activePromoId = _selectedPromoId ??
-                (me?.promotionId.isNotEmpty == true ? me!.promotionId : null);
+    final activeDeptId = _selectedDeptId ??
+        (me?.departmentId.isNotEmpty == true
+            ? me!.departmentId
+            : (depts.isNotEmpty ? depts.first.id : null));
 
-            // Cours de la fac, filtrés dept / promo si sélectionnés
-            final facCourses = allCourses.where((c) {
-              final hay =
-                  '${c.faculty} ${c.department} ${c.university}'.toLowerCase();
-              if (facLabel.isNotEmpty &&
-                  hay.contains(facLabel.split(' ').first)) {
-                return true;
-              }
-              if (me == null) return false;
-              return MaFacScope.courseMatchesUser(c, me);
-            }).toList();
+    final promos = promosAsync.valueOrNull ?? const <PromotionItem>[];
+    final activePromoId = _selectedPromoId ??
+        (me?.promotionId.isNotEmpty == true ? me!.promotionId : null);
 
-            List<Course> scopedCourses = facCourses;
-            if (activeDeptId != null) {
-              final deptName = depts
-                  .where((d) => d.id == activeDeptId)
-                  .map((d) => d.name.toLowerCase())
-                  .firstOrNull;
-              if (deptName != null && deptName.isNotEmpty) {
-                final byDept = facCourses
-                    .where((c) => c.department.toLowerCase().contains(
-                          deptName.split(' ').first,
-                        ))
-                    .toList();
-                if (byDept.isNotEmpty) scopedCourses = byDept;
-              }
-            }
-            if (activePromoId != null) {
-              final promo = promos.where((p) => p.id == activePromoId).firstOrNull;
-              if (promo != null) {
-                final lvl = promo.level.toLowerCase();
-                final pname = promo.name.toLowerCase();
-                final byPromo = scopedCourses.where((c) {
-                  final h =
-                      '${c.semester} ${c.targetPromotion} ${c.levelLabel}'
-                          .toLowerCase();
-                  return (lvl.isNotEmpty && h.contains(lvl)) ||
-                      (pname.isNotEmpty && h.contains(pname.split(' ').first));
-                }).toList();
-                if (byPromo.isNotEmpty) scopedCourses = byPromo;
-              }
-            }
+    final facCourses = allCourses.where((c) {
+      final hay =
+          '${c.faculty} ${c.department} ${c.university}'.toLowerCase();
+      if (facLabel.isNotEmpty &&
+          hay.contains(facLabel.split(' ').first)) {
+        return true;
+      }
+      if (me == null) return false;
+      return MaFacScope.courseMatchesUser(c, me);
+    }).toList();
 
-            return Column(
-              children: [
-                _FbHeader(user: me),
-                _FbTabBar(
-                  tabs: _tabs,
-                  selected: _tab,
-                  onSelected: (i) => setState(() => _tab = i),
-                ),
-                Expanded(
-                  child: IndexedStack(
-                    index: _tab,
-                    children: [
-                      _ParcoursFeed(
-                        facultyName: facName,
-                        universityName: me?.university ?? '',
-                        departments: depts,
-                        selectedDeptId: activeDeptId,
-                        promotions: promos,
-                        selectedPromoId: activePromoId,
-                        courses: scopedCourses,
-                        courseCount: scopedCourses.length,
-                        docCount: docs.length,
-                        eventCount: events.length,
-                        onSelectDept: (id) => setState(() {
-                          _selectedDeptId = id;
-                          _selectedPromoId = null;
-                        }),
-                        onSelectPromo: (id) =>
-                            setState(() => _selectedPromoId = id),
-                        onOpenTab: (i) => setState(() => _tab = i),
-                      ),
-                      _EnseignementsTab(
-                        courses: scopedCourses,
-                        user: me,
-                      ),
-                      _TravauxTab(docs: docs),
-                      _AgendaTab(
-                        events: events,
-                        announcements: announcements,
-                      ),
-                      _DocumentsTab(docs: docs),
-                      _DebouchesTab(outlet: career),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
+    List<Course> scopedCourses = facCourses;
+    if (activeDeptId != null) {
+      final deptName = depts
+          .where((d) => d.id == activeDeptId)
+          .map((d) => d.name.toLowerCase())
+          .firstOrNull;
+      if (deptName != null && deptName.isNotEmpty) {
+        final byDept = facCourses
+            .where((c) => c.department.toLowerCase().contains(
+                  deptName.split(' ').first,
+                ))
+            .toList();
+        if (byDept.isNotEmpty) scopedCourses = byDept;
+      }
+    }
+    if (activePromoId != null) {
+      final promo = promos.where((p) => p.id == activePromoId).firstOrNull;
+      if (promo != null) {
+        final lvl = promo.level.toLowerCase();
+        final pname = promo.name.toLowerCase();
+        final byPromo = scopedCourses.where((c) {
+          final h =
+              '${c.semester} ${c.targetPromotion} ${c.levelLabel}'.toLowerCase();
+          return (lvl.isNotEmpty && h.contains(lvl)) ||
+              (pname.isNotEmpty && h.contains(pname.split(' ').first));
+        }).toList();
+        if (byPromo.isNotEmpty) scopedCourses = byPromo;
+      }
+    }
+
+    return Scaffold(
+      backgroundColor: TimelineTokens.feedBg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            _FbHeader(user: me),
+            _FbTabBar(
+              tabs: _tabs,
+              selected: _tab,
+              onSelected: (i) => setState(() => _tab = i),
+            ),
+            Expanded(
+              child: coursesBusy && (_tab == 0 || _tab == 1)
+                  ? const LearnScreenSkeleton(cardCount: 2)
+                  : IndexedStack(
+                      index: _tab,
+                      children: [
+                        _ParcoursFeed(
+                          facultyName: facName,
+                          universityName: me?.university ?? '',
+                          departments: depts,
+                          selectedDeptId: activeDeptId,
+                          promotions: promos,
+                          selectedPromoId: activePromoId,
+                          courses: scopedCourses,
+                          courseCount: scopedCourses.length,
+                          docCount: docs.length,
+                          eventCount: events.length,
+                          onSelectDept: (id) => setState(() {
+                            _selectedDeptId = id;
+                            _selectedPromoId = null;
+                          }),
+                          onSelectPromo: (id) =>
+                              setState(() => _selectedPromoId = id),
+                          onOpenTab: (i) => setState(() => _tab = i),
+                        ),
+                        _EnseignementsTab(
+                          courses: scopedCourses,
+                          user: me,
+                        ),
+                        _TravauxTab(docs: docs),
+                        _AgendaTab(
+                          events: events,
+                          announcements: announcements,
+                        ),
+                        _DocumentsTab(docs: docs),
+                        _DebouchesTab(outlet: career),
+                      ],
+                    ),
+            ),
+          ],
         ),
       ),
     );

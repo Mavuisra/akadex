@@ -1,4 +1,4 @@
-from django.db.models import F, Q
+from django.db.models import Count, F, Q
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -24,6 +24,7 @@ from .serializers import (
     AnnouncementSerializer,
     CalendarEventSerializer,
     CampusSerializer,
+    CourseListSerializer,
     CourseSerializer,
     DepartmentSerializer,
     DocumentCommentSerializer,
@@ -84,11 +85,32 @@ class PromotionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class CourseViewSet(viewsets.ModelViewSet):
-    queryset = Course.objects.select_related('department').prefetch_related('teachers')
     serializer_class = CourseSerializer
     filterset_fields = ['department', 'semester', 'department__faculty']
     search_fields = ['code', 'title', 'description']
     ordering_fields = ['code', 'title', 'credits', 'created_at']
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return CourseListSerializer
+        return CourseSerializer
+
+    def get_queryset(self):
+        return (
+            Course.objects.select_related(
+                'department',
+                'department__faculty',
+                'department__faculty__university',
+            )
+            .prefetch_related('teachers')
+            .annotate(
+                approved_document_count=Count(
+                    'documents',
+                    filter=Q(documents__is_approved=True),
+                    distinct=True,
+                )
+            )
+        )
 
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):

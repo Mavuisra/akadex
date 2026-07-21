@@ -8,6 +8,7 @@ import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
+import '../../../../domain/models/models.dart';
 import '../../data/learn_domains.dart';
 import '../widgets/course_udemy_card.dart';
 
@@ -19,18 +20,27 @@ class LearnScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final coursesAsync = ref.watch(coursesProvider);
     final me = ref.watch(authStateProvider).valueOrNull;
+    final courses = coursesAsync.valueOrNull ?? const <Course>[];
+    final busy = coursesAsync.isLoading && courses.isEmpty;
+    final failed = coursesAsync.hasError && courses.isEmpty;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
-      body: coursesAsync.when(
-        loading: () => const LearnScreenSkeleton(),
-        error: (e, _) => Center(
+    if (busy) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF0F2F5),
+        body: LearnScreenSkeleton(),
+      );
+    }
+
+    if (failed) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF0F2F5),
+        body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                Text(apiErrorMessage(coursesAsync.error!), textAlign: TextAlign.center),
                 TextButton(
                   onPressed: () => ref.invalidate(coursesProvider),
                   child: const Text('Réessayer'),
@@ -39,18 +49,21 @@ class LearnScreen extends ConsumerWidget {
             ),
           ),
         ),
-        data: (courses) {
-          final counts = <String, int>{
-            for (final d in LearnDomains.all)
-              d.id: courses.where(d.matches).length,
-          };
-          final trending = [
-            ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isNotEmpty),
-            ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isEmpty),
-            ...courses.where((c) => !c.code.startsWith('AKX-')),
-          ].take(8).toList();
+      );
+    }
 
-          return CustomScrollView(
+    final counts = <String, int>{
+      for (final d in LearnDomains.all) d.id: courses.where(d.matches).length,
+    };
+    final trending = [
+      ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isNotEmpty),
+      ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isEmpty),
+      ...courses.where((c) => !c.code.startsWith('AKX-')),
+    ].take(8).toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F2F5),
+      body: CustomScrollView(
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
             ),
@@ -193,9 +206,7 @@ class LearnScreen extends ConsumerWidget {
                   ),
                 ),
             ],
-          );
-        },
-      ),
+          ),
     );
   }
 }

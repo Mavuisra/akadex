@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -32,9 +33,32 @@ final documentProvider =
   return ref.watch(academicRepositoryProvider).fetchDocument(id);
 });
 
-final coursesProvider = FutureProvider<List<Course>>((ref) {
-  return ref.watch(academicRepositoryProvider).fetchCourses();
-});
+/// Catalogue cours : cache local d’abord, puis refresh réseau en arrière-plan.
+class CoursesNotifier extends AsyncNotifier<List<Course>> {
+  @override
+  Future<List<Course>> build() async {
+    final repo = ref.watch(academicRepositoryProvider);
+    final cached = await repo.getCachedCourses();
+    if (cached.isNotEmpty) {
+      unawaited(_refreshInBackground());
+      return cached;
+    }
+    return repo.fetchCourses(preferCache: false);
+  }
+
+  Future<void> _refreshInBackground() async {
+    try {
+      final fresh =
+          await ref.read(academicRepositoryProvider).fetchCourses(preferCache: false);
+      state = AsyncData(fresh);
+    } catch (_) {
+      // Garde le cache affiché.
+    }
+  }
+}
+
+final coursesProvider =
+    AsyncNotifierProvider<CoursesNotifier, List<Course>>(CoursesNotifier.new);
 
 final courseProvider = FutureProvider.family<Course, String>((ref, id) {
   return ref.watch(academicRepositoryProvider).fetchCourse(id);
@@ -321,22 +345,47 @@ class AcademicRepository {
     return documentFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
-  Future<List<Course>> fetchCourses() async {
+  Future<List<Course>> getCachedCourses() => _store.getCourses();
+
+  /// Charge le catalogue cours. Avec [preferCache], renvoie le SQLite s’il
+  /// existe (affichage immédiat) ; sinon pagination réseau avec pages larges.
+  Future<List<Course>> fetchCourses({
+    bool preferCache = true,
+    String? departmentId,
+    String? facultyId,
+  }) async {
+    if (preferCache &&
+        departmentId == null &&
+        facultyId == null) {
+      final local = await _store.getCourses();
+      if (local.isNotEmpty) return local;
+    }
+
     try {
       final all = <Map<String, dynamic>>[];
-      var path = 'courses/?ordering=code';
+      var page = 1;
       while (true) {
-        final res = await _dio.get(path);
+        final res = await _dio.get(
+          'courses/',
+          queryParameters: {
+            'ordering': 'code',
+            'page': page,
+            'page_size': 100,
+            if (departmentId != null && departmentId.isNotEmpty)
+              'department': departmentId,
+            if (facultyId != null && facultyId.isNotEmpty)
+              'department__faculty': facultyId,
+          },
+        );
         all.addAll(unwrapList(res.data));
         final next = res.data is Map ? res.data['next'] : null;
         if (next == null) break;
-        final uri = Uri.parse(next.toString());
-        path = uri.path.contains('/api/')
-            ? next.toString().split('/api/').last
-            : 'courses/?${uri.query}';
-        if (all.length > 2000) break;
+        page++;
+        if (all.length > 2000 || page > 40) break;
       }
-      await _store.upsertCourses(all);
+      if (departmentId == null && facultyId == null) {
+        await _store.upsertCourses(all);
+      }
       return all.map(courseFromJson).toList();
     } catch (_) {
       return _store.getCourses();
