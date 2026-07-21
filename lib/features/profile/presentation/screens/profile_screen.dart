@@ -106,8 +106,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         onTap: () => context.go('/community'),
                       ),
                       _ShortcutTile(
-                        label: 'Bibliothèque',
-                        icon: Icons.menu_book_outlined,
+                        label: 'Ma Fac',
+                        icon: Icons.account_balance_outlined,
                         color: const Color(0xFF42B72A),
                         onTap: () => context.go('/library'),
                       ),

@@ -57,20 +57,46 @@ void main() {
     final labels = bar.items.map((e) => e.label).toList();
     expect(labels, contains('Apprendre'));
     expect(labels, isNot(contains('Explorer')));
+    expect(labels, isNot(contains('Bibliothèque')));
     expect(labels, contains('Accueil'));
-    expect(labels, contains('Bibliothèque'));
+    expect(labels, contains('Ma Fac'));
   });
 
-  testWidgets('LearnScreen affiche le titre Apprendre', (tester) async {
+  testWidgets('LearnScreen affiche les domaines et cours', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AkadexTheme.light(),
-        home: const LearnScreen(),
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          coursesProvider.overrideWith((ref) async => const [
+                Course(
+                  id: '1',
+                  title: 'Algorithmes',
+                  code: 'INFO101',
+                  teacher: 'Mukendi',
+                  teacherTitle: 'Prof.',
+                  teacherFullName: 'David Mukendi',
+                  semester: 'L1',
+                  promotion: 'L1',
+                  credits: 5,
+                  department: 'Informatique',
+                  faculty: 'FASI',
+                ),
+              ]),
+        ],
+        child: MaterialApp(
+          theme: AkadexTheme.light(),
+          home: const LearnScreen(),
+        ),
       ),
     );
     await tester.pump();
-    expect(find.text('Apprendre'), findsOneWidget);
-    expect(find.text('Système LMD'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Cours'), findsWidgets);
+    expect(find.text('Cours populaires'), findsOneWidget);
+    expect(find.text('Informatique'), findsWidgets);
   });
 
   testWidgets('TextPostViewerScreen affiche le contenu', (tester) async {

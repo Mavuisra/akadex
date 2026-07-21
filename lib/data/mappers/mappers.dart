@@ -33,11 +33,14 @@ DocumentType documentTypeFromApi(String? value) {
     'examen' => DocumentType.examen,
     'rapport' => DocumentType.rapport,
     'projet' => DocumentType.projet,
+    'projet_tutore' => DocumentType.projetTutore,
+    'tfc' => DocumentType.tfc,
     'memoire' => DocumentType.memoire,
     'these' => DocumentType.these,
     'article' => DocumentType.article,
     'tutoriel' => DocumentType.tutoriel,
     'fiche_revision' => DocumentType.ficheRevision,
+    'autre' => DocumentType.autre,
     _ => DocumentType.pdf,
   };
 }
@@ -60,11 +63,14 @@ String? documentTypeToApi(DocumentType? type) {
     DocumentType.examen => 'examen',
     DocumentType.rapport => 'rapport',
     DocumentType.projet => 'projet',
+    DocumentType.projetTutore => 'projet_tutore',
+    DocumentType.tfc => 'tfc',
     DocumentType.memoire => 'memoire',
     DocumentType.these => 'these',
     DocumentType.article => 'article',
     DocumentType.tutoriel => 'tutoriel',
     DocumentType.ficheRevision => 'fiche_revision',
+    DocumentType.autre => 'autre',
   };
 }
 
@@ -130,6 +136,7 @@ AcademicDocument documentFromJson(Map<String, dynamic> json) {
     title: (json['title'] ?? '').toString(),
     type: documentTypeFromApi(json['doc_type']?.toString()),
     author: (json['author_name'] ?? '').toString(),
+    authorId: (json['author'] ?? json['author_id'] ?? '').toString(),
     university: (json['university_name'] ?? '').toString(),
     department: (json['department_name'] ?? '').toString(),
     course: (json['course_title'] ?? json['course_code'] ?? '').toString(),
@@ -154,14 +161,40 @@ AcademicDocument documentFromJson(Map<String, dynamic> json) {
   );
 }
 
+String _cleanTeacherName(String raw) {
+  final t = raw.trim();
+  if (t.isEmpty || t == '—' || t == '-' || t.toLowerCase() == 'null') {
+    return '';
+  }
+  return t;
+}
+
 Course courseFromJson(Map<String, dynamic> json) {
   final teachers = (json['teacher_names'] as List?) ?? const [];
+  final fullName = _cleanTeacherName(
+    (json['teacher_full_name'] ?? '').toString(),
+  );
+  final fromList = teachers
+      .map((e) => _cleanTeacherName(e.toString()))
+      .firstWhere((e) => e.isNotEmpty, orElse: () => '');
+  final resolvedName = fullName.isNotEmpty ? fullName : fromList;
   return Course(
     id: json['id'].toString(),
     title: (json['title'] ?? '').toString(),
     code: (json['code'] ?? '').toString(),
-    teacher: teachers.isEmpty ? '—' : teachers.first.toString(),
+    teacher: resolvedName,
+    teacherTitle: (() {
+      final t = _cleanTeacherName((json['teacher_title'] ?? '').toString());
+      return t.isEmpty ? 'Professeur' : t;
+    })(),
+    teacherFullName: resolvedName,
+    teacherHeadline: (json['teacher_headline'] ?? '').toString(),
+    teacherBio: (json['teacher_bio'] ?? '').toString(),
+    teacherSpecialty: (json['teacher_specialty'] ?? '').toString(),
+    teacherAvatarUrl: (json['teacher_avatar_url'] ?? '').toString(),
+    teacherUniversity: (json['teacher_university'] ?? '').toString(),
     semester: (json['semester'] ?? '').toString(),
+    promotion: (json['promotion'] ?? json['semester'] ?? '').toString(),
     credits: asInt(json['credits']),
     department: (json['department_name'] ?? '').toString(),
     description: (json['description'] ?? '').toString(),
@@ -171,6 +204,9 @@ Course courseFromJson(Map<String, dynamic> json) {
     university: (json['university_name'] ?? '').toString(),
     faculty: (json['faculty_name'] ?? '').toString(),
     documentCount: asInt(json['document_count']),
+    coverUrl: (json['cover_url'] ?? '').toString(),
+    levelLabel: (json['level_label'] ?? '').toString(),
+    estimatedHours: asInt(json['estimated_hours']),
   );
 }
 
@@ -239,6 +275,9 @@ CourseModuleItem moduleFromJson(Map<String, dynamic> json) {
         .whereType<Map>()
         .map((e) => lessonFromJson(Map<String, dynamic>.from(e)))
         .toList(),
+    courseId: (json['course_id'] ?? json['course'] ?? '').toString(),
+    courseTitle: (json['course_title'] ?? '').toString(),
+    courseCode: (json['course_code'] ?? '').toString(),
   );
 }
 

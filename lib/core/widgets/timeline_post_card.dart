@@ -13,6 +13,7 @@ import '../../domain/models/models.dart';
 import '../theme/akadex_theme.dart';
 import '../theme/timeline_tokens.dart';
 import 'moderation_chip.dart';
+import 'post_academic_tags.dart';
 import 'post_media_carousel.dart';
 import 'post_viewer_screens.dart';
 import 'status_text_block.dart';
@@ -306,6 +307,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                 ),
               ),
             ],
+            PostAcademicTagsRow(post: _post),
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
               child: Row(
@@ -364,7 +366,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                   ),
                   _Action(
                     icon: Icons.chat_bubble_outline_rounded,
-                    label: 'Commenter',
+                    label: '',
                     onTap: () {
                       final me = ref.read(authStateProvider).valueOrNull;
                       if (me == null) {
@@ -628,6 +630,7 @@ class _Action extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = active ? activeColor : TimelineTokens.action;
+    final iconOnly = label.trim().isEmpty;
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -635,19 +638,21 @@ class _Action extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: TimelineTokens.iconAction, color: color),
-            const SizedBox(width: 5),
-            Flexible(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: TimelineTokens.actionLabelSize,
-                  fontWeight: FontWeight.w600,
-                  color: color,
+            if (!iconOnly) ...[
+              const SizedBox(width: 5),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: TimelineTokens.actionLabelSize,
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

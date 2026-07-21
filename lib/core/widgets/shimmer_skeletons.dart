@@ -214,3 +214,165 @@ class ConversationListSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// Écran Apprendre en chargement (header recherche + cartes shimmer).
+class LearnScreenSkeleton extends StatelessWidget {
+  const LearnScreenSkeleton({super.key, this.cardCount = 3});
+
+  final int cardCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFFF0F2F5),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // Header type feed : avatar · recherche · chat
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+              child: Row(
+                children: [
+                  const SkeletonBone(width: 40, height: 40, radius: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F2F5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.search_rounded,
+                            size: 20,
+                            color: Color(0xFF8A8D91),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Recherche',
+                            style: TextStyle(
+                              color: Color(0xFF8A8D91),
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    onPressed: null,
+                    icon: Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Stories domaines (horizontal)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: AkadexShimmer(
+                child: SizedBox(
+                  height: 108,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: 5,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, _) => const SkeletonBone(
+                      width: 96,
+                      height: 108,
+                      radius: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  Container(
+                    color: Colors.white,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: const AkadexShimmer(
+                      child: SkeletonBone(width: 160, height: 18, radius: 6),
+                    ),
+                  ),
+                  for (var i = 0; i < cardCount; i++)
+                    const _LearnCourseCardSkeleton(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LearnCourseCardSkeleton extends StatelessWidget {
+  const _LearnCourseCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(0, 0, 0, 8),
+      color: Colors.white,
+      padding: const EdgeInsets.all(16),
+      child: const AkadexShimmer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SkeletonBone(width: 40, height: 40, radius: 20),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SkeletonBone(width: 140, height: 12),
+                      SizedBox(height: 8),
+                      SkeletonBone(width: 100, height: 10),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 14),
+            SkeletonBone(width: double.infinity, height: 12),
+            SizedBox(height: 8),
+            SkeletonBone(width: double.infinity, height: 12),
+            SizedBox(height: 8),
+            SkeletonBone(width: 200, height: 12),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                SkeletonBone(width: 22, height: 22, radius: 11),
+                SizedBox(width: 14),
+                SkeletonBone(width: 22, height: 22, radius: 11),
+                SizedBox(width: 14),
+                SkeletonBone(width: 22, height: 22, radius: 11),
+                Spacer(),
+                SkeletonBone(width: 56, height: 10),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

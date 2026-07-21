@@ -214,6 +214,9 @@ class DocumentQuery {
     this.search,
     this.docType,
     this.courseId,
+    this.universityId,
+    this.departmentId,
+    this.facultyId,
     this.featuredOnly = false,
     this.ordering = '-downloads',
   });
@@ -221,6 +224,9 @@ class DocumentQuery {
   final String? search;
   final DocumentType? docType;
   final String? courseId;
+  final String? universityId;
+  final String? departmentId;
+  final String? facultyId;
   final bool featuredOnly;
   final String ordering;
 
@@ -230,12 +236,23 @@ class DocumentQuery {
       other.search == search &&
       other.docType == docType &&
       other.courseId == courseId &&
+      other.universityId == universityId &&
+      other.departmentId == departmentId &&
+      other.facultyId == facultyId &&
       other.featuredOnly == featuredOnly &&
       other.ordering == ordering;
 
   @override
-  int get hashCode =>
-      Object.hash(search, docType, courseId, featuredOnly, ordering);
+  int get hashCode => Object.hash(
+        search,
+        docType,
+        courseId,
+        universityId,
+        departmentId,
+        facultyId,
+        featuredOnly,
+        ordering,
+      );
 }
 
 class AcademicRepository {
@@ -254,6 +271,10 @@ class AcademicRepository {
           if (query.docType != null)
             'doc_type': documentTypeToApi(query.docType),
           'course': ?query.courseId,
+          'university': ?query.universityId,
+          'department': ?query.departmentId,
+          if (query.facultyId != null && query.facultyId!.isNotEmpty)
+            'department__faculty': query.facultyId,
           if (query.featuredOnly) 'is_featured': true,
           'ordering': query.ordering,
         },
@@ -368,6 +389,16 @@ class AcademicRepository {
   Future<CourseModuleItem> createModule(Map<String, dynamic> data) async {
     final res = await _dio.post('course-modules/', data: data);
     return moduleFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  Future<List<CourseModuleItem>> searchModules(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return const [];
+    final res = await _dio.get(
+      'course-modules/',
+      queryParameters: {'search': q},
+    );
+    return unwrapList(res.data).map(moduleFromJson).toList();
   }
 
   Future<void> saveLessonProgress(

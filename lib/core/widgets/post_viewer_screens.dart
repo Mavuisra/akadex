@@ -227,14 +227,10 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                         ),
                       ),
                       Expanded(
-                        child: TextButton.icon(
+                        child: IconButton(
                           onPressed: () {},
                           icon: const Icon(Icons.chat_bubble_outline,
                               color: TimelineTokens.action),
-                          label: const Text('Commenter',
-                              style: TextStyle(
-                                  color: TimelineTokens.action,
-                                  fontWeight: FontWeight.w700)),
                         ),
                       ),
                       Expanded(
@@ -397,6 +393,8 @@ class MediaPostViewerScreen extends ConsumerStatefulWidget {
 
 class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
   late CommunityPost _post;
+  final _comment = TextEditingController();
+  bool _sending = false;
 
   @override
   void initState() {
@@ -405,7 +403,237 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
   }
 
   @override
+  void dispose() {
+    _comment.dispose();
+    super.dispose();
+  }
+
+  Future<void> _like() async {
+    final me = ref.read(authStateProvider).valueOrNull;
+    if (me == null) {
+      context.push('/login');
+      return;
+    }
+    try {
+      final updated =
+          await ref.read(communityRepositoryProvider).likePost(_post.id);
+      if (mounted) setState(() => _post = updated);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendComment() async {
+    final text = _comment.text.trim();
+    if (text.isEmpty || _sending) return;
+    final me = ref.read(authStateProvider).valueOrNull;
+    if (me == null) {
+      context.push('/login');
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      await ref.read(communityRepositoryProvider).commentPost(_post.id, text);
+      _comment.clear();
+      ref.invalidate(postCommentsProvider(_post.id));
+      setState(() => _post = _post.copyWith(comments: _post.comments + 1));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorMessage(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _openComments() {
+    final me = ref.read(authStateProvider).valueOrNull;
+    if (me == null) {
+      context.push('/login');
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(ctx).bottom,
+          ),
+          child: SizedBox(
+            height: MediaQuery.sizeOf(ctx).height * 0.72,
+            child: Column(
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCED0D4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Commentaires',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final commentsAsync =
+                          ref.watch(postCommentsProvider(_post.id));
+                      return commentsAsync.when(
+                        loading: () => const Center(
+                          child: CupertinoActivityIndicator(),
+                        ),
+                        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+                        data: (list) {
+                          if (list.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'Aucun commentaire pour l’instant.',
+                                style: TextStyle(color: TimelineTokens.meta),
+                              ),
+                            );
+                          }
+                          return ListView.builder(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: list.length,
+                            itemBuilder: (_, i) {
+                              final c = list[i];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: AkadexColors.primarySoft,
+                                      child: Text(
+                                        c.author.isEmpty
+                                            ? '?'
+                                            : c.author[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          color: AkadexColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: TimelineTokens.commentBubble,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              c.author,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(c.content),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _comment,
+                            decoration: InputDecoration(
+                              hintText: 'Écrire un commentaire…',
+                              filled: true,
+                              fillColor: const Color(0xFFF0F2F5),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                borderSide: BorderSide.none,
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 10,
+                              ),
+                            ),
+                            onSubmitted: (_) => _sendComment(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filled(
+                          onPressed: _sending ? null : _sendComment,
+                          style: IconButton.styleFrom(
+                            backgroundColor: TimelineTokens.likeActive,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: _sending
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.send_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final avatar = _post.authorAvatarUrl;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -480,45 +708,131 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _post.author,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${timeAgo(_post.createdAt)} · Public',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AkadexColors.primarySoft,
+                          backgroundImage: avatar.isNotEmpty
+                              ? CachedNetworkImageProvider(avatar)
+                              : null,
+                          child: avatar.isEmpty
+                              ? Text(
+                                  _post.author.isEmpty
+                                      ? '?'
+                                      : _post.author[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    color: AkadexColors.primary,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _post.author,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '${timeAgo(_post.createdAt)} · Public',
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     if (_post.content.trim().isNotEmpty) ...[
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Text(
                         _post.content,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: Colors.white, height: 1.35),
+                        style:
+                            const TextStyle(color: Colors.white, height: 1.35),
                       ),
                     ],
                     const SizedBox(height: 14),
                     Row(
                       children: [
-                        const Icon(Icons.thumb_up,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 6),
-                        Text('${_post.likes}',
-                            style: const TextStyle(color: Colors.white)),
-                        const SizedBox(width: 20),
-                        const Icon(Icons.chat_bubble_outline,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 6),
-                        Text('${_post.comments}',
-                            style: const TextStyle(color: Colors.white)),
-                        const SizedBox(width: 20),
-                        const Icon(Icons.share_outlined,
-                            color: Colors.white, size: 20),
+                        InkWell(
+                          onTap: _like,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _post.isLiked
+                                      ? Icons.thumb_up
+                                      : Icons.thumb_up_outlined,
+                                  color: _post.isLiked
+                                      ? TimelineTokens.likeActive
+                                      : Colors.white,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${_post.likes}',
+                                  style: TextStyle(
+                                    color: _post.isLiked
+                                        ? TimelineTokens.likeActive
+                                        : Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        InkWell(
+                          onTap: _openComments,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.chat_bubble_outline,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${_post.comments}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 18),
+                        const Icon(
+                          Icons.share_outlined,
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ],
                     ),
                   ],
@@ -531,3 +845,4 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
     );
   }
 }
+

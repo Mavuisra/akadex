@@ -45,6 +45,7 @@ class CourseModuleViewSet(viewsets.ModelViewSet):
     serializer_class = CourseModuleSerializer
     permission_classes = [IsTeacherOrReadOnly]
     filterset_fields = ['course']
+    search_fields = ['title', 'description', 'course__title', 'course__code']
 
     def get_queryset(self):
         return CourseModule.objects.prefetch_related('lessons').select_related('course')

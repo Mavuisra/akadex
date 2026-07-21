@@ -390,11 +390,15 @@ class _FacebookProfileHeader extends StatelessWidget {
                     : null,
               ),
             ),
+            // Avatar à cheval : moitié sur la cover, moitié sur le blanc.
+            // Diamètre ≈ 104 + anneau 7 → half ≈ 55.5 → bottom -56.
             Positioned(
               left: 16,
-              bottom: -44,
+              bottom: -56,
               child: Container(
-                padding: const EdgeInsets.all(3.5),
+                width: 112,
+                height: 112,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: Colors.white,
                   shape: BoxShape.circle,
@@ -404,7 +408,7 @@ class _FacebookProfileHeader extends StatelessWidget {
                   ),
                 ),
                 child: CircleAvatar(
-                  radius: 52,
+                  radius: 50,
                   backgroundColor: AkadexColors.primarySoft,
                   backgroundImage: avatar != null && avatar.isNotEmpty
                       ? CachedNetworkImageProvider(avatar)
@@ -438,7 +442,7 @@ class _FacebookProfileHeader extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 52),
+        const SizedBox(height: 64),
       ],
     );
   }

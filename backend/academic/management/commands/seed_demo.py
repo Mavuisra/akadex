@@ -1120,6 +1120,13 @@ class Command(BaseCommand):
             alumni_esther=alumni_esther,
         )
 
+        # 6 cours vitrine (YouTube + enseignants pro)
+        from academic.management.commands.seed_flagship_courses import FLAGSHIP, _seed_course
+
+        self.stdout.write('Cours vitrine Akadex…')
+        for spec in FLAGSHIP:
+            _seed_course(spec, self.stdout)
+
         self.stdout.write(self.style.SUCCESS('Catalogue RDC + démo chargés.'))
         self.stdout.write(
             f'Universités={University.objects.filter(is_active=True).count()} '

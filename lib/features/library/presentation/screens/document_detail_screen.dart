@@ -4,12 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
-import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/document_type.dart';
 
+/// Détail document — style feed Facebook (pas de hero bleu).
 class DocumentDetailScreen extends ConsumerWidget {
   const DocumentDetailScreen({super.key, required this.documentId});
 
@@ -21,10 +22,13 @@ class DocumentDetailScreen extends ConsumerWidget {
 
     return docAsync.when(
       loading: () => const Scaffold(
+        backgroundColor: TimelineTokens.feedBg,
         body: Center(child: CupertinoActivityIndicator()),
       ),
       error: (e, _) => Scaffold(
+        backgroundColor: TimelineTokens.feedBg,
         appBar: AppBar(
+          backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () => context.pop(),
             icon: const Icon(Icons.arrow_back_rounded),
@@ -33,142 +37,163 @@ class DocumentDetailScreen extends ConsumerWidget {
         body: Center(child: Text(apiErrorMessage(e))),
       ),
       data: (doc) => Scaffold(
-        backgroundColor: AkadexColors.background,
-        body: Column(
+        backgroundColor: TimelineTokens.feedBg,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          leading: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.arrow_back_rounded),
+          ),
+          title: const Text(
+            'Publication',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        body: ListView(
           children: [
             Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(8, 0, 8, 32),
-              decoration: const BoxDecoration(
-                color: AkadexColors.primary,
-                borderRadius:
-                    BorderRadius.vertical(bottom: Radius.circular(24)),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back_rounded,
-                          color: Colors.white),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          DocTypeTag(doc.type.label),
-                          const SizedBox(height: 10),
-                          Text(
-                            doc.title,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${doc.author} · ${doc.year} · ${doc.sizeLabel}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.85),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SoftCard(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _Metric(
-                          label: 'Téléch.',
-                          value: formatCount(doc.downloads),
-                        ),
-                        _Metric(
-                          label: 'Vues',
-                          value: formatCount(doc.views),
-                        ),
-                        _Metric(
-                          label: 'Favoris',
-                          value: formatCount(doc.favorites),
-                        ),
-                        _Metric(
-                          label: 'Note',
-                          value: doc.rating.toStringAsFixed(1),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  SoftCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'À propos',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          doc.description.isEmpty
-                              ? 'Pas de description.'
-                              : doc.description,
-                          style: const TextStyle(
-                            color: AkadexColors.inkMuted,
-                            height: 1.45,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '${doc.university} · ${doc.department}',
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                        if (doc.course.isNotEmpty)
-                          Text(
-                            'Cours : ${doc.course}',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AkadexColors.inkMuted,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  FilledButton.icon(
-                    onPressed: () async {
-                      try {
-                        await ref
-                            .read(academicRepositoryProvider)
-                            .downloadDocument(documentId);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Téléchargement enregistré.'),
-                            ),
-                          );
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(apiErrorMessage(e))),
-                          );
-                        }
-                      }
+                  GestureDetector(
+                    onTap: () {
+                      if (doc.authorId.isEmpty) return;
+                      context.push('/alumni/profile/${doc.authorId}');
                     },
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Télécharger'),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AkadexColors.primarySoft,
+                          child: Text(
+                            doc.author.isEmpty
+                                ? '?'
+                                : doc.author.characters.first.toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AkadexColors.primary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                doc.author.isEmpty ? 'Auteur' : doc.author,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: Color(0xFF050505),
+                                ),
+                              ),
+                              Text(
+                                doc.type.label,
+                                style: const TextStyle(
+                                  color: TimelineTokens.meta,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: TimelineTokens.meta,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    doc.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      color: Color(0xFF050505),
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    doc.description.isEmpty
+                        ? 'Pas de description.'
+                        : doc.description,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      height: 1.4,
+                      color: Color(0xFF050505),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    [
+                      if (doc.university.isNotEmpty) doc.university,
+                      if (doc.department.isNotEmpty) doc.department,
+                      if (doc.course.isNotEmpty) doc.course,
+                      if (doc.year.isNotEmpty) doc.year,
+                    ].join(' · '),
+                    style: const TextStyle(
+                      color: TimelineTokens.meta,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${formatCount(doc.downloads)} téléch. · '
+                    '${formatCount(doc.views)} vues · '
+                    '${doc.sizeLabel}',
+                    style: const TextStyle(
+                      color: TimelineTokens.meta,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(height: 1, color: TimelineTokens.divider),
+                  SizedBox(
+                    height: TimelineTokens.actionHeight,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextButton.icon(
+                            onPressed: () async {
+                              try {
+                                await ref
+                                    .read(academicRepositoryProvider)
+                                    .downloadDocument(documentId);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Téléchargement enregistré.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(apiErrorMessage(e)),
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.download_outlined),
+                            label: const Text('Télécharger'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: TimelineTokens.likeActive,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -176,29 +201,6 @@ class DocumentDetailScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  const _Metric({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-        ),
-        Text(
-          label,
-          style: const TextStyle(color: AkadexColors.inkMuted, fontSize: 12),
-        ),
-      ],
     );
   }
 }

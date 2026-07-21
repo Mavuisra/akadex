@@ -7,7 +7,7 @@ import '../../core/theme/akadex_theme.dart';
 import '../../core/widgets/living_ui.dart';
 
 /// Navigation campus verrouillée pour tous :
-/// Accueil · Apprendre · Bibliothèque · Communauté · Alumni · Profil
+/// Accueil · Apprendre · Ma Fac · Communauté · Alumni · Profil
 class StudentShell extends StatelessWidget {
   const StudentShell({super.key, required this.navigationShell});
 
@@ -55,14 +55,14 @@ class StudentShell extends StatelessWidget {
                 label: 'Accueil',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.lightbulb),
-                activeIcon: Icon(CupertinoIcons.lightbulb_fill),
+                icon: Icon(CupertinoIcons.play_rectangle),
+                activeIcon: Icon(CupertinoIcons.play_rectangle_fill),
                 label: 'Apprendre',
               ),
               BottomNavigationBarItem(
-                icon: Icon(CupertinoIcons.book),
-                activeIcon: Icon(CupertinoIcons.book_fill),
-                label: 'Bibliothèque',
+                icon: Icon(Icons.account_balance_outlined),
+                activeIcon: Icon(Icons.account_balance),
+                label: 'Ma Fac',
               ),
               BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.chat_bubble_2),

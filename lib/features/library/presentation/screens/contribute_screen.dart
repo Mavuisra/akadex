@@ -7,6 +7,7 @@ import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
+import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/document_type.dart';
 
@@ -29,11 +30,16 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
   String? _error;
 
   static const _types = <(DocumentType, String)>[
-    (DocumentType.corrige, 'TP corrigé'),
+    (DocumentType.corrige, 'Examen / TP corrigé'),
     (DocumentType.tp, 'TD / TP'),
     (DocumentType.examen, 'Examen'),
     (DocumentType.resume, 'Résumé de cours'),
     (DocumentType.supportCours, 'PDF de cours'),
+    (DocumentType.tfc, 'TFC'),
+    (DocumentType.projetTutore, 'Projet tuteuré'),
+    (DocumentType.memoire, 'Mémoire'),
+    (DocumentType.projet, 'Projet'),
+    (DocumentType.autre, 'Autre travail académique'),
     (DocumentType.pdf, 'Document gratuit'),
     (DocumentType.lien, 'Ressource libre'),
     (DocumentType.ficheRevision, 'Fiche de révision'),
@@ -81,17 +87,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
       await ref.read(academicRepositoryProvider).createDocument({
         'title': _title.text.trim(),
         'description': _description.text.trim(),
-        'doc_type': switch (_type) {
-          DocumentType.supportCours => 'support_cours',
-          DocumentType.resume => 'resume',
-          DocumentType.pdf => 'pdf',
-          DocumentType.tp => 'tp',
-          DocumentType.corrige => 'corrige',
-          DocumentType.examen => 'examen',
-          DocumentType.lien => 'lien',
-          DocumentType.ficheRevision => 'fiche_revision',
-          _ => 'pdf',
-        },
+        'doc_type': documentTypeToApi(_type) ?? 'pdf',
         'university': int.tryParse(user.universityId) ?? user.universityId,
         if (user.departmentId.isNotEmpty)
           'department':

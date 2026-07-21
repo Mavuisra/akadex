@@ -28,6 +28,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _promoLabel;
   String? _tagLabel;
   String? _yearLabel;
+  String? _lastPersonalizedUserId;
+  bool _forYouMode = true;
 
   static const _kinds = <(String, String)>[
     ('all', 'Pour toi'),
@@ -58,11 +60,61 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   static const _years = ['2026', '2025', '2024', '2023'];
 
+  /// Applique fac / département / promotion de l’utilisateur connecté.
+  void _applyUserAcademicScope(UserProfile? me, {String? kind}) {
+    final keepKind = kind ?? (_forYouMode ? null : _query.kind);
+    if (me == null) {
+      _query = TimelineQuery(kind: keepKind);
+      _uniLabel = null;
+      _facLabel = null;
+      _deptLabel = null;
+      _promoLabel = null;
+      _lastPersonalizedUserId = null;
+      return;
+    }
+
+    final uniId = me.universityId.trim();
+    final facId = me.facultyId.trim();
+    final deptId = me.departmentId.trim();
+    final promoId = me.promotionId.trim();
+
+    _query = TimelineQuery(
+      kind: keepKind,
+      universityId: uniId.isEmpty ? null : uniId,
+      facultyId: facId.isEmpty ? null : facId,
+      departmentId: deptId.isEmpty ? null : deptId,
+      promotionId: promoId.isEmpty ? null : promoId,
+      tag: _query.tag,
+      year: _query.year,
+    );
+    _uniLabel = me.university.trim().isEmpty ? null : me.university.trim();
+    _facLabel = me.faculty.trim().isEmpty ? null : me.faculty.trim();
+    _deptLabel = me.department.trim().isEmpty ? null : me.department.trim();
+    _promoLabel = () {
+      final p = me.promotion.trim();
+      final lvl = me.level.trim();
+      if (p.isEmpty && lvl.isEmpty) return null;
+      if (p.isEmpty) return lvl;
+      if (lvl.isEmpty || p.toLowerCase().contains(lvl.toLowerCase())) return p;
+      return '$p ($lvl)';
+    }();
+    _lastPersonalizedUserId = me.id;
+  }
+
   @override
   Widget build(BuildContext context) {
     final me = ref.watch(authStateProvider).valueOrNull;
+
+    // Personnalise « Pour toi » dès que le profil est dispo / change.
+    if (_forYouMode && me?.id != _lastPersonalizedUserId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _applyUserAcademicScope(me));
+      });
+    }
+
     final postsAsync = ref.watch(timelinePostsProvider(_query));
-    final kindSelected = _query.kind ?? 'all';
+    final kindSelected = _forYouMode ? 'all' : (_query.kind ?? 'all');
 
     return Scaffold(
       backgroundColor: TimelineTokens.feedBg,
@@ -76,9 +128,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               selected: kindSelected,
               onSelected: (v) {
                 setState(() {
-                  _query = v == 'all'
-                      ? _query.copyWith(clearKind: true)
-                      : _query.copyWith(kind: v);
+                  if (v == 'all') {
+                    _forYouMode = true;
+                    _applyUserAcademicScope(me);
+                  } else {
+                    _forYouMode = false;
+                    // Garde le cadre académique de l’étudiant, change seulement le type.
+                    _applyUserAcademicScope(me, kind: v);
+                  }
                 });
               },
             ),
@@ -118,15 +175,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }),
               ),
               onClear: () => setState(() {
-                _query = TimelineQuery(
-                  kind: _query.kind,
-                );
-                _uniLabel = null;
-                _facLabel = null;
-                _deptLabel = null;
-                _promoLabel = null;
                 _tagLabel = null;
                 _yearLabel = null;
+                if (_forYouMode) {
+                  // Repart sur le parcours de l’utilisateur connecté.
+                  _applyUserAcademicScope(me);
+                } else {
+                  final kind = _query.kind;
+                  _query = TimelineQuery(kind: kind);
+                  _uniLabel = null;
+                  _facLabel = null;
+                  _deptLabel = null;
+                  _promoLabel = null;
+                }
               }),
             ),
             Expanded(
@@ -180,15 +241,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       data: (posts) {
                         if (posts.isEmpty) {
-                          return const SliverFillRemaining(
+                          final scopeHint = [
+                            ?_facLabel,
+                            ?_deptLabel,
+                            ?_promoLabel,
+                          ].join(' · ');
+                          return SliverFillRemaining(
                             hasScrollBody: false,
                             child: Center(
                               child: Padding(
-                                padding: EdgeInsets.all(28),
+                                padding: const EdgeInsets.all(28),
                                 child: Text(
-                                  'Aucune publication pour ces filtres.\nPartage un TP, un résumé ou un examen corrigé.',
+                                  _forYouMode && scopeHint.isNotEmpty
+                                      ? 'Aucune ressource pour ton parcours.\n$scopeHint\n\nPartage un TP, un résumé ou un examen corrigé.'
+                                      : 'Aucune publication pour ces filtres.\nPartage un TP, un résumé ou un examen corrigé.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     color: AkadexColors.inkMuted,
                                     height: 1.4,
                                   ),
@@ -495,16 +563,16 @@ class _KindFilterBar extends StatelessWidget {
             label: Text(f.$2),
             selected: active,
             onSelected: (_) => onSelected(f.$1),
-            selectedColor: const Color(0xFFE7F3FF),
-            checkmarkColor: TimelineTokens.likeActive,
+            selectedColor: AkadexColors.primarySoft,
+            checkmarkColor: AkadexColors.primary,
             labelStyle: TextStyle(
-              color: active ? TimelineTokens.likeActive : const Color(0xFF050505),
+              color: active ? AkadexColors.primary : const Color(0xFF050505),
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
             backgroundColor: TimelineTokens.feedBg,
             side: BorderSide(
-              color: active ? TimelineTokens.likeActive : Colors.transparent,
+              color: active ? AkadexColors.primary : Colors.transparent,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
@@ -585,17 +653,17 @@ class _AcademicFilterBar extends StatelessWidget {
                   label: Text(c.$1),
                   onPressed: c.$2,
                   backgroundColor:
-                      c.$3 ? const Color(0xFFE7F3FF) : TimelineTokens.feedBg,
+                      c.$3 ? AkadexColors.primarySoft : TimelineTokens.feedBg,
                   labelStyle: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: c.$3
-                        ? TimelineTokens.likeActive
+                        ? AkadexColors.primary
                         : const Color(0xFF050505),
                   ),
                   side: BorderSide(
                     color: c.$3
-                        ? TimelineTokens.likeActive
+                        ? AkadexColors.primary
                         : const Color(0xFFCED0D4),
                   ),
                   shape: RoundedRectangleBorder(

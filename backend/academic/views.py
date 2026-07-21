@@ -102,6 +102,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         'doc_type',
         'university',
         'department',
+        'department__faculty',
         'course',
         'academic_year',
         'is_featured',

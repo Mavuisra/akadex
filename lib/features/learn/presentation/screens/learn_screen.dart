@@ -1,161 +1,200 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
-import '../../../../core/widgets/living_ui.dart';
-import '../../../lmd/data/lmd_knowledge.dart';
+import '../../../../core/theme/timeline_tokens.dart';
+import '../../../../core/widgets/shimmer_skeletons.dart';
+import '../../../../data/api/api_client.dart';
+import '../../../../data/auth/auth_repository.dart';
+import '../../../../data/repositories/repositories.dart';
+import '../../data/learn_domains.dart';
+import '../widgets/course_udemy_card.dart';
 
-/// Onglet « Apprendre » — guide LMD (fixe pour tous les utilisateurs).
-class LearnScreen extends StatelessWidget {
+/// Onglet Apprendre : stories domaines + aperçu cours (style Facebook / Udemy).
+class LearnScreen extends ConsumerWidget {
   const LearnScreen({super.key});
 
-  IconData _icon(String name) => switch (name) {
-        'flag' => Icons.flag_outlined,
-        'layers' => Icons.layers_outlined,
-        'calendar' => Icons.calendar_view_month_outlined,
-        'credit' => Icons.toll_outlined,
-        'blocks' => Icons.view_module_outlined,
-        'compare' => Icons.compare_arrows_rounded,
-        'student' => Icons.person_outline_rounded,
-        'school' => Icons.school_outlined,
-        _ => Icons.school_outlined,
-      };
-
   @override
-  Widget build(BuildContext context) {
-    final sections = LmdKnowledge.sections;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coursesAsync = ref.watch(coursesProvider);
+    final me = ref.watch(authStateProvider).valueOrNull;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: PageAtmosphere(
-        intensity: 0.85,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              automaticallyImplyLeading: false,
-              backgroundColor: AkadexColors.background.withValues(alpha: 0.92),
-              title: const Text(
-                'Apprendre',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              actions: [
-                TextButton.icon(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    context.push('/lmd/assistant');
-                  },
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text('Assistant'),
+      backgroundColor: const Color(0xFFF0F2F5),
+      body: coursesAsync.when(
+        loading: () => const LearnScreenSkeleton(),
+        error: (e, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(apiErrorMessage(e), textAlign: TextAlign.center),
+                TextButton(
+                  onPressed: () => ref.invalidate(coursesProvider),
+                  child: const Text('Réessayer'),
                 ),
               ],
             ),
-            const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Système LMD',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    SizedBox(height: 6),
-                    Text(
-                      'Comprendre Licence · Master · Doctorat et naviguer ton parcours.',
-                      style: TextStyle(
-                        color: AkadexColors.inkMuted,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          ),
+        ),
+        data: (courses) {
+          final counts = <String, int>{
+            for (final d in LearnDomains.all)
+              d.id: courses.where(d.matches).length,
+          };
+          final trending = [
+            ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isNotEmpty),
+            ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isEmpty),
+            ...courses.where((c) => !c.code.startsWith('AKX-')),
+          ].take(8).toList();
+
+          return CustomScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: FilledButton.tonalIcon(
-                  onPressed: () => context.go('/library'),
-                  icon: const Icon(Icons.menu_book_outlined),
-                  label: const Text('Voir les cours'),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                automaticallyImplyLeading: false,
+                backgroundColor: Colors.white,
+                surfaceTintColor: Colors.transparent,
+                title: const Text(
+                  'Cours',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF050505),
+                  ),
                 ),
+                actions: [
+                  IconButton(
+                    onPressed: () => context.push('/lmd/assistant'),
+                    icon: const Icon(Icons.chat_bubble_outline_rounded),
+                  ),
+                ],
               ),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-              sliver: SliverList.separated(
-                itemCount: sections.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 10),
-                itemBuilder: (context, i) {
-                  final s = sections[i];
-                  return Material(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () => context.push('/lmd'),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: AkadexColors.primarySoft,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                _icon(s.iconName),
-                                color: AkadexColors.primary,
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AkadexColors.primarySoft,
+                        backgroundImage: me?.avatarUrl != null &&
+                                me!.avatarUrl!.isNotEmpty
+                            ? NetworkImage(me.avatarUrl!)
+                            : null,
+                        child: me?.avatarUrl == null || me!.avatarUrl!.isEmpty
+                            ? Text(
+                                (me?.name.isNotEmpty == true
+                                        ? me!.name[0]
+                                        : '?')
+                                    .toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: AkadexColors.primary,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => context.push('/learn/search'),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF0F2F5),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: const Text(
+                              'Rechercher un cours, module ou domaine…',
+                              style: TextStyle(
+                                color: Color(0xFF65676B),
+                                fontSize: 15,
                               ),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    s.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    s.body,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      color: AkadexColors.inkMuted,
-                                      fontSize: 13,
-                                      height: 1.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right_rounded),
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                      const SizedBox(width: 10),
+                      Column(
+                        children: [
+                          Icon(Icons.menu_book_outlined,
+                              color: Colors.green.shade700, size: 22),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Cours',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
-        ),
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: DomainStoriesRow(
+                    domains: LearnDomains.all,
+                    courseCounts: counts,
+                    onTap: (domain) {
+                      context.push('/learn/domain/${domain.id}');
+                    },
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: const Text(
+                    'Cours populaires',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF2D2F31),
+                    ),
+                  ),
+                ),
+              ),
+              if (trending.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Aucun cours disponible pour le moment.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: TimelineTokens.meta),
+                    ),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  sliver: SliverList.separated(
+                    itemCount: trending.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (_, i) => CourseUdemyCard(course: trending[i]),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

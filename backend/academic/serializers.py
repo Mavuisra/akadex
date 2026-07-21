@@ -17,6 +17,72 @@ from .models import (
 )
 
 
+def _first_teacher(course):
+    return course.teachers.all().first()
+
+
+def teacher_title_of(course):
+    t = _first_teacher(course)
+    if t is None:
+        return 'Professeur'
+    raw = (t.headline or '').strip()
+    known = (
+        'Professeur',
+        'Professeure',
+        'Docteur',
+        'Docteure',
+        'Maître de conférences',
+        'Maitre de conferences',
+        'Chargé de cours',
+        'Charge de cours',
+        'Dr.',
+        'Prof.',
+    )
+    for k in known:
+        if raw.lower().startswith(k.lower()):
+            return k if k not in ('Dr.', 'Prof.') else (
+                'Docteur' if k == 'Dr.' else 'Professeur'
+            )
+    if raw:
+        # headline = titre académique complet
+        return raw.split(',')[0].split('—')[0].split('-')[0].strip() or 'Professeur'
+    if getattr(t, 'gender', '') == 'F':
+        return 'Professeure'
+    return 'Professeur'
+
+
+def teacher_payload(course):
+    t = _first_teacher(course)
+    if t is None:
+        return {
+            'teacher_title': 'Professeur',
+            'teacher_full_name': '',
+            'teacher_headline': '',
+            'teacher_bio': '',
+            'teacher_specialty': '',
+            'teacher_avatar_url': '',
+            'teacher_university': '',
+        }
+    photo = (getattr(t, 'photo_url', '') or '').strip()
+    if not photo and t.avatar:
+        try:
+            photo = t.avatar.url
+        except Exception:
+            photo = ''
+    uni = ''
+    if t.university_id:
+        uni = t.university.name
+    return {
+        'teacher_title': teacher_title_of(course),
+        'teacher_full_name': t.get_full_name() or t.email,
+        'teacher_headline': (t.headline or '').strip(),
+        'teacher_bio': (t.bio or '').strip(),
+        'teacher_specialty': (t.professional_domain or '').strip(),
+        'teacher_avatar_url': photo,
+        'teacher_university': uni,
+    }
+
+
 class UniversitySerializer(serializers.ModelSerializer):
     class Meta:
         model = University
@@ -95,8 +161,26 @@ class PromotionSerializer(serializers.ModelSerializer):
 
 class CourseSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source='department.name', read_only=True)
+    faculty_name = serializers.CharField(
+        source='department.faculty.name',
+        read_only=True,
+        default='',
+    )
+    university_name = serializers.CharField(
+        source='department.faculty.university.name',
+        read_only=True,
+        default='',
+    )
     document_count = serializers.IntegerField(read_only=True)
     teacher_names = serializers.SerializerMethodField()
+    teacher_title = serializers.SerializerMethodField()
+    teacher_full_name = serializers.SerializerMethodField()
+    teacher_headline = serializers.SerializerMethodField()
+    teacher_bio = serializers.SerializerMethodField()
+    teacher_specialty = serializers.SerializerMethodField()
+    teacher_avatar_url = serializers.SerializerMethodField()
+    teacher_university = serializers.SerializerMethodField()
+    promotion = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -104,6 +188,8 @@ class CourseSerializer(serializers.ModelSerializer):
             'id',
             'department',
             'department_name',
+            'faculty_name',
+            'university_name',
             'code',
             'title',
             'description',
@@ -113,8 +199,19 @@ class CourseSerializer(serializers.ModelSerializer):
             'bibliography',
             'credits',
             'semester',
+            'promotion',
+            'cover_url',
+            'level_label',
+            'estimated_hours',
             'teachers',
             'teacher_names',
+            'teacher_title',
+            'teacher_full_name',
+            'teacher_headline',
+            'teacher_bio',
+            'teacher_specialty',
+            'teacher_avatar_url',
+            'teacher_university',
             'document_count',
             'created_at',
         ]
@@ -122,6 +219,42 @@ class CourseSerializer(serializers.ModelSerializer):
 
     def get_teacher_names(self, obj):
         return [u.get_full_name() or u.email for u in obj.teachers.all()]
+
+    def get_teacher_title(self, obj):
+        return teacher_payload(obj)['teacher_title']
+
+    def get_teacher_full_name(self, obj):
+        return teacher_payload(obj)['teacher_full_name']
+
+    def get_teacher_headline(self, obj):
+        return teacher_payload(obj)['teacher_headline']
+
+    def get_teacher_bio(self, obj):
+        return teacher_payload(obj)['teacher_bio']
+
+    def get_teacher_specialty(self, obj):
+        return teacher_payload(obj)['teacher_specialty']
+
+    def get_teacher_avatar_url(self, obj):
+        return teacher_payload(obj)['teacher_avatar_url']
+
+    def get_teacher_university(self, obj):
+        return teacher_payload(obj)['teacher_university']
+
+    def get_promotion(self, obj):
+        s = (obj.semester or '').strip()
+        if not s:
+            return ''
+        mapping = {
+            'L1': 'L1',
+            'L2': 'L2',
+            'L3': 'L3',
+            'Master 1': 'M1',
+            'Master 2': 'M2',
+            'M1': 'M1',
+            'M2': 'M2',
+        }
+        return mapping.get(s, s)
 
 
 class DocumentCommentSerializer(serializers.ModelSerializer):

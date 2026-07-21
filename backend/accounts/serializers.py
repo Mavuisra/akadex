@@ -105,6 +105,8 @@ class UserSerializer(serializers.ModelSerializer):
         return url
 
     def get_avatar(self, obj):
+        if getattr(obj, 'photo_url', None):
+            return obj.photo_url
         return self._abs_media(obj.avatar)
 
     def get_cover(self, obj):

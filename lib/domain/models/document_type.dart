@@ -14,11 +14,14 @@ enum DocumentType {
   examen,
   rapport,
   projet,
+  projetTutore,
+  tfc,
   memoire,
   these,
   article,
   tutoriel,
   ficheRevision,
+  autre,
 }
 
 extension DocumentTypeX on DocumentType {
@@ -38,10 +41,13 @@ extension DocumentTypeX on DocumentType {
         DocumentType.examen => 'Examen',
         DocumentType.rapport => 'Rapport',
         DocumentType.projet => 'Projet',
+        DocumentType.projetTutore => 'Projet tuteuré',
+        DocumentType.tfc => 'TFC',
         DocumentType.memoire => 'Mémoire',
         DocumentType.these => 'Thèse',
         DocumentType.article => 'Article',
         DocumentType.tutoriel => 'Tutoriel',
         DocumentType.ficheRevision => 'Fiche de révision',
+        DocumentType.autre => 'Autre travail',
       };
 }

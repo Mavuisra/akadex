@@ -136,6 +136,20 @@ class Course(models.Model):
         blank=True,
         help_text='Cycle universitaire RDC : L1, L2, L3, Master 1, Master 2',
     )
+    cover_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text='Image de couverture (URL publique)',
+    )
+    level_label = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text='Débutant / Intermédiaire / Avancé',
+    )
+    estimated_hours = models.PositiveSmallIntegerField(
+        default=0,
+        help_text='Durée estimée en heures',
+    )
     teachers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
@@ -171,11 +185,14 @@ class DocumentType(models.TextChoices):
     EXAMEN = 'examen', 'Examen'
     RAPPORT = 'rapport', 'Rapport'
     PROJET = 'projet', 'Projet'
+    PROJET_TUTORE = 'projet_tutore', 'Projet tuteuré'
+    TFC = 'tfc', 'Travail de Fin de Cycle'
     MEMOIRE = 'memoire', 'Mémoire'
     THESE = 'these', 'Thèse'
     ARTICLE = 'article', 'Article scientifique'
     TUTORIEL = 'tutoriel', 'Tutoriel'
     FICHE_REVISION = 'fiche_revision', 'Fiche de révision'
+    AUTRE = 'autre', 'Autre travail académique'
 
 
 class Document(models.Model):

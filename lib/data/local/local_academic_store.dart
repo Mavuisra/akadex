@@ -179,7 +179,7 @@ class LocalAcademicStore {
           'id': c['id'].toString(),
           'code': (c['code'] ?? '').toString(),
           'title': (c['title'] ?? '').toString(),
-          'teacher': teachers.isEmpty ? '—' : teachers.first.toString(),
+          'teacher': teachers.isEmpty ? '' : teachers.first.toString(),
           'semester': (c['semester'] ?? '').toString(),
           'credits': asInt(c['credits']),
           'department': (c['department_name'] ?? '').toString(),

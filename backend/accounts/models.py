@@ -33,6 +33,8 @@ class User(AbstractUser):
     matricule = models.CharField(max_length=64, blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     cover = models.ImageField(upload_to='covers/', blank=True, null=True)
+    # URL externe (seed / Unsplash) quand pas d’avatar fichier.
+    photo_url = models.URLField(max_length=500, blank=True)
     bio = models.TextField(blank=True)
     headline = models.CharField(max_length=255, blank=True)
     professional_domain = models.CharField(max_length=255, blank=True)

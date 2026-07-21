@@ -9,6 +9,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/theme/status_backgrounds.dart';
+import '../../../../core/widgets/academic_autocomplete.dart';
+import '../../../../core/widgets/post_academic_tags.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -39,6 +41,13 @@ class _CommunityPublishScreenState
   String? _imageName;
   Uint8List? _imageBytes;
 
+  String? _universityId;
+  String? _universityName;
+  String? _facultyId;
+  String? _facultyName;
+  String? _promotionId;
+  String? _promotionName;
+
   static const _kinds = [
     ('discussion', 'Publication', Icons.edit_outlined),
     ('exam', 'Examen', Icons.assignment_turned_in_outlined),
@@ -59,11 +68,25 @@ class _CommunityPublishScreenState
       !_hasMedia && StatusBackgrounds.isShortEnough(_content.text);
 
   bool get _canPublish =>
-      _content.text.trim().isNotEmpty || _hasMedia;
+      (_content.text.trim().isNotEmpty || _hasMedia) &&
+      (_universityName?.trim().isNotEmpty ?? false) &&
+      (_facultyName?.trim().isNotEmpty ?? false) &&
+      (_promotionName?.trim().isNotEmpty ?? false);
 
   @override
   void initState() {
     super.initState();
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user != null) {
+      _universityId = user.universityId.isEmpty ? null : user.universityId;
+      _universityName = user.university.isEmpty ? null : user.university;
+      _facultyId = user.facultyId.isEmpty ? null : user.facultyId;
+      _facultyName = user.faculty.isEmpty ? null : user.faculty;
+      _promotionId = user.promotionId.isEmpty ? null : user.promotionId;
+      _promotionName = user.promotion.isEmpty
+          ? (user.level.isEmpty ? null : user.level)
+          : user.promotion;
+    }
     _content.addListener(() {
       if (!StatusBackgrounds.isShortEnough(_content.text) || _hasMedia) {
         _bgColor = null;
@@ -115,7 +138,16 @@ class _CommunityPublishScreenState
 
   Future<void> _submit() async {
     final content = _content.text.trim();
-    if (!_canPublish) return;
+    if (!_canPublish) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Renseigne université, faculté et promotion avant de publier.',
+          ),
+        ),
+      );
+      return;
+    }
 
     final title = content.isEmpty
         ? (_kind == 'tp'
@@ -133,11 +165,19 @@ class _CommunityPublishScreenState
     try {
       final tags = <String>[_kind];
       if (bg.isNotEmpty) tags.add(StatusBackgrounds.tagFor(bg));
+      tags.add(PostAcademicTags.encodeUniversity(_universityName!));
+      tags.add(PostAcademicTags.encodeFaculty(_facultyName!));
+      tags.add(PostAcademicTags.encodePromotion(_promotionName!));
+
+      final deptId = int.tryParse(
+        (ref.read(authStateProvider).valueOrNull?.departmentId ?? ''),
+      );
 
       await ref.read(communityRepositoryProvider).createPost(
             title: title,
             content: content.isEmpty ? title : content,
             kind: _kind,
+            departmentId: deptId,
             filePath: _pdfPath,
             fileBytes: _pdfBytes,
             fileName: _pdfName,
@@ -436,6 +476,116 @@ class _CommunityPublishScreenState
                     ),
                   ),
                 ],
+                const SizedBox(height: 20),
+                const Text(
+                  'Contexte académique *',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF050505),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Université, faculté et promotion sont obligatoires.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF65676B)),
+                ),
+                const SizedBox(height: 10),
+                Builder(
+                  builder: (context) {
+                    final unis =
+                        ref.watch(universitiesProvider).valueOrNull ?? const [];
+                    return AcademicAutocomplete(
+                      key: ValueKey('pub-uni-$_universityId'),
+                      label: 'Université *',
+                      icon: Icons.account_balance_outlined,
+                      softStyle: true,
+                      selectedId: _universityId,
+                      selectedName: _universityName,
+                      options: [
+                        for (final u in unis)
+                          AcademicOption(id: u.id, name: u.name),
+                      ],
+                      onSelected: (id, name) => setState(() {
+                        _universityId = id.isEmpty ? null : id;
+                        _universityName = name.trim().isEmpty ? null : name;
+                        _facultyId = null;
+                        _facultyName = null;
+                        _promotionId = null;
+                        _promotionName = null;
+                      }),
+                      onCreateCustom: (name) async {
+                        final id = await ref
+                            .read(academicRepositoryProvider)
+                            .suggestUniversity(name);
+                        ref.invalidate(universitiesProvider);
+                        return id;
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                Builder(
+                  builder: (context) {
+                    final facs = ref
+                            .watch(facultiesProvider(_universityId))
+                            .valueOrNull ??
+                        const [];
+                    return AcademicAutocomplete(
+                      key: ValueKey('pub-fac-$_universityId-$_facultyId'),
+                      label: 'Faculté *',
+                      softStyle: true,
+                      enabled: _universityId != null ||
+                          (_universityName?.isNotEmpty ?? false),
+                      selectedId: _facultyId,
+                      selectedName: _facultyName,
+                      options: [
+                        for (final f in facs)
+                          AcademicOption(id: f.id, name: f.name),
+                      ],
+                      onSelected: (id, name) => setState(() {
+                        _facultyId = id.isEmpty ? null : id;
+                        _facultyName = name.trim().isEmpty ? null : name;
+                        _promotionId = null;
+                        _promotionName = null;
+                      }),
+                      onCreateCustom: _universityId == null
+                          ? null
+                          : (name) async {
+                              final id = await ref
+                                  .read(academicRepositoryProvider)
+                                  .suggestFaculty(
+                                    name: name,
+                                    universityId: _universityId!,
+                                  );
+                              ref.invalidate(
+                                facultiesProvider(_universityId),
+                              );
+                              return id;
+                            },
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                AcademicAutocomplete(
+                  key: ValueKey('pub-promo-$_promotionId-$_promotionName'),
+                  label: 'Promotion *',
+                  softStyle: true,
+                  selectedId: _promotionId,
+                  selectedName: _promotionName,
+                  options: const [
+                    AcademicOption(id: 'L1', name: 'L1'),
+                    AcademicOption(id: 'L2', name: 'L2'),
+                    AcademicOption(id: 'L3', name: 'L3'),
+                    AcademicOption(id: 'M1', name: 'M1'),
+                    AcademicOption(id: 'M2', name: 'M2'),
+                    AcademicOption(id: 'Doctorat', name: 'Doctorat'),
+                  ],
+                  onSelected: (id, name) => setState(() {
+                    _promotionId = id.isEmpty ? null : id;
+                    _promotionName = name.trim().isEmpty ? null : name;
+                  }),
+                ),
                 const SizedBox(height: 20),
                 Row(
                   children: [

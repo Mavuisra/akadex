@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from academic.models import Course
+from academic.serializers import teacher_payload
 
 from .models import CourseComment, CourseLesson, CourseModule, LessonProgress
 
@@ -39,12 +40,16 @@ class CourseLessonSerializer(serializers.ModelSerializer):
 class CourseModuleSerializer(serializers.ModelSerializer):
     lessons = CourseLessonSerializer(many=True, read_only=True)
     lessons_count = serializers.SerializerMethodField()
+    course_title = serializers.CharField(source='course.title', read_only=True)
+    course_code = serializers.CharField(source='course.code', read_only=True)
 
     class Meta:
         model = CourseModule
         fields = [
             'id',
             'course',
+            'course_title',
+            'course_code',
             'title',
             'description',
             'order',
@@ -71,6 +76,14 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     teacher_names = serializers.SerializerMethodField()
+    teacher_title = serializers.SerializerMethodField()
+    teacher_full_name = serializers.SerializerMethodField()
+    teacher_headline = serializers.SerializerMethodField()
+    teacher_bio = serializers.SerializerMethodField()
+    teacher_specialty = serializers.SerializerMethodField()
+    teacher_avatar_url = serializers.SerializerMethodField()
+    teacher_university = serializers.SerializerMethodField()
+    promotion = serializers.SerializerMethodField()
     modules = CourseModuleSerializer(many=True, read_only=True)
     document_count = serializers.IntegerField(read_only=True)
 
@@ -87,21 +100,63 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
             'bibliography',
             'credits',
             'semester',
+            'promotion',
+            'cover_url',
+            'level_label',
+            'estimated_hours',
             'department',
             'department_name',
             'faculty_name',
             'university_name',
             'teacher_names',
+            'teacher_title',
+            'teacher_full_name',
+            'teacher_headline',
+            'teacher_bio',
+            'teacher_specialty',
+            'teacher_avatar_url',
+            'teacher_university',
             'document_count',
             'modules',
             'created_at',
         ]
 
     def get_teacher_names(self, obj):
-        return [
-            t.get_full_name() or t.email
-            for t in obj.teachers.all()
-        ]
+        return [t.get_full_name() or t.email for t in obj.teachers.all()]
+
+    def get_teacher_title(self, obj):
+        return teacher_payload(obj)['teacher_title']
+
+    def get_teacher_full_name(self, obj):
+        return teacher_payload(obj)['teacher_full_name']
+
+    def get_teacher_headline(self, obj):
+        return teacher_payload(obj)['teacher_headline']
+
+    def get_teacher_bio(self, obj):
+        return teacher_payload(obj)['teacher_bio']
+
+    def get_teacher_specialty(self, obj):
+        return teacher_payload(obj)['teacher_specialty']
+
+    def get_teacher_avatar_url(self, obj):
+        return teacher_payload(obj)['teacher_avatar_url']
+
+    def get_teacher_university(self, obj):
+        return teacher_payload(obj)['teacher_university']
+
+    def get_promotion(self, obj):
+        s = (obj.semester or '').strip()
+        mapping = {
+            'L1': 'L1',
+            'L2': 'L2',
+            'L3': 'L3',
+            'Master 1': 'M1',
+            'Master 2': 'M2',
+            'M1': 'M1',
+            'M2': 'M2',
+        }
+        return mapping.get(s, s)
 
 
 class CourseCommentSerializer(serializers.ModelSerializer):

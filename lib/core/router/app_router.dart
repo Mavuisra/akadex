@@ -18,13 +18,16 @@ import '../../features/community/presentation/screens/community_publish_screen.d
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/pdf_reader_screen.dart';
+import '../../features/learn/presentation/screens/domain_courses_screen.dart';
 import '../../features/learn/presentation/screens/learn_screen.dart';
+import '../../features/learn/presentation/screens/learn_search_screen.dart';
 import '../../features/library/presentation/screens/contribute_screen.dart';
 import '../../core/widgets/post_viewer_screens.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
 import '../../features/library/presentation/screens/lesson_player_screen.dart';
-import '../../features/library/presentation/screens/library_screen.dart';
+import '../../features/ma_fac/presentation/screens/ma_fac_docs_screen.dart';
+import '../../features/ma_fac/presentation/screens/ma_fac_screen.dart';
 import '../../features/lmd/presentation/screens/lmd_assistant_screen.dart';
 import '../../features/lmd/presentation/screens/lmd_guide_screen.dart';
 import '../../features/messaging/presentation/screens/chat_screen.dart';
@@ -146,6 +149,26 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: '/learn',
                 pageBuilder: (context, state) =>
                     _fadeSlide(state, const LearnScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'search',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) => _cupertino(
+                      state,
+                      const LearnSearchScreen(),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'domain/:id',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) => _cupertino(
+                      state,
+                      DomainCoursesScreen(
+                        domainId: state.pathParameters['id']!,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -154,7 +177,27 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/library',
                 pageBuilder: (context, state) =>
-                    _fadeSlide(state, const LibraryScreen()),
+                    _fadeSlide(state, const MaFacScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'docs/:categoryId',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) => _cupertino(
+                      state,
+                      MaFacDocsScreen(
+                        categoryId: state.pathParameters['categoryId']!,
+                      ),
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'courses',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) => _cupertino(
+                      state,
+                      const MaFacCoursesScreen(),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -270,6 +313,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               courseId: (extra?['courseId'] ?? '').toString(),
               modules:
                   (extra?['modules'] as List<CourseModuleItem>?) ?? const [],
+              courseTitle: (extra?['courseTitle'] ?? '').toString(),
             ),
           );
         },
@@ -339,7 +383,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) => _cupertino(
           state,
-          AlumniProfileScreen(userId: state.pathParameters['id']!),
+          AlumniProfileScreen(
+            userId: state.pathParameters['id']!,
+            focusDocumentId: state.uri.queryParameters['doc'],
+            focusPostId: state.uri.queryParameters['post'],
+          ),
         ),
       ),
       GoRoute(

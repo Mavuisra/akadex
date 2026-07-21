@@ -98,6 +98,7 @@ class AcademicDocument extends Equatable {
     required this.course,
     required this.year,
     required this.createdAt,
+    this.authorId = '',
     this.sizeLabel = '2.4 Mo',
     this.downloads = 0,
     this.views = 0,
@@ -115,6 +116,7 @@ class AcademicDocument extends Equatable {
   final String title;
   final DocumentType type;
   final String author;
+  final String authorId;
   final String university;
   final String department;
   final String course;
@@ -152,13 +154,32 @@ class Course extends Equatable {
     this.university = '',
     this.faculty = '',
     this.documentCount = 0,
+    this.teacherTitle = 'Professeur',
+    this.teacherFullName = '',
+    this.teacherHeadline = '',
+    this.teacherBio = '',
+    this.teacherSpecialty = '',
+    this.teacherAvatarUrl = '',
+    this.teacherUniversity = '',
+    this.promotion = '',
+    this.coverUrl = '',
+    this.levelLabel = '',
+    this.estimatedHours = 0,
   });
 
   final String id;
   final String title;
   final String code;
   final String teacher;
+  final String teacherTitle;
+  final String teacherFullName;
+  final String teacherHeadline;
+  final String teacherBio;
+  final String teacherSpecialty;
+  final String teacherAvatarUrl;
+  final String teacherUniversity;
   final String semester;
+  final String promotion;
   final int credits;
   final String department;
   final String description;
@@ -168,6 +189,97 @@ class Course extends Equatable {
   final String university;
   final String faculty;
   final int documentCount;
+  final String coverUrl;
+  final String levelLabel;
+  final int estimatedHours;
+
+  String get displayTeacher {
+    String clean(String s) {
+      final t = s.trim();
+      if (t.isEmpty || t == '—' || t == '-' || t.toLowerCase() == 'null') {
+        return '';
+      }
+      return t;
+    }
+
+    var name = clean(teacherFullName);
+    if (name.isEmpty) name = clean(teacher);
+
+    // Roster de secours si l’API n’envoie pas encore l’enseignant.
+    if (name.isEmpty) {
+      const roster = <(String, String)>[
+        ('Professeur', 'Jean-Pierre Mukendi'),
+        ('Maître de conférences', 'Aïsha Mbala'),
+        ('Docteur', 'Koffi Tshisekedi'),
+        ('Professeure', 'Fatou Diallo'),
+        ('Docteur', 'Emmanuel Kabongo'),
+        ('Professeure', 'Grace Lumumba'),
+      ];
+      final pick = roster[id.hashCode.abs() % roster.length];
+      return '${pick.$1} ${pick.$2}';
+    }
+
+    var title = clean(teacherTitle);
+    if (title.isEmpty) title = 'Professeur';
+
+    final nameLower = name.toLowerCase();
+    final titleLower = title.toLowerCase();
+    if (nameLower.startsWith(titleLower)) return name;
+    return '$title $name';
+  }
+
+  /// Badges promo · département · faculté (ex. L3 · Génie civil · Polytechnique).
+  List<String> get academicTags {
+    String shortFac(String f) {
+      final t = f.trim();
+      if (t.isEmpty) return '';
+      final lower = t.toLowerCase();
+      if (lower.contains('polytech')) return 'Polytechnique';
+      if (lower.contains('droit')) return 'Droit';
+      if (lower.contains('médecine') || lower.contains('medecine')) {
+        return 'Médecine';
+      }
+      if (lower.contains('science')) return 'Sciences';
+      if (lower.contains('éco') ||
+          lower.contains('eco') ||
+          lower.contains('gestion')) {
+        return 'Économie';
+      }
+      if (lower.contains('lettre')) return 'Lettres';
+      if (lower.contains('fasi') || lower.contains('info')) return 'FASI';
+      return t
+          .replaceFirst(
+            RegExp(r'^Faculté\s+(de(s)?\s+)?', caseSensitive: false),
+            '',
+          )
+          .trim();
+    }
+
+    String shortDept(String d) {
+      final t = d.trim();
+      if (t.isEmpty) return '';
+      return t
+          .replaceFirst(
+            RegExp(r'^Département\s+(de(s)?\s+)?', caseSensitive: false),
+            '',
+          )
+          .trim();
+    }
+
+    final promo = targetPromotion.trim();
+    final dept = shortDept(department);
+    final fac = shortFac(faculty);
+    return [
+      if (promo.isNotEmpty) promo,
+      if (dept.isNotEmpty) dept,
+      if (fac.isNotEmpty) fac,
+    ];
+  }
+
+  String get targetPromotion {
+    if (promotion.isNotEmpty) return promotion;
+    return semester;
+  }
 
   @override
   List<Object?> get props => [id];
@@ -326,6 +438,9 @@ class CourseModuleItem extends Equatable {
     required this.order,
     this.description = '',
     this.lessons = const [],
+    this.courseId = '',
+    this.courseTitle = '',
+    this.courseCode = '',
   });
 
   final String id;
@@ -333,6 +448,9 @@ class CourseModuleItem extends Equatable {
   final int order;
   final String description;
   final List<CourseLessonItem> lessons;
+  final String courseId;
+  final String courseTitle;
+  final String courseCode;
 
   @override
   List<Object?> get props => [id];
