@@ -13,8 +13,10 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConstants.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
-      receiveTimeout: const Duration(seconds: 20),
+      // Render free : cold start souvent > 30–50 s.
+      connectTimeout: const Duration(seconds: 60),
+      receiveTimeout: const Duration(seconds: 90),
+      sendTimeout: const Duration(seconds: 60),
       headers: {'Accept': 'application/json'},
     ),
   );
@@ -29,12 +31,33 @@ final dioProvider = Provider<Dio>((ref) {
         handler.next(options);
       },
       onError: (error, handler) async {
+        // Un retry sur timeout GET (réveil Render).
+        final opts = error.requestOptions;
+        final isTimeout = error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.connectionTimeout ||
+            error.type == DioExceptionType.sendTimeout;
+        final retries = (opts.extra['akadex_retries'] as int?) ?? 0;
+        if (isTimeout &&
+            retries < 1 &&
+            (opts.method.toUpperCase() == 'GET')) {
+          opts.extra['akadex_retries'] = retries + 1;
+          try {
+            final clone = await dio.fetch(opts);
+            return handler.resolve(clone);
+          } catch (_) {
+            // tombe sur l’erreur originale ci-dessous
+          }
+        }
         if (error.response?.statusCode == 401) {
           final refresh = prefs.getString('refresh_token');
           if (refresh != null && refresh.isNotEmpty) {
             try {
               final refreshDio = Dio(
-                BaseOptions(baseUrl: AppConstants.apiBaseUrl),
+                BaseOptions(
+                  baseUrl: AppConstants.apiBaseUrl,
+                  connectTimeout: const Duration(seconds: 60),
+                  receiveTimeout: const Duration(seconds: 90),
+                ),
               );
               final res = await refreshDio.post(
                 'auth/token/refresh/',
@@ -91,13 +114,22 @@ String apiErrorMessage(Object error) {
       return 'Le serveur Akadex est temporairement indisponible '
           '(erreur $status). Réessaie dans une minute.';
     }
-    if (error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout) {
+    if (error.type == DioExceptionType.receiveTimeout ||
+        error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout) {
+      return 'Le serveur met du temps à démarrer (Render). '
+          'Réessaie dans quelques secondes.';
+    }
+    if (error.type == DioExceptionType.connectionError) {
       return 'Impossible de joindre le serveur. Vérifie ta connexion.';
     }
     return error.message ?? 'Erreur réseau';
   }
   final text = error.toString();
+  if (text.contains('took longer than') || text.contains('receiveTimeout')) {
+    return 'Le serveur met du temps à démarrer (Render). '
+        'Réessaie dans quelques secondes.';
+  }
   if (text.contains('status code of 500') || text.contains('500')) {
     return 'Le serveur Akadex est temporairement indisponible. Réessaie bientôt.';
   }

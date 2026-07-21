@@ -613,13 +613,60 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final deptsAsync = ref.watch(departmentsProvider(_universityId));
     final promosAsync = ref.watch(promotionsProvider(_departmentId));
     final isStudent = _role == 'student';
+    Object? catalogError;
+    if (unisAsync.hasError) {
+      catalogError = unisAsync.error;
+    } else if (isStudent && facultiesAsync.hasError) {
+      catalogError = facultiesAsync.error;
+    } else if (deptsAsync.hasError) {
+      catalogError = deptsAsync.error;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (catalogError != null) ...[
+          SoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  apiErrorMessage(catalogError),
+                  style: const TextStyle(
+                    color: AkadexColors.inkMuted,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    ref.invalidate(universitiesProvider);
+                    ref.invalidate(facultiesProvider(_universityId));
+                    ref.invalidate(departmentsProvider(_universityId));
+                    ref.invalidate(promotionsProvider(_departmentId));
+                  },
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
         unisAsync.when(
-          loading: () => const LinearProgressIndicator(),
-          error: (e, _) => Text(apiErrorMessage(e)),
+          loading: () => const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: LinearProgressIndicator(),
+          ),
+          error: (_, _) => _softField(
+            child: TextField(
+              enabled: false,
+              decoration: _dec(
+                'Université (chargement…)',
+                icon: Icons.account_balance_outlined,
+              ),
+            ),
+          ),
           data: (unis) => AcademicAutocomplete(
             key: ValueKey('uni-$_universityId'),
             label: 'Université',
@@ -653,7 +700,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           const SizedBox(height: 12),
           facultiesAsync.when(
             loading: () => const SizedBox.shrink(),
-            error: (e, _) => Text(apiErrorMessage(e)),
+            error: (_, _) => const SizedBox.shrink(),
             data: (facs) => AcademicAutocomplete(
               key: ValueKey('fac-$_universityId-$_facultyId'),
               label: 'Faculté',
@@ -690,7 +737,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SizedBox(height: 12),
         deptsAsync.when(
           loading: () => const LinearProgressIndicator(),
-          error: (e, _) => Text(apiErrorMessage(e)),
+          error: (_, _) => const SizedBox.shrink(),
           data: (all) {
             final filtered = all.where((d) {
               if (_universityId != null &&
@@ -741,7 +788,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SizedBox(height: 12),
         promosAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (e, _) => Text(apiErrorMessage(e)),
+          error: (_, _) => const SizedBox.shrink(),
           data: (promos) => AcademicAutocomplete(
             key: ValueKey('promo-$_departmentId-$_promotionId'),
             label: 'Promotion',
