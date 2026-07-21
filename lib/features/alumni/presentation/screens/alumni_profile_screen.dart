@@ -538,12 +538,12 @@ class _FbDocumentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
-      decoration: highlighted
-          ? BoxDecoration(
-              border: Border.all(color: TimelineTokens.likeActive, width: 2),
-            )
-          : null,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: highlighted
+            ? Border.all(color: TimelineTokens.likeActive, width: 2)
+            : null,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
