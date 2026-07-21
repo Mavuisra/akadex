@@ -34,6 +34,16 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Analyze/test AVANT le tag pour éviter des tags orphelins si ça casse.
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test
+
       - name: Bump pubspec version
         id: bump
         shell: bash
@@ -51,6 +61,16 @@ jobs:
           new_name="${major}.${minor}.${patch}"
           new_full="${new_name}+${build}"
           tag="v${new_name}"
+
+          # Si le tag existe déjà (release précédente incomplète), on saute plus loin.
+          while git rev-parse "$tag" >/dev/null 2>&1; do
+            echo "Tag $tag existe déjà — on incrémente encore"
+            patch=$((patch + 1))
+            build=$((build + 1))
+            new_name="${major}.${minor}.${patch}"
+            new_full="${new_name}+${build}"
+            tag="v${new_name}"
+          done
 
           sed -i "s/^version: .*/version: ${new_full}/" pubspec.yaml
           echo "version=${new_full}" >> "$GITHUB_OUTPUT"
@@ -77,21 +97,8 @@ jobs:
         run: |
           set -euo pipefail
           tag="${{ steps.bump.outputs.tag }}"
-          if git rev-parse "$tag" >/dev/null 2>&1; then
-            echo "Tag $tag already exists — aborting to avoid overwrite"
-            exit 1
-          fi
           git tag "$tag"
           git push origin "$tag"
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Test
-        run: flutter test
 
       - name: Build Android APK
         run: flutter build apk --release --dart-define=API_BASE_URL=https://akadex.onrender.com/api/

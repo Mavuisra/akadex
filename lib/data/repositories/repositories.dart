@@ -659,15 +659,15 @@ class CommunityRepository {
         'title': title,
         'content': content,
         'kind': kind,
-        if (departmentId != null) 'department': departmentId,
+        'department': ?departmentId,
         if (videoUrl.isNotEmpty) 'video_url': videoUrl,
         if (fileUrl.isNotEmpty) 'file_url': fileUrl,
         if (pageCount > 0) 'page_count': pageCount,
         if (backgroundColor.isNotEmpty) 'background_color': backgroundColor,
         // Multipart : JSONField exige une chaîne JSON valide.
         'tags': jsonEncode(tags),
-        if (filePart != null) 'file': filePart,
-        if (imagePart != null) 'image': imagePart,
+        'file': ?filePart,
+        'image': ?imagePart,
       });
       res = await _dio.post('posts/', data: form);
     } else {
