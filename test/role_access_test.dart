@@ -21,7 +21,7 @@ void main() {
     test('interdit le campus étudiant', () {
       for (final loc in [
         '/home',
-        '/explorer',
+        '/learn',
         '/community',
         '/alumni',
         '/alumni/publish',
@@ -78,7 +78,7 @@ void main() {
     test('autorise le campus étudiant', () {
       for (final loc in [
         '/home',
-        '/explorer',
+        '/learn',
         '/library',
         '/community',
         '/alumni',
