@@ -39,7 +39,7 @@ extension DocumentTypeX on DocumentType {
         DocumentType.corrige => 'Corrigé',
         DocumentType.interrogation => 'Interrogation',
         DocumentType.examen => 'Examen',
-        DocumentType.rapport => 'Rapport',
+        DocumentType.rapport => 'Rapport de stage',
         DocumentType.projet => 'Projet',
         DocumentType.projetTutore => 'Projet tuteuré',
         DocumentType.tfc => 'TFC',

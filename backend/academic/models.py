@@ -183,7 +183,7 @@ class DocumentType(models.TextChoices):
     CORRIGE = 'corrige', 'Corrigé'
     INTERROGATION = 'interrogation', 'Interrogation'
     EXAMEN = 'examen', 'Examen'
-    RAPPORT = 'rapport', 'Rapport'
+    RAPPORT = 'rapport', 'Rapport de stage'
     PROJET = 'projet', 'Projet'
     PROJET_TUTORE = 'projet_tutore', 'Projet tuteuré'
     TFC = 'tfc', 'Travail de Fin de Cycle'

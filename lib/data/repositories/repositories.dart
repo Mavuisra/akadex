@@ -75,6 +75,17 @@ final departmentsProvider =
       .fetchDepartments(universityId: universityId);
 });
 
+/// Départements d’une faculté (inscription / Ma Fac).
+final facultyDepartmentsProvider =
+    FutureProvider.family<List<DepartmentItem>, String?>((ref, facultyId) {
+  if (facultyId == null || facultyId.isEmpty) {
+    return Future.value(const <DepartmentItem>[]);
+  }
+  return ref
+      .watch(academicRepositoryProvider)
+      .fetchDepartments(facultyId: facultyId);
+});
+
 final facultiesProvider =
     FutureProvider.family<List<FacultyItem>, String?>((ref, universityId) {
   return ref
@@ -498,7 +509,21 @@ class AcademicRepository {
     }
   }
 
-  Future<List<UniversityItem>> fetchUniversities() async {
+  /// Cache SQLite d’abord (affichage immédiat), puis refresh réseau.
+  Future<List<UniversityItem>> fetchUniversities({
+    bool preferCache = true,
+  }) async {
+    if (preferCache) {
+      final cached = await _store.getUniversities();
+      if (cached.isNotEmpty) {
+        unawaited(_pullUniversities());
+        return cached;
+      }
+    }
+    return _pullUniversities();
+  }
+
+  Future<List<UniversityItem>> _pullUniversities() async {
     try {
       final res = await _dio.get('universities/');
       final raw = unwrapList(res.data);
@@ -509,37 +534,54 @@ class AcademicRepository {
     }
   }
 
-  Future<List<DepartmentItem>> fetchDepartments({String? universityId}) async {
-    final res = await _dio.get(
-      'departments/',
-      queryParameters: {
-        if (universityId != null && universityId.isNotEmpty)
-          'faculty__university': universityId,
-      },
-    );
-    return unwrapList(res.data).map(departmentFromJson).toList();
+  Future<List<DepartmentItem>> fetchDepartments({
+    String? universityId,
+    String? facultyId,
+  }) async {
+    try {
+      final res = await _dio.get(
+        'departments/',
+        queryParameters: {
+          if (facultyId != null && facultyId.isNotEmpty)
+            'faculty': facultyId
+          else if (universityId != null && universityId.isNotEmpty)
+            'faculty__university': universityId,
+        },
+      );
+      return unwrapList(res.data).map(departmentFromJson).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<FacultyItem>> fetchFaculties({String? universityId}) async {
-    final res = await _dio.get(
-      'faculties/',
-      queryParameters: {
-        if (universityId != null && universityId.isNotEmpty)
-          'university': universityId,
-      },
-    );
-    return unwrapList(res.data).map(facultyFromJson).toList();
+    try {
+      final res = await _dio.get(
+        'faculties/',
+        queryParameters: {
+          if (universityId != null && universityId.isNotEmpty)
+            'university': universityId,
+        },
+      );
+      return unwrapList(res.data).map(facultyFromJson).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<PromotionItem>> fetchPromotions({String? departmentId}) async {
-    final res = await _dio.get(
-      'promotions/',
-      queryParameters: {
-        if (departmentId != null && departmentId.isNotEmpty)
-          'department': departmentId,
-      },
-    );
-    return unwrapList(res.data).map(promotionFromJson).toList();
+    if (departmentId == null || departmentId.isEmpty) {
+      return const [];
+    }
+    try {
+      final res = await _dio.get(
+        'promotions/',
+        queryParameters: {'department': departmentId},
+      );
+      return unwrapList(res.data).map(promotionFromJson).toList();
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<String> suggestUniversity(String name) async {

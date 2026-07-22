@@ -37,6 +37,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
     (DocumentType.supportCours, 'PDF de cours'),
     (DocumentType.tfc, 'TFC'),
     (DocumentType.projetTutore, 'Projet tuteuré'),
+    (DocumentType.rapport, 'Rapport de stage'),
     (DocumentType.memoire, 'Mémoire'),
     (DocumentType.projet, 'Projet'),
     (DocumentType.autre, 'Autre travail académique'),

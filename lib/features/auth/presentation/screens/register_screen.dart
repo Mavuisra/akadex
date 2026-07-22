@@ -9,6 +9,7 @@ import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
+import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -51,6 +52,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   static const _fieldPad = EdgeInsets.symmetric(horizontal: 16, vertical: 16);
   static const _totalSteps = 4;
+
+  @override
+  void initState() {
+    super.initState();
+    // Réveil API + cache unis pendant les étapes 0–2 (évite l’attente à « Ton parcours »).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(universitiesProvider);
+    });
+  }
 
   @override
   void dispose() {
@@ -164,8 +174,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
     if (_step < _totalSteps - 1) {
+      final next = _step + 1;
+      // Prefetch catalogue avant d’arriver sur l’étape parcours.
+      if (next >= 2) {
+        ref.read(universitiesProvider);
+      }
       setState(() {
-        _step += 1;
+        _step = next;
         _error = null;
       });
       return;
@@ -607,18 +622,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
+  Widget _catalogPlaceholder(String label, {IconData? icon}) {
+    return _softField(
+      child: TextField(
+        enabled: false,
+        decoration: _dec(label, icon: icon),
+      ),
+    );
+  }
+
   Widget _buildAcademicStep() {
     final unisAsync = ref.watch(universitiesProvider);
-    final facultiesAsync = ref.watch(facultiesProvider(_universityId));
-    final deptsAsync = ref.watch(departmentsProvider(_universityId));
-    final promosAsync = ref.watch(promotionsProvider(_departmentId));
+    final hasUni = _universityId != null && _universityId!.isNotEmpty;
+    final hasFac = _facultyId != null && _facultyId!.isNotEmpty;
+    final hasDept = _departmentId != null && _departmentId!.isNotEmpty;
+    // Ne charge pas tout le catalogue avant la sélection d’université
+    // (évite un GET departments/ énorme + cold start Render).
+    final facultiesAsync = hasUni
+        ? ref.watch(facultiesProvider(_universityId))
+        : const AsyncValue<List<FacultyItem>>.data([]);
+    // Départements filtrés par faculté dès qu’elle est choisie.
+    final deptsAsync = hasFac
+        ? ref.watch(facultyDepartmentsProvider(_facultyId))
+        : hasUni
+            ? ref.watch(departmentsProvider(_universityId))
+            : const AsyncValue<List<DepartmentItem>>.data([]);
+    final promosAsync = hasDept
+        ? ref.watch(promotionsProvider(_departmentId))
+        : const AsyncValue<List<PromotionItem>>.data([]);
     final isStudent = _role == 'student';
     Object? catalogError;
     if (unisAsync.hasError) {
       catalogError = unisAsync.error;
-    } else if (isStudent && facultiesAsync.hasError) {
+    } else if (isStudent && hasUni && facultiesAsync.hasError) {
       catalogError = facultiesAsync.error;
-    } else if (deptsAsync.hasError) {
+    } else if (hasUni && deptsAsync.hasError) {
       catalogError = deptsAsync.error;
     }
 
@@ -641,9 +679,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 OutlinedButton.icon(
                   onPressed: () {
                     ref.invalidate(universitiesProvider);
-                    ref.invalidate(facultiesProvider(_universityId));
-                    ref.invalidate(departmentsProvider(_universityId));
-                    ref.invalidate(promotionsProvider(_departmentId));
+                    if (hasUni) {
+                      ref.invalidate(facultiesProvider(_universityId));
+                      ref.invalidate(departmentsProvider(_universityId));
+                    }
+                    if (hasFac) {
+                      ref.invalidate(facultyDepartmentsProvider(_facultyId));
+                    }
+                    if (hasDept) {
+                      ref.invalidate(promotionsProvider(_departmentId));
+                    }
                   },
                   icon: const Icon(Icons.refresh_rounded, size: 18),
                   label: const Text('Réessayer'),
@@ -654,18 +699,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           const SizedBox(height: 12),
         ],
         unisAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: LinearProgressIndicator(),
-          ),
-          error: (_, _) => _softField(
-            child: TextField(
-              enabled: false,
-              decoration: _dec(
+          loading: () => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const LinearProgressIndicator(minHeight: 2),
+              const SizedBox(height: 12),
+              _catalogPlaceholder(
                 'Université (chargement…)',
                 icon: Icons.account_balance_outlined,
               ),
-            ),
+            ],
+          ),
+          error: (_, _) => _catalogPlaceholder(
+            'Université (indisponible — réessayer)',
+            icon: Icons.account_balance_outlined,
           ),
           data: (unis) => AcademicAutocomplete(
             key: ValueKey('uni-$_universityId'),
@@ -698,129 +745,149 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         if (isStudent) ...[
           const SizedBox(height: 12),
-          facultiesAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (facs) => AcademicAutocomplete(
-              key: ValueKey('fac-$_universityId-$_facultyId'),
-              label: 'Faculté',
-              softStyle: true,
-              selectedId: _facultyId,
-              selectedName: _facultyName,
-              enabled: _universityId != null,
-              options: [
-                for (final f in facs) AcademicOption(id: f.id, name: f.name),
-              ],
-              onSelected: (id, name) => setState(() {
-                _facultyId = id.isEmpty ? null : id;
-                _facultyName = name;
-                _departmentId = null;
-                _departmentName = null;
-                _promotionId = null;
-                _promotionName = null;
-              }),
-              onCreateCustom: _universityId == null
-                  ? null
-                  : (name) async {
-                      final id = await ref
-                          .read(academicRepositoryProvider)
-                          .suggestFaculty(
-                            name: name,
-                            universityId: _universityId!,
-                          );
-                      ref.invalidate(facultiesProvider(_universityId));
-                      return id;
-                    },
+          if (!hasUni)
+            _catalogPlaceholder('Faculté (choisis d’abord l’université)')
+          else
+            facultiesAsync.when(
+              loading: () => _catalogPlaceholder('Faculté (chargement…)'),
+              error: (_, _) =>
+                  _catalogPlaceholder('Faculté (indisponible — réessayer)'),
+              data: (facs) => AcademicAutocomplete(
+                key: ValueKey('fac-$_universityId-$_facultyId'),
+                label: 'Faculté',
+                softStyle: true,
+                selectedId: _facultyId,
+                selectedName: _facultyName,
+                enabled: true,
+                options: [
+                  for (final f in facs) AcademicOption(id: f.id, name: f.name),
+                ],
+                onSelected: (id, name) => setState(() {
+                  _facultyId = id.isEmpty ? null : id;
+                  _facultyName = name;
+                  _departmentId = null;
+                  _departmentName = null;
+                  _promotionId = null;
+                  _promotionName = null;
+                }),
+                onCreateCustom: (name) async {
+                  final id = await ref
+                      .read(academicRepositoryProvider)
+                      .suggestFaculty(
+                        name: name,
+                        universityId: _universityId!,
+                      );
+                  ref.invalidate(facultiesProvider(_universityId));
+                  return id;
+                },
+              ),
             ),
-          ),
         ],
         const SizedBox(height: 12),
-        deptsAsync.when(
-          loading: () => const LinearProgressIndicator(),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (all) {
-            final filtered = all.where((d) {
-              if (_universityId != null &&
-                  d.universityId != _universityId &&
-                  d.universityId != 'null') {
-                return false;
-              }
-              if (isStudent &&
-                  _facultyId != null &&
-                  d.facultyId.isNotEmpty &&
-                  d.facultyId != _facultyId) {
-                return false;
-              }
-              return true;
-            }).toList();
-            return AcademicAutocomplete(
-              key: ValueKey(
-                'dept-$_universityId-$_facultyId-$_departmentId',
-              ),
-              label: 'Département',
+        if (!hasUni)
+          _catalogPlaceholder('Département (choisis d’abord l’université)')
+        else if (isStudent && !hasFac)
+          _catalogPlaceholder('Département (choisis d’abord la faculté)')
+        else
+          deptsAsync.when(
+            loading: () => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const LinearProgressIndicator(minHeight: 2),
+                const SizedBox(height: 8),
+                _catalogPlaceholder('Département (chargement…)'),
+              ],
+            ),
+            error: (_, _) =>
+                _catalogPlaceholder('Département (indisponible — réessayer)'),
+            data: (all) {
+              final uniId = _universityId;
+              final facId = _facultyId;
+              final filtered = all.where((d) {
+                if (uniId != null &&
+                    d.universityId != uniId &&
+                    d.universityId != 'null') {
+                  return false;
+                }
+                if (isStudent &&
+                    facId != null &&
+                    d.facultyId.isNotEmpty &&
+                    d.facultyId != facId) {
+                  return false;
+                }
+                return true;
+              }).toList();
+              return AcademicAutocomplete(
+                key: ValueKey(
+                  'dept-$_universityId-$_facultyId-$_departmentId',
+                ),
+                label: 'Département',
+                softStyle: true,
+                selectedId: _departmentId,
+                selectedName: _departmentName,
+                options: [
+                  for (final d in filtered)
+                    AcademicOption(id: d.id, name: d.name),
+                ],
+                onSelected: (id, name) => setState(() {
+                  _departmentId = id.isEmpty ? null : id;
+                  _departmentName = name;
+                  _promotionId = null;
+                  _promotionName = null;
+                }),
+                onCreateCustom: (name) async {
+                  final id = await ref
+                      .read(academicRepositoryProvider)
+                      .suggestDepartment(
+                        name: name,
+                        facultyId: _facultyId,
+                        universityId: _universityId,
+                      );
+                  ref.invalidate(departmentsProvider(_universityId));
+                  ref.invalidate(facultyDepartmentsProvider(_facultyId));
+                  return id;
+                },
+              );
+            },
+          ),
+        const SizedBox(height: 12),
+        if (!hasDept)
+          _catalogPlaceholder('Promotion (choisis d’abord le département)')
+        else
+          promosAsync.when(
+            loading: () => _catalogPlaceholder('Promotion (chargement…)'),
+            error: (_, _) =>
+                _catalogPlaceholder('Promotion (indisponible — réessayer)'),
+            data: (promos) => AcademicAutocomplete(
+              key: ValueKey('promo-$_departmentId-$_promotionId'),
+              label: 'Promotion',
               softStyle: true,
-              selectedId: _departmentId,
-              selectedName: _departmentName,
+              selectedId: _promotionId,
+              selectedName: _promotionName,
+              enabled: true,
               options: [
-                for (final d in filtered)
-                  AcademicOption(id: d.id, name: d.name),
+                for (final p in promos)
+                  AcademicOption(
+                    id: p.id,
+                    name: p.year > 0 ? '${p.name} (${p.year})' : p.name,
+                  ),
               ],
               onSelected: (id, name) => setState(() {
-                _departmentId = id.isEmpty ? null : id;
-                _departmentName = name;
-                _promotionId = null;
-                _promotionName = null;
+                _promotionId = id.isEmpty ? null : id;
+                _promotionName = name;
               }),
               onCreateCustom: (name) async {
                 final id = await ref
                     .read(academicRepositoryProvider)
-                    .suggestDepartment(
+                    .suggestPromotion(
                       name: name,
-                      facultyId: _facultyId,
-                      universityId: _universityId,
+                      departmentId: _departmentId!,
                     );
-                ref.invalidate(departmentsProvider(_universityId));
+                ref.invalidate(promotionsProvider(_departmentId));
                 return id;
               },
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        promosAsync.when(
-          loading: () => const SizedBox.shrink(),
-          error: (_, _) => const SizedBox.shrink(),
-          data: (promos) => AcademicAutocomplete(
-            key: ValueKey('promo-$_departmentId-$_promotionId'),
-            label: 'Promotion',
-            softStyle: true,
-            selectedId: _promotionId,
-            selectedName: _promotionName,
-            enabled: _departmentId != null,
-            options: [
-              for (final p in promos)
-                AcademicOption(
-                  id: p.id,
-                  name: p.year > 0 ? '${p.name} (${p.year})' : p.name,
-                ),
-            ],
-            onSelected: (id, name) => setState(() {
-              _promotionId = id.isEmpty ? null : id;
-              _promotionName = name;
-            }),
-            onCreateCustom: _departmentId == null
-                ? null
-                : (name) async {
-                    final id = await ref
-                        .read(academicRepositoryProvider)
-                        .suggestPromotion(
-                          name: name,
-                          departmentId: _departmentId!,
-                        );
-                    ref.invalidate(promotionsProvider(_departmentId));
-                    return id;
-                  },
+            ),
           ),
-        ),
         if (isStudent) ...[
           const SizedBox(height: 12),
           _softField(

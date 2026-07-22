@@ -36,7 +36,7 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
     ('parcours', 'Parcours'),
     ('enseignements', 'Enseignements'),
     ('travaux', 'Travaux'),
-    ('agenda', 'Agenda'),
+    ('apparitorat', 'Apparitorat'),
     ('documents', 'Documents'),
     ('debouches', 'Débouchés'),
   ];
@@ -49,9 +49,9 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
     final coursesBusy = coursesAsync.isLoading && allCourses.isEmpty;
     final coursesError = coursesAsync.hasError && allCourses.isEmpty;
 
-    // Docs / agenda : chargés dès que l’onglet en a besoin (pas au 1er paint).
+    // Docs / apparitorat : chargés dès que l’onglet en a besoin (pas au 1er paint).
     final needDocs = _tab == 0 || _tab == 2 || _tab == 4;
-    final needAgenda = _tab == 0 || _tab == 3;
+    final needApparitorat = _tab == 0 || _tab == 3;
     final docsAsync = needDocs
         ? ref.watch(
             documentsProvider(
@@ -70,8 +70,8 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
           )
         : const AsyncValue<List<AcademicDocument>>.data([]);
     final eventsAsync =
-        needAgenda ? ref.watch(eventsProvider) : const AsyncValue.data(<CalendarEventItem>[]);
-    final announcementsAsync = needAgenda
+        needApparitorat ? ref.watch(eventsProvider) : const AsyncValue.data(<CalendarEventItem>[]);
+    final announcementsAsync = needApparitorat
         ? ref.watch(announcementsProvider)
         : const AsyncValue.data(<UniversityAnnouncement>[]);
     final deptsAsync = ref.watch(departmentsProvider(me?.universityId));
@@ -215,7 +215,15 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
                           user: me,
                         ),
                         _TravauxTab(docs: docs),
-                        _AgendaTab(
+                        _ApparitoratTab(
+                          facultyName: facName,
+                          departmentName: me?.department.isNotEmpty == true
+                              ? me!.department
+                              : (depts
+                                      .where((d) => d.id == activeDeptId)
+                                      .map((d) => d.name)
+                                      .firstOrNull ??
+                                  ''),
                           events: events,
                           announcements: announcements,
                         ),
@@ -469,7 +477,7 @@ class _ParcoursFeed extends StatelessWidget {
             children: [
               _StatCell(value: '$courseCount', label: 'Cours'),
               _StatCell(value: '$docCount', label: 'Documents'),
-              _StatCell(value: '$eventCount', label: 'Agenda'),
+              _StatCell(value: '$eventCount', label: 'Apparitorat'),
             ],
           ),
         ),
@@ -500,8 +508,8 @@ class _ParcoursFeed extends StatelessWidget {
                     onTap: () => onOpenTab(1),
                   ),
                   _QuickChip(
-                    label: 'Examens / Annonces',
-                    icon: Icons.campaign_outlined,
+                    label: 'Apparitorat',
+                    icon: Icons.apartment_outlined,
                     onTap: () => onOpenTab(3),
                   ),
                   _QuickChip(
@@ -938,7 +946,7 @@ class _TravauxTab extends StatelessWidget {
         _FeedBlock(
           title: 'Travaux académiques',
           child: const Text(
-            'Examens, TP, TFC, projets tuteurés, mémoires — PDF de ta filière.',
+            'Examens, TP, TFC, projets, rapports de stage, mémoires — PDF de ta filière.',
             style: TextStyle(color: TimelineTokens.meta, height: 1.35),
           ),
         ),
@@ -968,12 +976,16 @@ class _TravauxTab extends StatelessWidget {
   }
 }
 
-class _AgendaTab extends StatelessWidget {
-  const _AgendaTab({
+class _ApparitoratTab extends StatelessWidget {
+  const _ApparitoratTab({
+    required this.facultyName,
+    required this.departmentName,
     required this.events,
     required this.announcements,
   });
 
+  final String facultyName;
+  final String departmentName;
   final List<CalendarEventItem> events;
   final List<UniversityAnnouncement> announcements;
 
@@ -985,71 +997,96 @@ class _AgendaTab extends StatelessWidget {
             e.title.toLowerCase().contains('examen'))
         .toList();
     final other = events.where((e) => !exams.contains(e)).toList();
+    final scopeLine = [
+      if (facultyName.isNotEmpty) facultyName,
+      if (departmentName.isNotEmpty) departmentName,
+    ].join(' · ');
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),
       children: [
+        Container(
+          color: Colors.white,
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Apparitorat',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 20,
+                  color: Color(0xFF050505),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                scopeLine.isEmpty
+                    ? 'Infos officielles de ta faculté et de ton département : annonces, examens, résultats.'
+                    : 'Infos officielles — $scopeLine. Annonces, examens et résultats de ton parcours.',
+                style: const TextStyle(
+                  color: TimelineTokens.meta,
+                  height: 1.35,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
         _FeedBlock(
-          title: 'Annonces de la faculté',
+          title: 'Annonces faculté & département',
           child: announcements.isEmpty
-              ? const Text('Aucune annonce.',
-                  style: TextStyle(color: TimelineTokens.meta))
+              ? const Text(
+                  'Aucune annonce pour le moment.',
+                  style: TextStyle(color: TimelineTokens.meta),
+                )
               : Column(
                   children: [
-                    for (final a in announcements.take(6))
+                    for (final a in announcements.take(8))
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.campaign_outlined,
-                            color: AkadexColors.primary),
-                        title: Text(a.title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
+                        leading: const Icon(
+                          Icons.campaign_outlined,
+                          color: AkadexColors.primary,
+                        ),
+                        title: Text(
+                          a.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         subtitle: a.body.isEmpty
                             ? null
-                            : Text(a.body,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis),
+                            : Text(
+                                a.body,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                       ),
                   ],
                 ),
         ),
         const SizedBox(height: 8),
         _FeedBlock(
-          title: 'Examens programmés',
+          title: 'Examens & convocations',
           child: exams.isEmpty
-              ? const Text('Aucun examen planifié.',
-                  style: TextStyle(color: TimelineTokens.meta))
+              ? const Text(
+                  'Aucun examen publié par l’apparitorat.',
+                  style: TextStyle(color: TimelineTokens.meta),
+                )
               : Column(
                   children: [
                     for (final e in exams)
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.quiz_outlined,
-                            color: AkadexColors.primary),
-                        title: Text(e.title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
-                        subtitle: Text(e.eventType),
-                      ),
-                  ],
-                ),
-        ),
-        const SizedBox(height: 8),
-        _FeedBlock(
-          title: 'Événements académiques',
-          child: other.isEmpty
-              ? const Text('Pas d’événement.',
-                  style: TextStyle(color: TimelineTokens.meta))
-              : Column(
-                  children: [
-                    for (final e in other.take(8))
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.event_outlined,
-                            color: AkadexColors.primary),
-                        title: Text(e.title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
+                        leading: const Icon(
+                          Icons.quiz_outlined,
+                          color: AkadexColors.primary,
+                        ),
+                        title: Text(
+                          e.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
                         subtitle: Text(
                           [
                             e.eventType,
@@ -1062,18 +1099,49 @@ class _AgendaTab extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _FeedBlock(
-          title: 'Résultats publiés',
+          title: 'Activités académiques',
+          child: other.isEmpty
+              ? const Text(
+                  'Pas d’activité planifiée.',
+                  style: TextStyle(color: TimelineTokens.meta),
+                )
+              : Column(
+                  children: [
+                    for (final e in other.take(8))
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(
+                          Icons.event_outlined,
+                          color: AkadexColors.primary,
+                        ),
+                        title: Text(
+                          e.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text(
+                          [
+                            e.eventType,
+                            if (e.location.isNotEmpty) e.location,
+                          ].join(' · '),
+                        ),
+                      ),
+                  ],
+                ),
+        ),
+        const SizedBox(height: 8),
+        _FeedBlock(
+          title: 'Résultats & notes',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Les résultats s’afficheront ici dès publication.',
+                'Les résultats de ton département s’afficheront ici dès publication par l’apparitorat.',
                 style: TextStyle(color: TimelineTokens.meta, height: 1.35),
               ),
               TextButton(
                 onPressed: () => context.push('/calendar'),
                 child: const Text(
-                  'Calendrier complet',
+                  'Voir le calendrier complet',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     color: AkadexColors.primary,

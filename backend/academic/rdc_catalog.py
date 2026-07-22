@@ -1,9 +1,11 @@
 """
 Catalogue académique RDC — UNIKIN, UPN, UPC.
 
-Sources officielles UNIKIN (2024-2025) :
+Sources officielles UNIKIN (2024-2025 / 2025) :
 - Facultés : https://www.unikin.ac.cd/facultes-et-entites
 - Programmes : https://www.unikin.ac.cd/programme-des-cours
+- Dentaire : https://www.unikin.ac.cd/fac/medecinedentaire/programmes-de-cours/
+- Vétérinaire : https://www.unikin.ac.cd/fac/medvet/programme-des-cours/
 - Charges horaires SGA (PDF) :
   https://www.unikin.ac.cd/wp-content/uploads/2025/07/Faculte-des-Sciences-et-Technologies-1.pdf
   https://www.unikin.ac.cd/wp-content/uploads/2025/07/FACULTE-de-Droit.pdf
@@ -13,6 +15,7 @@ Sources officielles UNIKIN (2024-2025) :
   https://www.unikin.ac.cd/wp-content/uploads/2025/07/CHARGE-HORAIRE-FACULTE-DE-MEDECINE-.pdf
   https://www.unikin.ac.cd/wp-content/uploads/2025/07/Faculte-de-Medecine-Dentaire.pdf
   https://www.unikin.ac.cd/wp-content/uploads/2025/07/Faculte-de-Petrole-Gaz-et-Energie-Renouvelable.pdf
+  https://www.unikin.ac.cd/wp-content/uploads/2025/07/Faculte-de-Medecine-Veterinaire.pdf
 
 Les intitulés UNIKIN (toutes facultés) sont dans academic/unikin_courses.py
 (plus INFO/MATH dans ce fichier). Codes UE = identifiants internes Akadex.
@@ -389,6 +392,7 @@ from academic.unikin_courses import (  # noqa: E402
     PHY_COURSES,
     POLY_CIVIL,
     POLY_ELEC,
+    POLY_INFO,
     POLY_MECA,
     PSY_COURSES,
     SANTE_PUB,
@@ -435,8 +439,8 @@ UNIVERSITIES = [
                 'name': 'Faculté de Droit',
                 'description': (
                     'Formation juridique pour la justice et l’État de droit. '
-                    'Départements : Droit public interne, Droits de l’homme, '
-                    'Droit international public & RI.'
+                    'Départements : Droit privé, Droit public interne, Droits de l’homme, '
+                    'DIP & RI, Droit économique et social.'
                 ),
                 'departments': [
                     {
@@ -447,7 +451,7 @@ UNIVERSITIES = [
                     {
                         'slug': 'droit-public',
                         'name': 'Droit public interne',
-                        'courses': DROIT_COURSES[:8],
+                        'courses': DROIT_COURSES[:12],
                     },
                     {
                         'slug': 'droits-homme',
@@ -455,9 +459,60 @@ UNIVERSITIES = [
                         'courses': [
                             c
                             for c in DROIT_COURSES
-                            if c[0] in ('DRT112', 'DRT412', 'DRT413', 'DRT421')
+                            if c[0]
+                            in (
+                                'DRT112',
+                                'DRT214',
+                                'DRT412',
+                                'DRT413',
+                                'DRT414',
+                                'DRT415',
+                                'DRT416',
+                                'DRT417',
+                                'DRT418',
+                                'DRT419',
+                                'DRT420',
+                                'DRT421',
+                            )
                         ]
-                        or DROIT_COURSES[-4:],
+                        or DROIT_COURSES[-8:],
+                    },
+                    {
+                        'slug': 'droit-international',
+                        'name': 'Droit international public et relations internationales',
+                        'courses': [
+                            c
+                            for c in DROIT_COURSES
+                            if c[0]
+                            in (
+                                'DRT116',
+                                'DRT411',
+                                'DRT413',
+                                'DRT414',
+                                'DRT416',
+                                'DRT420',
+                                'DRT421',
+                            )
+                        ]
+                        or DROIT_COURSES[8:],
+                    },
+                    {
+                        'slug': 'droit-economique-social',
+                        'name': 'Droit économique et social',
+                        'courses': [
+                            c
+                            for c in DROIT_COURSES
+                            if c[0]
+                            in (
+                                'DRT217',
+                                'DRT311',
+                                'DRT314',
+                                'DRT315',
+                                'DRT316',
+                                'DRT421',
+                            )
+                        ]
+                        or DROIT_COURSES[10:20],
                     },
                 ],
             },
@@ -474,7 +529,34 @@ UNIVERSITIES = [
                         'name': 'Sciences économiques',
                         'courses': ECO_COURSES,
                     },
-                    {'slug': 'gestion', 'name': 'Gestion', 'courses': ECO_COURSES},
+                    {
+                        'slug': 'gestion',
+                        'name': 'Gestion des entreprises',
+                        'courses': ECO_COURSES,
+                    },
+                    {
+                        'slug': 'sciences-commerciales',
+                        'name': 'Sciences commerciales et financières',
+                        'courses': ECO_COURSES,
+                    },
+                    {
+                        'slug': 'igaf',
+                        'name': 'Informatique de gestion et analyse financière (IGAF)',
+                        'courses': [
+                            c
+                            for c in ECO_COURSES
+                            if c[0]
+                            in (
+                                'ECO113',
+                                'ECO114',
+                                'GES223',
+                                'GES313',
+                                'ECO313',
+                                'ECO411',
+                            )
+                        ]
+                        + INFO_COURSES[:8],
+                    },
                 ],
             },
             {
@@ -489,6 +571,28 @@ UNIVERSITIES = [
                         'slug': 'medecine-generale',
                         'name': 'Médecine',
                         'courses': MED_COURSES,
+                    },
+                    {
+                        'slug': 'sciences-biomedicales',
+                        'name': 'Sciences biomédicales',
+                        'courses': MED_COURSES[:18],
+                    },
+                    {
+                        'slug': 'medecine-physique-readaptation',
+                        'name': 'Médecine physique et réadaptation',
+                        'courses': [
+                            c
+                            for c in MED_COURSES
+                            if c[0]
+                            in (
+                                'MED214',
+                                'MED215',
+                                'MED216',
+                                'MED314',
+                                'MED423',
+                            )
+                        ]
+                        or MED_COURSES[10:20],
                     },
                 ],
             },
@@ -573,7 +677,7 @@ UNIVERSITIES = [
                     {
                         'slug': 'genie-informatique',
                         'name': 'Génie informatique',
-                        'courses': INFO_COURSES[:18],
+                        'courses': POLY_INFO,
                     },
                 ],
             },
@@ -581,14 +685,87 @@ UNIVERSITIES = [
                 'slug': 'lettres-sciences-humaines',
                 'name': 'Faculté des Lettres et Sciences Humaines',
                 'description': (
-                    'FLSH (créée 1956) — formation critique et intellectuelle.'
+                    'FLSH (créée 1956) — 12 départements / filières officiels. '
+                    'https://www.unikin.ac.cd/faculte-des-lettres-et-sciences-humaines'
                 ),
                 'departments': [
-                    {'slug': 'lettres', 'name': 'Lettres', 'courses': LETTRES_COURSES},
+                    {
+                        'slug': 'philosophie',
+                        'name': 'Philosophie',
+                        'courses': LETTRES_COURSES[:8],
+                    },
                     {
                         'slug': 'histoire',
-                        'name': 'Histoire',
+                        'name': 'Sciences historiques, gestion du patrimoine et développement',
+                        'courses': [
+                            c
+                            for c in LETTRES_COURSES
+                            if c[0].startswith('HIS')
+                            or c[0] in ('LET111', 'LET311', 'LET411')
+                        ]
+                        or LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'lettres-francaises',
+                        'name': 'Lettres et civilisations françaises',
                         'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'lettres-africaines',
+                        'name': 'Lettres et civilisations africaines',
+                        'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'lettres-anglaises',
+                        'name': 'Lettres et civilisations anglaises',
+                        'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'sic',
+                        'name': 'Sciences de l’information et de la communication',
+                        'courses': [
+                            c
+                            for c in LETTRES_COURSES
+                            if c[0].startswith('SIC')
+                            or c[0] in ('LET111', 'LET112', 'LET311')
+                        ]
+                        or LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'techniques-documentaires',
+                        'name': 'Sciences et techniques documentaires',
+                        'courses': LETTRES_COURSES[:10],
+                    },
+                    {
+                        'slug': 'langues-informatique-affaires',
+                        'name': 'Langues et informatiques appliquées aux affaires et au commerce',
+                        'courses': LETTRES_COURSES[:6] + INFO_COURSES[:8],
+                    },
+                    {
+                        'slug': 'traduction',
+                        'name': 'Traduction et interprétariat',
+                        'courses': [
+                            c
+                            for c in LETTRES_COURSES
+                            if c[0].startswith('TRA')
+                            or c[0] in ('LET111', 'LET123', 'LET213', 'LET411')
+                        ]
+                        or LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'arts-spectacle',
+                        'name': 'Lettres-arts de spectacle africain et patrimoines culturels',
+                        'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'anglais-informatique-affaires',
+                        'name': 'Anglais et informatique des affaires',
+                        'courses': LETTRES_COURSES[:8] + INFO_COURSES[:10],
+                    },
+                    {
+                        'slug': 'ecole-langues-vivantes',
+                        'name': 'École des langues vivantes',
+                        'courses': LETTRES_COURSES[:6],
                     },
                 ],
             },
@@ -596,8 +773,8 @@ UNIVERSITIES = [
                 'slug': 'psychologie-sciences-education',
                 'name': 'Faculté de Psychologie et Sciences de l’Éducation',
                 'description': (
-                    'FPSE — héritière de l’Institut de Psychologie et Pédagogie '
-                    'de Lovanium.'
+                    'FPSE — Psychologie, Sciences de l’éducation, GEOT, Agrégation. '
+                    'https://www.unikin.ac.cd/fac/fpsysed/'
                 ),
                 'departments': [
                     {
@@ -610,6 +787,16 @@ UNIVERSITIES = [
                         'name': 'Sciences de l’éducation',
                         'courses': PEDAGO_COURSES,
                     },
+                    {
+                        'slug': 'geot',
+                        'name': 'Gestion des entreprises et organisation du travail',
+                        'courses': ECO_COURSES[4:16] + PSY_COURSES[8:14],
+                    },
+                    {
+                        'slug': 'agregation',
+                        'name': 'Agrégation de l’enseignement secondaire',
+                        'courses': PEDAGO_COURSES,
+                    },
                 ],
             },
             {
@@ -617,18 +804,50 @@ UNIVERSITIES = [
                 'name': 'Faculté des Sciences Agronomiques et de l’Environnement',
                 'description': (
                     'Ingénieurs agronomes et spécialistes du développement '
-                    'durable (GRNR, GFB, GSEA, masters MAGF/MGB…).'
+                    'durable (GRNR, GFB, GSEA, zootechnie, CIA…).'
                 ),
                 'departments': [
                     {
-                        'slug': 'agronomie',
+                        'slug': 'grnr',
                         'name': 'Gestion des ressources naturelles renouvelables',
+                        'courses': AGRO_COURSES,
+                    },
+                    {
+                        'slug': 'forets-biodiversite',
+                        'name': 'Gestion des forêts et de la biodiversité',
+                        'courses': AGRO_COURSES,
+                    },
+                    {
+                        'slug': 'gsea',
+                        'name': 'Gestion des sols, eaux et assainissement',
                         'courses': AGRO_COURSES,
                     },
                     {
                         'slug': 'zootechnie',
                         'name': 'Zootechnie',
-                        'courses': AGRO_COURSES[:3],
+                        'courses': [
+                            c
+                            for c in AGRO_COURSES
+                            if c[0]
+                            in (
+                                'AGR111',
+                                'AGR214',
+                                'AGR213',
+                                'AGR312',
+                                'AGR411',
+                            )
+                        ]
+                        or AGRO_COURSES[:10],
+                    },
+                    {
+                        'slug': 'chimie-industrie-agricole',
+                        'name': 'Chimie et industrie agricole',
+                        'courses': AGRO_COURSES[10:] + CHIM_COURSES[:6],
+                    },
+                    {
+                        'slug': 'production-vegetale',
+                        'name': 'Production végétale',
+                        'courses': AGRO_COURSES,
                     },
                 ],
             },
@@ -659,6 +878,21 @@ UNIVERSITIES = [
                         'name': 'Pharmacie',
                         'courses': PHARMA_COURSES,
                     },
+                    {
+                        'slug': 'chimie-pharmaceutique',
+                        'name': 'Chimie pharmaceutique et pharmacognosie',
+                        'courses': PHARMA_COURSES,
+                    },
+                    {
+                        'slug': 'biologie-pharmaceutique',
+                        'name': 'Biologie pharmaceutique',
+                        'courses': PHARMA_COURSES[:12] + BIO_COURSES[:4],
+                    },
+                    {
+                        'slug': 'galenique-analyse',
+                        'name': 'Pharmacie galénique et analyse des médicaments',
+                        'courses': PHARMA_COURSES,
+                    },
                 ],
             },
             {
@@ -669,6 +903,11 @@ UNIVERSITIES = [
                     {
                         'slug': 'sante-publique',
                         'name': 'Santé publique',
+                        'courses': SANTE_PUB,
+                    },
+                    {
+                        'slug': 'epidemiologie',
+                        'name': 'Épidémiologie',
                         'courses': SANTE_PUB,
                     },
                 ],
@@ -691,6 +930,21 @@ UNIVERSITIES = [
                         'name': 'Administration publique',
                         'courses': SOC_COURSES,
                     },
+                    {
+                        'slug': 'relations-internationales',
+                        'name': 'Relations internationales',
+                        'courses': SOC_COURSES,
+                    },
+                    {
+                        'slug': 'sociologie',
+                        'name': 'Sociologie',
+                        'courses': SOC_COURSES,
+                    },
+                    {
+                        'slug': 'sciences-travail',
+                        'name': 'Sciences du travail',
+                        'courses': SOC_COURSES,
+                    },
                 ],
             },
             {
@@ -705,6 +959,11 @@ UNIVERSITIES = [
                         'name': 'Médecine vétérinaire',
                         'courses': VET_COURSES,
                     },
+                    {
+                        'slug': 'productions-animales',
+                        'name': 'Productions animales et santé publique vétérinaire',
+                        'courses': VET_COURSES,
+                    },
                 ],
             },
             {
@@ -715,9 +974,24 @@ UNIVERSITIES = [
                 ),
                 'departments': [
                     {
-                        'slug': 'petrole-gaz',
-                        'name': 'Pétrole et gaz',
+                        'slug': 'exploration-production',
+                        'name': 'Exploration et production pétrolière',
                         'courses': PETROLE_COURSES,
+                    },
+                    {
+                        'slug': 'raffinage-petrochimie',
+                        'name': 'Raffinage et pétrochimie',
+                        'courses': PETROLE_COURSES,
+                    },
+                    {
+                        'slug': 'energies-renouvelables',
+                        'name': 'Énergies renouvelables et environnement',
+                        'courses': PETROLE_COURSES,
+                    },
+                    {
+                        'slug': 'gestion-economie-petroliere',
+                        'name': 'Gestion et économie pétrolière',
+                        'courses': PETROLE_COURSES[20:] + ECO_COURSES[:8],
                     },
                 ],
             },
@@ -738,21 +1012,37 @@ UNIVERSITIES = [
                 'slug': 'droit',
                 'name': 'Faculté de Droit',
                 'departments': [
-                    {'slug': 'droit', 'name': 'Droit', 'courses': DROIT_COURSES},
+                    {'slug': 'droit-prive', 'name': 'Droit privé', 'courses': DROIT_COURSES},
+                    {'slug': 'droit-public', 'name': 'Droit public', 'courses': DROIT_COURSES[:12]},
                 ],
             },
             {
                 'slug': 'sciences-eco-gestion',
                 'name': 'Faculté des Sciences Économiques et de Gestion',
                 'departments': [
-                    {'slug': 'economie-gestion', 'name': 'Économie et gestion', 'courses': ECO_COURSES},
+                    {'slug': 'economie', 'name': 'Économie', 'courses': ECO_COURSES},
+                    {'slug': 'gestion', 'name': 'Gestion', 'courses': ECO_COURSES},
                 ],
             },
             {
                 'slug': 'lettres-sciences-humaines',
                 'name': 'Faculté des Lettres et Sciences Humaines',
                 'departments': [
-                    {'slug': 'lettres', 'name': 'Lettres', 'courses': LETTRES_COURSES},
+                    {
+                        'slug': 'lettres-francaises',
+                        'name': 'Lettres françaises',
+                        'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'histoire-geo',
+                        'name': 'Histoire-Géographie',
+                        'courses': LETTRES_COURSES,
+                    },
+                    {
+                        'slug': 'langues-africaines',
+                        'name': 'Langues africaines',
+                        'courses': LETTRES_COURSES,
+                    },
                 ],
             },
             {
@@ -776,6 +1066,11 @@ UNIVERSITIES = [
                         'name': 'Sciences de l’éducation',
                         'courses': PEDAGO_COURSES,
                     },
+                    {
+                        'slug': 'orientation',
+                        'name': 'Orientation scolaire et professionnelle',
+                        'courses': PSY_COURSES[8:] + PEDAGO_COURSES[:6],
+                    },
                 ],
             },
             {
@@ -783,8 +1078,18 @@ UNIVERSITIES = [
                 'name': 'Faculté des Sciences Sociales, Administratives et Politiques',
                 'departments': [
                     {
-                        'slug': 'sciences-sociales',
-                        'name': 'Sciences sociales',
+                        'slug': 'sciences-politiques',
+                        'name': 'Sciences politiques',
+                        'courses': SOC_COURSES,
+                    },
+                    {
+                        'slug': 'administration-publique',
+                        'name': 'Administration publique',
+                        'courses': SOC_COURSES,
+                    },
+                    {
+                        'slug': 'sociologie',
+                        'name': 'Sociologie',
                         'courses': SOC_COURSES,
                     },
                 ],
@@ -798,6 +1103,11 @@ UNIVERSITIES = [
                         'name': 'Sciences de la santé',
                         'courses': SANTE_PUB,
                     },
+                    {
+                        'slug': 'infirmier',
+                        'name': 'Sciences infirmières',
+                        'courses': SANTE_PUB + MED_COURSES[:6],
+                    },
                 ],
             },
             {
@@ -805,14 +1115,24 @@ UNIVERSITIES = [
                 'name': 'Faculté de Pédagogie et de Didactique des Disciplines',
                 'departments': [
                     {
-                        'slug': 'didactique',
-                        'name': 'Didactique des disciplines',
+                        'slug': 'didactique-sciences',
+                        'name': 'Didactique des sciences',
                         'courses': PEDAGO_COURSES,
+                    },
+                    {
+                        'slug': 'didactique-lettres',
+                        'name': 'Didactique des lettres',
+                        'courses': PEDAGO_COURSES + LETTRES_COURSES[:4],
                     },
                     {
                         'slug': 'informatique-pedagogique',
                         'name': 'Informatique pédagogique',
                         'courses': INFO_COURSES[:10] + PEDAGO_COURSES[4:6],
+                    },
+                    {
+                        'slug': 'education-physique',
+                        'name': 'Éducation physique et sportive',
+                        'courses': PEDAGO_COURSES,
                     },
                 ],
             },
@@ -832,6 +1152,11 @@ UNIVERSITIES = [
                 'name': 'Faculté des Sciences Agronomiques et Environnement',
                 'departments': [
                     {'slug': 'agronomie', 'name': 'Agronomie', 'courses': AGRO_COURSES},
+                    {
+                        'slug': 'production-animale',
+                        'name': 'Production animale',
+                        'courses': AGRO_COURSES[:12],
+                    },
                 ],
             },
         ],

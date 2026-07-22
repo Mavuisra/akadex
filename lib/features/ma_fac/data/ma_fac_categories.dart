@@ -66,9 +66,18 @@ abstract final class MaFacCategories {
       label: 'Projets',
       icon: Icons.handyman_outlined,
       colors: [Color(0xFF455A64), Color(0xFF263238)],
-      types: [DocumentType.projet, DocumentType.projetTutore, DocumentType.rapport],
+      types: [DocumentType.projet, DocumentType.projetTutore],
       photoUrl:
           'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80',
+    ),
+    MaFacCategory(
+      id: 'rapport-stage',
+      label: 'Rapport de stage',
+      icon: Icons.work_outline_rounded,
+      colors: [Color(0xFF0277BD), Color(0xFF01579B)],
+      types: [DocumentType.rapport],
+      photoUrl:
+          'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
     ),
     MaFacCategory(
       id: 'memoires',

@@ -73,12 +73,16 @@ class Command(BaseCommand):
                     depts[key] = dept
 
                     for level in CYCLES:
-                        Promotion.objects.get_or_create(
+                        Promotion.objects.update_or_create(
                             department=dept,
-                            name=f'{level} {dept.name} 2025–2026',
+                            name=level,
                             year=2025,
-                            defaults={'level': level},
+                            defaults={'level': level, 'is_verified': True},
                         )
+                    # Nettoyer les anciennes promotions verbeuses (seed précédent).
+                    Promotion.objects.filter(department=dept, year=2025).exclude(
+                        name__in=list(CYCLES)
+                    ).delete()
 
                     for code, title, desc, credits, cycle in dept_spec.get('courses', []):
                         # Préfixer le code par l’univ pour éviter collisions cross-fac
@@ -118,38 +122,48 @@ class Command(BaseCommand):
 
         promo_l3 = Promotion.objects.get(
             department=dept_info,
-            name='L3 Informatique 2025–2026',
+            name='L3',
             year=2025,
         )
         promo_l2 = Promotion.objects.get(
             department=dept_info,
-            name='L2 Informatique 2025–2026',
+            name='L2',
             year=2025,
         )
         promo_gest = Promotion.objects.get(
             department=dept_gest,
-            name='L3 Gestion 2025–2026',
+            name='L3',
             year=2025,
         )
 
         def ensure_user(email, username, first, last, role, **extra):
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'username': username,
-                    'first_name': first,
-                    'last_name': last,
-                    'role': role,
-                    **extra,
-                },
-            )
-            for k, v in extra.items():
-                setattr(user, k, v)
-            user.username = username
+            """Idempotent : retrouve par email ou username (évite UNIQUE username)."""
+            user = User.objects.filter(email=email).first()
+            if user is None:
+                user = User.objects.filter(username=username).first()
+            if user is None:
+                user = User(email=email, username=username)
+
+            desired = username
+            clash = User.objects.filter(username=desired)
+            if user.pk:
+                clash = clash.exclude(pk=user.pk)
+            if clash.exists():
+                n = 2
+                while User.objects.filter(username=f'{username}{n}').exclude(
+                    pk=user.pk or 0
+                ).exists():
+                    n += 1
+                desired = f'{username}{n}'
+
+            user.email = email
+            user.username = desired
             user.first_name = first
             user.last_name = last
             user.role = role
             user.is_active = True
+            for k, v in extra.items():
+                setattr(user, k, v)
             # Toujours réaligner le mot de passe démo
             user.set_password('akadex2026')
             user.save()
