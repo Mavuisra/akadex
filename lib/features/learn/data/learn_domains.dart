@@ -21,12 +21,14 @@ class LearnDomain {
   final List<String> keywords;
 
   bool matches(Course course) {
+    if (course.domainSlugs.contains(id)) return true;
     final hay = [
       course.faculty,
       course.department,
       course.title,
       course.code,
       course.university,
+      ...course.domainNames,
     ].join(' ').toLowerCase();
     return keywords.any((k) => hay.contains(k.toLowerCase()));
   }
@@ -65,6 +67,22 @@ abstract final class LearnDomains {
       icon: Icons.trending_up_rounded,
       colors: [Color(0xFFEF6C00), Color(0xFFE65100)],
       keywords: ['économie', 'economie', 'gestion', 'commerce', 'finance'],
+    ),
+    LearnDomain(
+      id: 'comptabilite',
+      name: 'Comptabilité',
+      shortLabel: 'Compta',
+      icon: Icons.calculate_outlined,
+      colors: [Color(0xFF00838F), Color(0xFF006064)],
+      keywords: ['comptabilité', 'comptabilite', 'ohada', 'audit', 'fiscal'],
+    ),
+    LearnDomain(
+      id: 'marketing',
+      name: 'Marketing',
+      shortLabel: 'Mktg',
+      icon: Icons.campaign_outlined,
+      colors: [Color(0xFFC2185B), Color(0xFF880E4F)],
+      keywords: ['marketing', 'vente', 'communication commerciale'],
     ),
     LearnDomain(
       id: 'sciences',
@@ -109,14 +127,7 @@ abstract final class LearnDomains {
 
   static List<Course> filterCourses(List<Course> courses, LearnDomain domain) {
     final matched = courses.where(domain.matches).toList();
-    if (matched.isEmpty) {
-      return courses.where((c) => c.code.startsWith('AKX-')).take(12).toList();
-    }
-    matched.sort((a, b) {
-      final af = a.code.startsWith('AKX-') ? 0 : 1;
-      final bf = b.code.startsWith('AKX-') ? 0 : 1;
-      return af.compareTo(bf);
-    });
+    matched.sort((a, b) => a.title.compareTo(b.title));
     return matched;
   }
 }

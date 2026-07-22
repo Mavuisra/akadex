@@ -117,10 +117,44 @@ class Promotion(models.Model):
         return f'{self.name} ({self.year})'
 
 
+class LearningDomain(models.Model):
+    """Domaine Apprendre (Informatique, Droit…) — liaison cours ↔ vidéos."""
+
+    slug = models.SlugField(unique=True)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    keywords = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Mots-clés séparés par des virgules',
+    )
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
 class Course(models.Model):
+    class ModerationStatus(models.TextChoices):
+        PENDING = 'pending', 'En attente de validation'
+        APPROVED = 'approved', 'Validé'
+        CHANGES_REQUESTED = 'changes_requested', 'Modification demandée'
+        REJECTED = 'rejected', 'Rejeté'
+
     department = models.ForeignKey(
         Department,
         on_delete=models.CASCADE,
+        related_name='courses',
+    )
+    promotion = models.ForeignKey(
+        Promotion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='courses',
     )
     code = models.CharField(max_length=32)
@@ -134,7 +168,7 @@ class Course(models.Model):
     semester = models.CharField(
         max_length=32,
         blank=True,
-        help_text='Cycle universitaire RDC : L1, L2, L3, Master 1, Master 2',
+        help_text='Cycle / semestre : L1, L2, L3, Master 1, Master 2, S1, S2…',
     )
     cover_url = models.URLField(
         max_length=500,
@@ -148,14 +182,48 @@ class Course(models.Model):
     )
     estimated_hours = models.PositiveSmallIntegerField(
         default=0,
-        help_text='Durée estimée en heures',
+        help_text='Volume horaire estimé',
+    )
+    teacher_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text='Titulaire du cours (saisie libre)',
     )
     teachers = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         blank=True,
         related_name='taught_courses',
     )
+    domains = models.ManyToManyField(
+        LearningDomain,
+        blank=True,
+        related_name='courses',
+    )
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='submitted_courses',
+    )
+    is_approved = models.BooleanField(default=True)
+    moderation_status = models.CharField(
+        max_length=32,
+        choices=ModerationStatus.choices,
+        default=ModerationStatus.APPROVED,
+        db_index=True,
+    )
+    moderation_note = models.TextField(blank=True)
+    validated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='validated_courses',
+    )
+    validated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ('department', 'code')
@@ -167,6 +235,45 @@ class Course(models.Model):
     @property
     def document_count(self):
         return self.documents.filter(is_approved=True).count()
+
+    @property
+    def is_pending(self):
+        return self.moderation_status == self.ModerationStatus.PENDING
+
+
+class CourseValidationLog(models.Model):
+    class Action(models.TextChoices):
+        SUBMITTED = 'submitted', 'Soumis'
+        APPROVED = 'approved', 'Validé'
+        CHANGES_REQUESTED = 'changes_requested', 'Modification demandée'
+        REJECTED = 'rejected', 'Rejeté'
+
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name='validation_logs',
+    )
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='course_validation_actions',
+    )
+    action = models.CharField(max_length=32, choices=Action.choices)
+    note = models.TextField(blank=True)
+    domain_slugs = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text='Domaines liés au moment de l’action (slugs CSV)',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.course_id} — {self.action}'
 
 
 class DocumentType(models.TextChoices):

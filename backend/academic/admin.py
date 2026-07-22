@@ -7,11 +7,13 @@ from .models import (
     CalendarEvent,
     Campus,
     Course,
+    CourseValidationLog,
     Department,
     Document,
     DocumentComment,
     Faculty,
     Favorite,
+    LearningDomain,
     Promotion,
     RewardPrize,
     RewardRedemption,
@@ -54,12 +56,166 @@ class PromotionAdmin(admin.ModelAdmin):
     list_filter = ('year', 'department', 'level')
 
 
+@admin.register(LearningDomain)
+class LearningDomainAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'order', 'is_active')
+    list_editable = ('order', 'is_active')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ('name', 'slug', 'keywords')
+
+
+class CourseValidationLogInline(admin.TabularInline):
+    model = CourseValidationLog
+    extra = 0
+    readonly_fields = (
+        'actor',
+        'action',
+        'note',
+        'domain_slugs',
+        'created_at',
+    )
+    can_delete = False
+
+
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('code', 'title', 'department', 'semester', 'credits')
-    list_filter = ('department', 'semester')
-    search_fields = ('code', 'title')
-    filter_horizontal = ('teachers',)
+    list_display = (
+        'code',
+        'title',
+        'department',
+        'semester',
+        'moderation_status',
+        'is_approved',
+        'submitted_by',
+        'credits',
+    )
+    list_filter = (
+        'moderation_status',
+        'is_approved',
+        'department__faculty__university',
+        'semester',
+        'domains',
+    )
+    search_fields = ('code', 'title', 'teacher_name', 'submitted_by__email')
+    filter_horizontal = ('teachers', 'domains')
+    readonly_fields = ('validated_by', 'validated_at', 'created_at', 'updated_at')
+    inlines = [CourseValidationLogInline]
+    actions = ['approve_courses', 'reject_courses', 'request_course_changes']
+
+    @admin.action(description='Valider les cours (domaines déjà associés)')
+    def approve_courses(self, request, queryset):
+        from django.utils import timezone
+
+        from accounts.models import AppNotification
+
+        for course in queryset.select_related('submitted_by'):
+            if not course.domains.exists():
+                self.message_user(
+                    request,
+                    f'« {course.title} » : associez au moins un domaine avant validation.',
+                    level='WARNING',
+                )
+                continue
+            course.is_approved = True
+            course.moderation_status = Course.ModerationStatus.APPROVED
+            course.validated_by = request.user
+            course.validated_at = timezone.now()
+            course.save(
+                update_fields=[
+                    'is_approved',
+                    'moderation_status',
+                    'validated_by',
+                    'validated_at',
+                    'updated_at',
+                ]
+            )
+            CourseValidationLog.objects.create(
+                course=course,
+                actor=request.user,
+                action=CourseValidationLog.Action.APPROVED,
+                domain_slugs=','.join(d.slug for d in course.domains.all()),
+            )
+            if course.submitted_by_id:
+                AppNotification.objects.create(
+                    user_id=course.submitted_by_id,
+                    kind=AppNotification.Kind.GENERAL,
+                    title='Cours validé',
+                    message=f'Votre cours « {course.title} » a été validé.',
+                )
+
+    @admin.action(description='Demander une modification')
+    def request_course_changes(self, request, queryset):
+        from accounts.models import AppNotification
+
+        for course in queryset.select_related('submitted_by'):
+            course.is_approved = False
+            course.moderation_status = Course.ModerationStatus.CHANGES_REQUESTED
+            course.moderation_note = course.moderation_note or 'Modification demandée'
+            course.save(
+                update_fields=[
+                    'is_approved',
+                    'moderation_status',
+                    'moderation_note',
+                    'updated_at',
+                ]
+            )
+            CourseValidationLog.objects.create(
+                course=course,
+                actor=request.user,
+                action=CourseValidationLog.Action.CHANGES_REQUESTED,
+                note=course.moderation_note,
+            )
+            if course.submitted_by_id:
+                AppNotification.objects.create(
+                    user_id=course.submitted_by_id,
+                    kind=AppNotification.Kind.GENERAL,
+                    title='Modification demandée',
+                    message=(
+                        f'Une modification a été demandée pour « {course.title} ».'
+                    ),
+                )
+
+    @admin.action(description='Rejeter les cours')
+    def reject_courses(self, request, queryset):
+        from accounts.models import AppNotification
+
+        for course in queryset.select_related('submitted_by'):
+            course.is_approved = False
+            course.moderation_status = Course.ModerationStatus.REJECTED
+            course.save(
+                update_fields=[
+                    'is_approved',
+                    'moderation_status',
+                    'updated_at',
+                ]
+            )
+            CourseValidationLog.objects.create(
+                course=course,
+                actor=request.user,
+                action=CourseValidationLog.Action.REJECTED,
+            )
+            if course.submitted_by_id:
+                AppNotification.objects.create(
+                    user_id=course.submitted_by_id,
+                    kind=AppNotification.Kind.GENERAL,
+                    title='Cours refusé',
+                    message=f'Votre cours « {course.title} » a été refusé.',
+                )
+
+
+@admin.register(CourseValidationLog)
+class CourseValidationLogAdmin(admin.ModelAdmin):
+    list_display = ('course', 'action', 'actor', 'created_at')
+    list_filter = ('action',)
+    search_fields = ('course__title', 'course__code', 'note')
+    readonly_fields = (
+        'course',
+        'actor',
+        'action',
+        'note',
+        'domain_slugs',
+        'created_at',
+    )
 
 
 @admin.register(Document)

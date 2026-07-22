@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
@@ -260,6 +261,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (course.needsModerationBadge) ...[
+                            ModerationChip(status: course.moderationStatus),
+                            const SizedBox(height: 10),
+                          ],
                           Text(
                             course.title,
                             style: const TextStyle(
@@ -279,6 +284,38 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                 fontSize: 15,
                                 color: Color(0xFF3E4143),
                                 height: 1.35,
+                              ),
+                            ),
+                          ],
+                          if (course.domainNames.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                for (final name in course.domainNames)
+                                  _ChipBadge(
+                                    label: name,
+                                    bg: AkadexColors.primarySoft,
+                                    fg: AkadexColors.primary,
+                                  ),
+                              ],
+                            ),
+                          ],
+                          if (course.primaryDomainSlug.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () => context.push(
+                                  '/learn/domain/${course.primaryDomainSlug}',
+                                ),
+                                icon: const Icon(Icons.play_circle_outline),
+                                label: Text(
+                                  course.domainNames.length == 1
+                                      ? 'Apprendre ce domaine'
+                                      : 'Apprendre : ${course.domainNames.first}',
+                                ),
                               ),
                             ),
                           ],

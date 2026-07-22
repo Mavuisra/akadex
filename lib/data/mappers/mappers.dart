@@ -177,7 +177,22 @@ Course courseFromJson(Map<String, dynamic> json) {
   final fromList = teachers
       .map((e) => _cleanTeacherName(e.toString()))
       .firstWhere((e) => e.isNotEmpty, orElse: () => '');
-  final resolvedName = fullName.isNotEmpty ? fullName : fromList;
+  final teacherNameField =
+      _cleanTeacherName((json['teacher_name'] ?? '').toString());
+  final resolvedName = fullName.isNotEmpty
+      ? fullName
+      : (fromList.isNotEmpty ? fromList : teacherNameField);
+  final domains = (json['domains'] as List?) ?? const [];
+  final domainSlugs = <String>[];
+  final domainNames = <String>[];
+  for (final d in domains) {
+    if (d is Map) {
+      final slug = (d['slug'] ?? '').toString();
+      final name = (d['name'] ?? '').toString();
+      if (slug.isNotEmpty) domainSlugs.add(slug);
+      if (name.isNotEmpty) domainNames.add(name);
+    }
+  }
   return Course(
     id: json['id'].toString(),
     title: (json['title'] ?? '').toString(),
@@ -207,6 +222,14 @@ Course courseFromJson(Map<String, dynamic> json) {
     coverUrl: (json['cover_url'] ?? '').toString(),
     levelLabel: (json['level_label'] ?? '').toString(),
     estimatedHours: asInt(json['estimated_hours']),
+    isApproved: json['is_approved'] != false,
+    moderationStatus: (json['moderation_status'] ??
+            (json['is_approved'] == true ? 'approved' : 'pending'))
+        .toString(),
+    moderationNote: (json['moderation_note'] ?? '').toString(),
+    domainSlugs: domainSlugs,
+    domainNames: domainNames,
+    submittedByName: (json['submitted_by_name'] ?? '').toString(),
   );
 }
 
@@ -462,9 +485,10 @@ AppNotification notificationFromJson(Map<String, dynamic> json) {
 }
 
 String moderationStatusLabel(String status) => switch (status) {
-      'pending' => "En cours d'examen",
-      'approved' => 'Validée',
-      'rejected' => 'Refusée',
+      'pending' => 'En attente de validation',
+      'changes_requested' => 'Modification demandée',
+      'approved' => 'Validé',
+      'rejected' => 'Rejeté',
       _ => status,
     };
 

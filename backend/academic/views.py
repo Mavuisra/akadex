@@ -1,6 +1,8 @@
 from django.db.models import Count, F, Q
+from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from academic.rewards import WHEEL_UNLOCK_POINTS
@@ -10,11 +12,13 @@ from .models import (
     CalendarEvent,
     Campus,
     Course,
+    CourseValidationLog,
     Department,
     Document,
     DocumentComment,
     Faculty,
     Favorite,
+    LearningDomain,
     Promotion,
     RewardPrize,
     RewardRedemption,
@@ -24,6 +28,7 @@ from .serializers import (
     AnnouncementSerializer,
     CalendarEventSerializer,
     CampusSerializer,
+    CourseContributeSerializer,
     CourseListSerializer,
     CourseSerializer,
     DepartmentSerializer,
@@ -31,6 +36,7 @@ from .serializers import (
     DocumentSerializer,
     FacultySerializer,
     FavoriteSerializer,
+    LearningDomainSerializer,
     PromotionSerializer,
     RewardPrizeSerializer,
     RewardRedemptionSerializer,
@@ -84,25 +90,50 @@ class PromotionViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None
 
 
+class LearningDomainViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = LearningDomainSerializer
+    lookup_field = 'slug'
+    pagination_class = None
+    search_fields = ['name', 'slug', 'keywords']
+
+    def get_queryset(self):
+        return LearningDomain.objects.filter(is_active=True)
+
+
 class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
-    filterset_fields = ['department', 'semester', 'department__faculty']
-    search_fields = ['code', 'title', 'description']
-    ordering_fields = ['code', 'title', 'credits', 'created_at']
+    filterset_fields = [
+        'department',
+        'semester',
+        'department__faculty',
+        'moderation_status',
+        'is_approved',
+        'submitted_by',
+        'domains',
+        'domains__slug',
+        'promotion',
+    ]
+    search_fields = ['code', 'title', 'description', 'teacher_name']
+    ordering_fields = ['code', 'title', 'credits', 'created_at', 'updated_at']
 
     def get_serializer_class(self):
         if self.action == 'list':
             return CourseListSerializer
+        if self.action == 'create':
+            return CourseContributeSerializer
         return CourseSerializer
 
     def get_queryset(self):
-        return (
+        qs = (
             Course.objects.select_related(
                 'department',
                 'department__faculty',
                 'department__faculty__university',
+                'promotion',
+                'submitted_by',
+                'validated_by',
             )
-            .prefetch_related('teachers')
+            .prefetch_related('teachers', 'domains', 'validation_logs')
             .annotate(
                 approved_document_count=Count(
                     'documents',
@@ -111,11 +142,259 @@ class CourseViewSet(viewsets.ModelViewSet):
                 )
             )
         )
+        user = self.request.user
+        if user.is_authenticated and user.is_staff:
+            return qs
+        # Spec : pending visible partout avec badge ; rejetés = auteur seulement.
+        if user.is_authenticated:
+            return qs.filter(
+                Q(moderation_status__in=[
+                    Course.ModerationStatus.APPROVED,
+                    Course.ModerationStatus.PENDING,
+                    Course.ModerationStatus.CHANGES_REQUESTED,
+                ])
+                | Q(submitted_by=user)
+            ).distinct()
+        return qs.filter(
+            moderation_status__in=[
+                Course.ModerationStatus.APPROVED,
+                Course.ModerationStatus.PENDING,
+                Course.ModerationStatus.CHANGES_REQUESTED,
+            ]
+        )
 
     def get_permissions(self):
-        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+        if self.action == 'create':
+            return [permissions.IsAuthenticated()]
+        if self.action in (
+            'approve',
+            'reject',
+            'request_changes',
+            'destroy',
+        ):
             return [permissions.IsAdminUser()]
+        if self.action in ('update', 'partial_update'):
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+
+    def perform_create(self, serializer):
+        import uuid
+
+        user = self.request.user
+        if not user.department_id:
+            raise ValidationError(
+                {
+                    'department': (
+                        'Complétez votre département dans le profil '
+                        'avant de proposer un cours.'
+                    )
+                }
+            )
+        code = (serializer.validated_data.get('code') or '').strip()
+        if not code:
+            code = f'PROP-{uuid.uuid4().hex[:8].upper()}'
+        semester = (serializer.validated_data.get('semester') or '').strip()
+        if not semester and user.promotion_id:
+            semester = user.promotion.level or user.promotion.name
+        course = serializer.save(
+            department=user.department,
+            promotion=user.promotion,
+            submitted_by=user,
+            code=code,
+            semester=semester,
+            is_approved=False,
+            moderation_status=Course.ModerationStatus.PENDING,
+        )
+        CourseValidationLog.objects.create(
+            course=course,
+            actor=user,
+            action=CourseValidationLog.Action.SUBMITTED,
+            note='Contribution étudiante',
+        )
+
+    def perform_update(self, serializer):
+        course = self.get_object()
+        user = self.request.user
+        if not user.is_staff:
+            if course.submitted_by_id != user.id:
+                raise PermissionDenied()
+            if course.moderation_status not in (
+                Course.ModerationStatus.PENDING,
+                Course.ModerationStatus.CHANGES_REQUESTED,
+            ):
+                raise PermissionDenied(
+                    'Seul un cours en attente ou à modifier peut être édité.'
+                )
+            # Empêche de forcer une validation côté client.
+            course = serializer.save(
+                is_approved=False,
+                moderation_status=Course.ModerationStatus.PENDING,
+                moderation_note='',
+            )
+            CourseValidationLog.objects.create(
+                course=course,
+                actor=user,
+                action=CourseValidationLog.Action.SUBMITTED,
+                note='Resoumission après modification',
+            )
+            return
+        serializer.save()
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        course = serializer.instance
+        out = CourseSerializer(course, context={'request': request})
+        headers = self.get_success_headers(out.data)
+        return Response(out.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def _set_domains(self, course, request):
+        domain_ids = request.data.get('domain_ids') or request.data.get('domains')
+        domain_slugs = request.data.get('domain_slugs')
+        domains = []
+        if domain_ids:
+            domains = list(
+                LearningDomain.objects.filter(id__in=domain_ids, is_active=True)
+            )
+        elif domain_slugs:
+            if isinstance(domain_slugs, str):
+                domain_slugs = [
+                    s.strip() for s in domain_slugs.split(',') if s.strip()
+                ]
+            domains = list(
+                LearningDomain.objects.filter(
+                    slug__in=domain_slugs, is_active=True
+                )
+            )
+        if domains:
+            course.domains.set(domains)
+        return ','.join(d.slug for d in course.domains.all())
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def approve(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        course = self.get_object()
+        note = (request.data.get('note') or '').strip()
+        domain_csv = self._set_domains(course, request)
+        if not course.domains.exists():
+            raise ValidationError(
+                {
+                    'domains': (
+                        'Associez au moins un domaine d’apprentissage '
+                        'lors de la validation.'
+                    )
+                }
+            )
+        course.is_approved = True
+        course.moderation_status = Course.ModerationStatus.APPROVED
+        course.moderation_note = note
+        course.validated_by = request.user
+        course.validated_at = timezone.now()
+        course.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'moderation_note',
+                'validated_by',
+                'validated_at',
+                'updated_at',
+            ]
+        )
+        CourseValidationLog.objects.create(
+            course=course,
+            actor=request.user,
+            action=CourseValidationLog.Action.APPROVED,
+            note=note,
+            domain_slugs=domain_csv,
+        )
+        if course.submitted_by_id:
+            AppNotification.objects.create(
+                user_id=course.submitted_by_id,
+                kind=AppNotification.Kind.GENERAL,
+                title='Cours validé',
+                message=f'Votre cours « {course.title} » a été validé.',
+            )
+        return Response(CourseSerializer(course, context={'request': request}).data)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[permissions.IsAdminUser],
+        url_path='request-changes',
+    )
+    def request_changes(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        course = self.get_object()
+        note = (request.data.get('note') or request.data.get('reason') or '').strip()
+        if not note:
+            raise ValidationError({'note': 'Précisez la modification demandée.'})
+        course.is_approved = False
+        course.moderation_status = Course.ModerationStatus.CHANGES_REQUESTED
+        course.moderation_note = note
+        course.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'moderation_note',
+                'updated_at',
+            ]
+        )
+        CourseValidationLog.objects.create(
+            course=course,
+            actor=request.user,
+            action=CourseValidationLog.Action.CHANGES_REQUESTED,
+            note=note,
+            domain_slugs=','.join(d.slug for d in course.domains.all()),
+        )
+        if course.submitted_by_id:
+            AppNotification.objects.create(
+                user_id=course.submitted_by_id,
+                kind=AppNotification.Kind.GENERAL,
+                title='Modification demandée',
+                message=(
+                    f'Une modification a été demandée pour « {course.title} ». '
+                    f'Motif : {note}'
+                ),
+            )
+        return Response(CourseSerializer(course, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def reject(self, request, pk=None):
+        from accounts.models import AppNotification
+
+        course = self.get_object()
+        note = (request.data.get('note') or request.data.get('reason') or '').strip()
+        course.is_approved = False
+        course.moderation_status = Course.ModerationStatus.REJECTED
+        course.moderation_note = note
+        course.save(
+            update_fields=[
+                'is_approved',
+                'moderation_status',
+                'moderation_note',
+                'updated_at',
+            ]
+        )
+        CourseValidationLog.objects.create(
+            course=course,
+            actor=request.user,
+            action=CourseValidationLog.Action.REJECTED,
+            note=note,
+        )
+        if course.submitted_by_id:
+            AppNotification.objects.create(
+                user_id=course.submitted_by_id,
+                kind=AppNotification.Kind.GENERAL,
+                title='Cours refusé',
+                message=(
+                    f'Votre cours « {course.title} » a été refusé.'
+                    + (f' Motif : {note}' if note else '')
+                ),
+            )
+        return Response({'status': 'rejected'})
 
 
 class DocumentViewSet(viewsets.ModelViewSet):

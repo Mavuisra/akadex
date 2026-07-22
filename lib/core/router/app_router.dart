@@ -26,7 +26,10 @@ import '../../core/widgets/post_viewer_screens.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
 import '../../features/library/presentation/screens/lesson_player_screen.dart';
+import '../../features/library/presentation/screens/suggest_course_screen.dart';
+import '../../features/ma_fac/presentation/screens/ma_fac_course_detail_screen.dart';
 import '../../features/ma_fac/presentation/screens/ma_fac_docs_screen.dart';
+import '../../features/ma_fac/presentation/screens/ma_fac_explore_screen.dart';
 import '../../features/ma_fac/presentation/screens/ma_fac_screen.dart';
 import '../../features/lmd/presentation/screens/lmd_assistant_screen.dart';
 import '../../features/lmd/presentation/screens/lmd_guide_screen.dart';
@@ -197,6 +200,33 @@ final routerProvider = Provider<GoRouter>((ref) {
                       const MaFacCoursesScreen(),
                     ),
                   ),
+                  GoRoute(
+                    path: 'explore',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) {
+                      final q = state.uri.queryParameters;
+                      return _cupertino(
+                        state,
+                        MaFacExploreScreen(
+                          departmentId: q['departmentId'] ?? '',
+                          departmentName: q['departmentName'] ?? '',
+                          promotionId: q['promotionId'] ?? '',
+                          promotionName: q['promotionName'] ?? '',
+                          facultyName: q['facultyName'] ?? '',
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'ue/:id',
+                    parentNavigatorKey: _rootKey,
+                    pageBuilder: (context, state) => _cupertino(
+                      state,
+                      MaFacCourseDetailScreen(
+                        courseId: state.pathParameters['id']!,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -359,6 +389,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const ContributeScreen()),
+      ),
+      GoRoute(
+        path: '/contribute/course',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const SuggestCourseScreen()),
       ),
       GoRoute(
         path: '/my-contributions',

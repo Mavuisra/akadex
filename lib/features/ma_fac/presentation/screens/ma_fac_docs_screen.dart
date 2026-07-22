@@ -177,7 +177,7 @@ class MaFacCoursesScreen extends ConsumerWidget {
             itemBuilder: (_, i) {
               final c = courses[i];
               return SoftCard(
-                onTap: () => context.push('/library/course/${c.id}'),
+                onTap: () => context.push('/library/ue/${c.id}'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

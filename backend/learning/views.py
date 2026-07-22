@@ -35,8 +35,10 @@ class CourseOutlineViewSet(viewsets.ReadOnlyModelViewSet):
             'department',
             'department__faculty',
             'department__faculty__university',
+            'promotion',
         ).prefetch_related(
             'teachers',
+            'domains',
             'modules__lessons',
         )
 

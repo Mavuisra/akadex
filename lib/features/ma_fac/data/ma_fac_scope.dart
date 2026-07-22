@@ -35,25 +35,21 @@ abstract final class MaFacScope {
   }
 
   static List<Course> filterCourses(List<Course> all, UserProfile? me) {
-    if (me == null) return all.take(12).toList();
-    final matched = all.where((c) => courseMatchesUser(c, me)).toList();
-    if (matched.isNotEmpty) {
-      matched.sort((a, b) {
-        final af = a.code.startsWith('AKX-') ? 0 : 1;
-        final bf = b.code.startsWith('AKX-') ? 0 : 1;
-        return af.compareTo(bf);
-      });
-      return matched;
-    }
+    // Les AKX-* sont la vitrine « Apprendre », pas le programme de promotion.
+    final catalogue = all.where((c) => !c.code.startsWith('AKX-')).toList();
+    if (me == null) return catalogue.take(12).toList();
+    final matched =
+        catalogue.where((c) => courseMatchesUser(c, me)).toList();
+    if (matched.isNotEmpty) return matched;
     final uni = me.university.trim().toLowerCase();
     if (uni.isNotEmpty) {
-      final byUni = all
+      final byUni = catalogue
           .where(
             (c) => c.university.toLowerCase().contains(uni.split(' ').first),
           )
           .toList();
       if (byUni.isNotEmpty) return byUni.take(20).toList();
     }
-    return all.where((c) => c.code.startsWith('AKX-')).take(8).toList();
+    return const [];
   }
 }

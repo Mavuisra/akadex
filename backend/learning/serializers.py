@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from academic.models import Course
-from academic.serializers import teacher_payload
+from academic.serializers import LearningDomainSerializer, teacher_payload
 
 from .models import CourseComment, CourseLesson, CourseModule, LessonProgress
 
@@ -86,6 +86,7 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
     promotion = serializers.SerializerMethodField()
     modules = CourseModuleSerializer(many=True, read_only=True)
     document_count = serializers.IntegerField(read_only=True)
+    domains = LearningDomainSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
@@ -104,6 +105,7 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
             'cover_url',
             'level_label',
             'estimated_hours',
+            'teacher_name',
             'department',
             'department_name',
             'faculty_name',
@@ -118,17 +120,29 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
             'teacher_university',
             'document_count',
             'modules',
+            'domains',
+            'is_approved',
+            'moderation_status',
+            'moderation_note',
             'created_at',
         ]
 
     def get_teacher_names(self, obj):
-        return [t.get_full_name() or t.email for t in obj.teachers.all()]
+        names = [t.get_full_name() or t.email for t in obj.teachers.all()]
+        if names:
+            return names
+        if (obj.teacher_name or '').strip():
+            return [obj.teacher_name.strip()]
+        return []
 
     def get_teacher_title(self, obj):
         return teacher_payload(obj)['teacher_title']
 
     def get_teacher_full_name(self, obj):
-        return teacher_payload(obj)['teacher_full_name']
+        name = teacher_payload(obj)['teacher_full_name']
+        if name:
+            return name
+        return (obj.teacher_name or '').strip()
 
     def get_teacher_headline(self, obj):
         return teacher_payload(obj)['teacher_headline']
@@ -146,6 +160,8 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
         return teacher_payload(obj)['teacher_university']
 
     def get_promotion(self, obj):
+        if obj.promotion_id:
+            return obj.promotion.name
         s = (obj.semester or '').strip()
         mapping = {
             'L1': 'L1',

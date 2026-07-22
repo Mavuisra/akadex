@@ -5,11 +5,13 @@ from .models import (
     CalendarEvent,
     Campus,
     Course,
+    CourseValidationLog,
     Department,
     Document,
     DocumentComment,
     Faculty,
     Favorite,
+    LearningDomain,
     Promotion,
     RewardPrize,
     RewardRedemption,
@@ -159,6 +161,43 @@ class PromotionSerializer(serializers.ModelSerializer):
         ]
 
 
+class LearningDomainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LearningDomain
+        fields = [
+            'id',
+            'slug',
+            'name',
+            'description',
+            'keywords',
+            'is_active',
+            'order',
+        ]
+
+
+class CourseValidationLogSerializer(serializers.ModelSerializer):
+    actor_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseValidationLog
+        fields = [
+            'id',
+            'course',
+            'actor',
+            'actor_name',
+            'action',
+            'note',
+            'domain_slugs',
+            'created_at',
+        ]
+        read_only_fields = fields
+
+    def get_actor_name(self, obj):
+        if obj.actor_id is None:
+            return ''
+        return obj.actor.get_full_name() or obj.actor.email
+
+
 class CourseListSerializer(serializers.ModelSerializer):
     """Payload léger pour listes (Apprendre / Ma Fac) — sans bios ni textes longs."""
 
@@ -177,6 +216,8 @@ class CourseListSerializer(serializers.ModelSerializer):
     teacher_names = serializers.SerializerMethodField()
     teacher_full_name = serializers.SerializerMethodField()
     promotion = serializers.SerializerMethodField()
+    domains = LearningDomainSerializer(many=True, read_only=True)
+    submitted_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -194,9 +235,16 @@ class CourseListSerializer(serializers.ModelSerializer):
             'cover_url',
             'level_label',
             'estimated_hours',
+            'teacher_name',
             'teacher_names',
             'teacher_full_name',
             'document_count',
+            'is_approved',
+            'moderation_status',
+            'moderation_note',
+            'domains',
+            'submitted_by',
+            'submitted_by_name',
         ]
 
     def get_document_count(self, obj):
@@ -206,15 +254,26 @@ class CourseListSerializer(serializers.ModelSerializer):
         return obj.documents.filter(is_approved=True).count()
 
     def get_teacher_names(self, obj):
-        return [u.get_full_name() or u.email for u in obj.teachers.all()]
+        names = [u.get_full_name() or u.email for u in obj.teachers.all()]
+        if names:
+            return names
+        tn = (obj.teacher_name or '').strip()
+        return [tn] if tn else []
 
     def get_teacher_full_name(self, obj):
         teachers = list(obj.teachers.all())
-        if not teachers:
+        if teachers:
+            return teachers[0].get_full_name() or teachers[0].email
+        return (obj.teacher_name or '').strip()
+
+    def get_submitted_by_name(self, obj):
+        if obj.submitted_by_id is None:
             return ''
-        return teachers[0].get_full_name() or teachers[0].email
+        return obj.submitted_by.get_full_name() or obj.submitted_by.email
 
     def get_promotion(self, obj):
+        if obj.promotion_id:
+            return obj.promotion.name
         s = (obj.semester or '').strip()
         mapping = {
             'L1': 'L1',
@@ -250,6 +309,16 @@ class CourseSerializer(serializers.ModelSerializer):
     teacher_avatar_url = serializers.SerializerMethodField()
     teacher_university = serializers.SerializerMethodField()
     promotion = serializers.SerializerMethodField()
+    domains = LearningDomainSerializer(many=True, read_only=True)
+    domain_ids = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=LearningDomain.objects.filter(is_active=True),
+        source='domains',
+        write_only=True,
+        required=False,
+    )
+    submitted_by_name = serializers.SerializerMethodField()
+    validation_logs = CourseValidationLogSerializer(many=True, read_only=True)
 
     class Meta:
         model = Course
@@ -272,6 +341,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'cover_url',
             'level_label',
             'estimated_hours',
+            'teacher_name',
             'teachers',
             'teacher_names',
             'teacher_title',
@@ -282,9 +352,29 @@ class CourseSerializer(serializers.ModelSerializer):
             'teacher_avatar_url',
             'teacher_university',
             'document_count',
+            'domains',
+            'domain_ids',
+            'is_approved',
+            'moderation_status',
+            'moderation_note',
+            'submitted_by',
+            'submitted_by_name',
+            'validated_by',
+            'validated_at',
+            'validation_logs',
             'created_at',
+            'updated_at',
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = [
+            'created_at',
+            'updated_at',
+            'is_approved',
+            'moderation_status',
+            'submitted_by',
+            'validated_by',
+            'validated_at',
+            'validation_logs',
+        ]
 
     def get_document_count(self, obj):
         annotated = getattr(obj, 'approved_document_count', None)
@@ -304,7 +394,10 @@ class CourseSerializer(serializers.ModelSerializer):
         return self._teacher(obj)['teacher_title']
 
     def get_teacher_full_name(self, obj):
-        return self._teacher(obj)['teacher_full_name']
+        name = self._teacher(obj)['teacher_full_name']
+        if name:
+            return name
+        return (obj.teacher_name or '').strip()
 
     def get_teacher_headline(self, obj):
         return self._teacher(obj)['teacher_headline']
@@ -321,7 +414,14 @@ class CourseSerializer(serializers.ModelSerializer):
     def get_teacher_university(self, obj):
         return self._teacher(obj)['teacher_university']
 
+    def get_submitted_by_name(self, obj):
+        if obj.submitted_by_id is None:
+            return ''
+        return obj.submitted_by.get_full_name() or obj.submitted_by.email
+
     def get_promotion(self, obj):
+        if obj.promotion_id:
+            return obj.promotion.name
         s = (obj.semester or '').strip()
         if not s:
             return ''
@@ -335,6 +435,45 @@ class CourseSerializer(serializers.ModelSerializer):
             'M2': 'M2',
         }
         return mapping.get(s, s)
+
+
+class CourseContributeSerializer(serializers.ModelSerializer):
+    """Soumission collaborative d’un cours par un étudiant."""
+
+    class Meta:
+        model = Course
+        fields = [
+            'id',
+            'title',
+            'code',
+            'description',
+            'objectives',
+            'prerequisites',
+            'estimated_hours',
+            'teacher_name',
+            'semester',
+            'credits',
+            'level_label',
+        ]
+        extra_kwargs = {
+            'code': {'required': False, 'allow_blank': True},
+            'description': {'required': False, 'allow_blank': True},
+            'objectives': {'required': False, 'allow_blank': True},
+            'prerequisites': {'required': False, 'allow_blank': True},
+            'estimated_hours': {'required': False},
+            'teacher_name': {'required': False, 'allow_blank': True},
+            'semester': {'required': False, 'allow_blank': True},
+            'credits': {'required': False},
+            'level_label': {'required': False, 'allow_blank': True},
+        }
+
+    def validate_title(self, value):
+        title = (value or '').strip()
+        if len(title) < 3:
+            raise serializers.ValidationError(
+                'L’intitulé du cours est trop court.'
+            )
+        return title
 
 
 class DocumentCommentSerializer(serializers.ModelSerializer):

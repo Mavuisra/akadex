@@ -196,6 +196,17 @@ class LocalAcademicStore {
     await batch.commit(noResult: true);
   }
 
+  /// Remplace entièrement le catalogue local (évite de garder d’anciens cours purgés).
+  Future<void> replaceAllCourses(List<Map<String, dynamic>> items) async {
+    if (_db == null) {
+      _memCourses.clear();
+      await upsertCourses(items);
+      return;
+    }
+    await _db.delete('courses');
+    await upsertCourses(items);
+  }
+
   Future<List<Course>> getCourses({String? semester}) async {
     if (_db == null) {
       var list = _memCourses.values.map(courseFromJson).toList();

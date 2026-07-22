@@ -143,3 +143,46 @@ class AkadexApiTests(APITestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email='nouveau@test.cd').exists())
+
+    def test_student_can_propose_course_pending(self):
+        from academic.models import LearningDomain
+
+        self.user.department = self.dept
+        self.user.save(update_fields=['department'])
+        self.client.force_authenticate(user=self.user)
+        url = reverse('course-list')
+        res = self.client.post(
+            url,
+            {
+                'title': 'Généralités des bases de données',
+                'description': 'Intro SGBD',
+                'teacher_name': 'Prof. Test',
+                'semester': 'L2',
+                'estimated_hours': 45,
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['moderation_status'], 'pending')
+        self.assertFalse(res.data['is_approved'])
+        course_id = res.data['id']
+
+        domain = LearningDomain.objects.create(
+            slug='informatique',
+            name='Informatique',
+        )
+        admin = User.objects.create_superuser(
+            email='admin@test.cd',
+            username='admin',
+            password='akadex2026',
+        )
+        self.client.force_authenticate(user=admin)
+        approve = self.client.post(
+            reverse('course-approve', args=[course_id]),
+            {'domain_ids': [domain.id]},
+            format='json',
+        )
+        self.assertEqual(approve.status_code, status.HTTP_200_OK)
+        self.assertEqual(approve.data['moderation_status'], 'approved')
+        self.assertTrue(approve.data['is_approved'])
+        self.assertEqual(approve.data['domains'][0]['slug'], 'informatique')

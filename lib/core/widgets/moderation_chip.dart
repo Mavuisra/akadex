@@ -13,6 +13,7 @@ class ModerationChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (bg, fg) = switch (status) {
       'pending' => (const Color(0xFFFFF4E0), const Color(0xFF8A5A00)),
+      'changes_requested' => (const Color(0xFFE8F0FE), const Color(0xFF174EA6)),
       'rejected' => (const Color(0xFFFDECEC), AkadexColors.danger),
       'approved' => (const Color(0xFFE6F7EF), AkadexColors.success),
       _ => (AkadexColors.primarySoft, AkadexColors.primary),

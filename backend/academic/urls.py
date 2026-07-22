@@ -17,6 +17,7 @@ from .views import (
     DocumentViewSet,
     FacultyViewSet,
     FavoriteViewSet,
+    LearningDomainViewSet,
     PromotionViewSet,
     RewardPrizeViewSet,
     UniversityViewSet,
@@ -28,6 +29,7 @@ router.register('campuses', CampusViewSet, basename='campus')
 router.register('faculties', FacultyViewSet, basename='faculty')
 router.register('departments', DepartmentViewSet, basename='department')
 router.register('promotions', PromotionViewSet, basename='promotion')
+router.register('learning-domains', LearningDomainViewSet, basename='learning-domain')
 router.register('courses', CourseViewSet, basename='course')
 router.register('documents', DocumentViewSet, basename='document')
 router.register('document-comments', DocumentCommentViewSet, basename='document-comment')

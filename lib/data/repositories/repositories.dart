@@ -356,6 +356,13 @@ class AcademicRepository {
     return documentFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
+  Future<Course> createCourse(Map<String, dynamic> data) async {
+    final res = await _dio.post('courses/', data: data);
+    final raw = Map<String, dynamic>.from(res.data as Map);
+    await _store.upsertCourses([raw]);
+    return courseFromJson(raw);
+  }
+
   Future<List<Course>> getCachedCourses() => _store.getCourses();
 
   /// Charge le catalogue cours. Avec [preferCache], renvoie le SQLite s’il
@@ -395,7 +402,7 @@ class AcademicRepository {
         if (all.length > 2000 || page > 40) break;
       }
       if (departmentId == null && facultyId == null) {
-        await _store.upsertCourses(all);
+        await _store.replaceAllCourses(all);
       }
       return all.map(courseFromJson).toList();
     } catch (_) {

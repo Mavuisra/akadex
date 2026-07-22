@@ -11,6 +11,7 @@ from academic.models import (
     Document,
     DocumentType,
     Faculty,
+    LearningDomain,
     Promotion,
     RewardPrize,
     University,
@@ -22,6 +23,126 @@ from learning.models import CourseComment, CourseLesson, CourseModule, LessonCon
 from messaging.models import Conversation, Message
 
 User = get_user_model()
+
+LEARNING_DOMAINS = [
+    {
+        'slug': 'informatique',
+        'name': 'Informatique',
+        'order': 1,
+        'keywords': 'informatique,fasi,génie logiciel,info,digital,algorithme,python,sql,base de données',
+        'description': 'Programmation, bases de données, réseaux, IA et développement.',
+    },
+    {
+        'slug': 'droit',
+        'name': 'Droit',
+        'order': 2,
+        'keywords': 'droit,juridique,loi,constitutionnel,pénal',
+        'description': 'Droit public, privé, constitutionnel et procédures.',
+    },
+    {
+        'slug': 'medecine',
+        'name': 'Médecine',
+        'order': 3,
+        'keywords': 'médecine,medecine,santé,sante,pharmacie,anatomie',
+        'description': 'Sciences médicales, anatomie, pharmacie et santé.',
+    },
+    {
+        'slug': 'economie',
+        'name': 'Économie & Gestion',
+        'order': 4,
+        'keywords': 'économie,economie,gestion,commerce,finance',
+        'description': 'Économie, gestion d’entreprise et finance.',
+    },
+    {
+        'slug': 'comptabilite',
+        'name': 'Comptabilité',
+        'order': 5,
+        'keywords': 'comptabilité,comptabilite,ohada,audit,fiscal',
+        'description': 'Comptabilité générale, OHADA, audit et fiscalité.',
+    },
+    {
+        'slug': 'marketing',
+        'name': 'Marketing',
+        'order': 6,
+        'keywords': 'marketing,vente,communication commerciale,stratégie',
+        'description': 'Marketing stratégique, digital et commercial.',
+    },
+    {
+        'slug': 'sciences',
+        'name': 'Sciences',
+        'order': 7,
+        'keywords': 'science,physique,chimie,math,biologie',
+        'description': 'Mathématiques, physique, chimie et biologie.',
+    },
+    {
+        'slug': 'lettres',
+        'name': 'Lettres & SHS',
+        'order': 8,
+        'keywords': 'lettre,langue,histoire,socio,psycho,communication',
+        'description': 'Lettres, langues et sciences humaines.',
+    },
+    {
+        'slug': 'ingenierie',
+        'name': 'Ingénierie',
+        'order': 9,
+        'keywords': 'ingénieur,ingenieur,polytech,civil,électri,electri',
+        'description': 'Génie civil, électrique, mécanique et polytechnique.',
+    },
+    {
+        'slug': 'agronomie',
+        'name': 'Agronomie',
+        'order': 10,
+        'keywords': 'agro,agronomie,vétérinaire,veterinaire',
+        'description': 'Agronomie, élevage et sciences vétérinaires.',
+    },
+]
+
+
+def seed_learning_domains():
+    domains = {}
+    for spec in LEARNING_DOMAINS:
+        domain, _ = LearningDomain.objects.update_or_create(
+            slug=spec['slug'],
+            defaults={
+                'name': spec['name'],
+                'description': spec['description'],
+                'keywords': spec['keywords'],
+                'order': spec['order'],
+                'is_active': True,
+            },
+        )
+        domains[spec['slug']] = domain
+    return domains
+
+
+def link_courses_to_domains(domains):
+    """Associe automatiquement les cours seedés aux domaines via mots-clés."""
+    linked = 0
+    for course in Course.objects.select_related(
+        'department', 'department__faculty'
+    ).prefetch_related('domains'):
+        if course.domains.exists():
+            continue
+        hay = ' '.join(
+            [
+                course.title or '',
+                course.description or '',
+                course.department.name if course.department_id else '',
+                course.department.faculty.name
+                if course.department_id
+                else '',
+                course.code or '',
+            ]
+        ).lower()
+        matched = []
+        for slug, domain in domains.items():
+            keys = [k.strip() for k in domain.keywords.split(',') if k.strip()]
+            if any(k.lower() in hay for k in keys):
+                matched.append(domain)
+        if matched:
+            course.domains.set(matched)
+            linked += 1
+    return linked
 
 
 class Command(BaseCommand):
@@ -35,6 +156,9 @@ class Command(BaseCommand):
         unis = {}
         depts = {}
         courses = {}
+
+        self.stdout.write('Domaines d’apprentissage…')
+        domains = seed_learning_domains()
 
         for uni_spec in UNIVERSITIES:
             uni, _ = University.objects.update_or_create(
@@ -84,23 +208,9 @@ class Command(BaseCommand):
                         name__in=list(CYCLES)
                     ).delete()
 
-                    for code, title, desc, credits, cycle in dept_spec.get('courses', []):
-                        # Préfixer le code par l’univ pour éviter collisions cross-fac
-                        full_code = f'{uni.slug.upper()[:3]}-{code}'
-                        course, _ = Course.objects.update_or_create(
-                            department=dept,
-                            code=full_code,
-                            defaults={
-                                'title': title,
-                                'description': desc,
-                                'credits': credits,
-                                'semester': cycle,
-                                'objectives': f'Maîtriser les notions essentielles de {title.lower()}.',
-                                'skills': 'Analyse, travail en équipe, résolution de problèmes',
-                            },
-                        )
-                        courses[f'{key}:{code}'] = course
-                        courses[full_code] = course
+                    # Cours catalogue (grilles indicatives) : plus seedés.
+                    # Les programmes se construisent via contributions étudiantes validées.
+                    # Conservé pour référence éventuelle : dept_spec.get('courses', [])
 
         # Retirer l’ancienne univ de démo ISP Gombe si présente
         University.objects.filter(slug='isp-gombe').update(is_active=False)
@@ -1134,18 +1244,25 @@ class Command(BaseCommand):
             alumni_esther=alumni_esther,
         )
 
-        # 6 cours vitrine (YouTube + enseignants pro)
-        from academic.management.commands.seed_flagship_courses import FLAGSHIP, _seed_course
+        # Pas de cours vitrine AKX dans le catalogue Ma Fac (promotions).
+        # Les ressources Apprendre restent gérées via les domaines.
+        purged, _ = Course.objects.filter(submitted_by__isnull=True).delete()
+        self.stdout.write(
+            self.style.WARNING(
+                f'Cours seedés / fictifs purgés : {purged} '
+                '(conservées : contributions étudiantes uniquement).'
+            )
+        )
 
-        self.stdout.write('Cours vitrine Akadex…')
-        for spec in FLAGSHIP:
-            _seed_course(spec, self.stdout)
+        linked = link_courses_to_domains(domains)
+        self.stdout.write(f'Domaines liés à {linked} cours.')
 
         self.stdout.write(self.style.SUCCESS('Catalogue RDC + démo chargés.'))
         self.stdout.write(
             f'Universités={University.objects.filter(is_active=True).count()} '
             f'Facultés={Faculty.objects.count()} '
             f'Départements={Department.objects.count()} '
+            f'Domaines={LearningDomain.objects.count()} '
             f'Cours={Course.objects.count()} '
             f'Docs={Document.objects.count()} '
             f'Récompenses={RewardPrize.objects.count()}'

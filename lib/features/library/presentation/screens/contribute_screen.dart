@@ -143,6 +143,12 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/contribute/course'),
+            icon: const Icon(Icons.menu_book_outlined),
+            label: const Text('Proposer un cours universitaire'),
+          ),
           const SizedBox(height: 20),
           const Text(
             'Type de contenu',
