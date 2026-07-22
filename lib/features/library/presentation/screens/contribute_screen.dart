@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/living_ui.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
@@ -46,7 +47,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
     (DocumentType.ficheRevision, 'Fiche de révision'),
   ];
 
-  static const _pad = EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+  static const _fieldPad = EdgeInsets.symmetric(horizontal: 16, vertical: 16);
 
   @override
   void dispose() {
@@ -55,6 +56,35 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
     _url.dispose();
     _year.dispose();
     super.dispose();
+  }
+
+  InputDecoration _dec(String hint, {IconData? icon}) {
+    return InputDecoration(
+      hintText: hint,
+      prefixIcon: icon == null ? null : Icon(icon),
+      border: InputBorder.none,
+      filled: true,
+      fillColor: Colors.transparent,
+      contentPadding: _fieldPad,
+    );
+  }
+
+  Widget _softField({required Widget child}) {
+    return SoftCard(padding: EdgeInsets.zero, child: child);
+  }
+
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontWeight: FontWeight.w800,
+          fontSize: 15,
+          color: AkadexColors.ink,
+        ),
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -120,129 +150,255 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AkadexColors.background,
-      appBar: AppBar(
-        title: const Text('Proposer une contribution'),
-        actions: [
-          TextButton(
-            onPressed: () => context.push('/my-contributions'),
-            child: const Text('Mes envois'),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-        children: [
-          SoftCard(
-            child: Text(
-              'Toute contribution passe par une modération. '
-              'Après validation, tu reçois une notification avec tes points.',
-              style: TextStyle(
-                color: AkadexColors.inkMuted.withValues(alpha: 0.95),
-                height: 1.45,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => context.push('/contribute/course'),
-            icon: const Icon(Icons.menu_book_outlined),
-            label: const Text('Proposer un cours universitaire'),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Type de contenu',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+      backgroundColor: Colors.transparent,
+      body: PageAtmosphere(
+        child: SafeArea(
+          child: Column(
             children: [
-              for (final t in _types)
-                ChoiceChip(
-                  label: Text(t.$2),
-                  selected: _type == t.$1,
-                  onSelected: (_) => setState(() => _type = t.$1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 4, 8, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => context.pop(),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                    ),
+                    const Expanded(
+                      child: Text(
+                        'Proposer une contribution',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AkadexColors.ink,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => context.push('/my-contributions'),
+                      child: const Text('Mes envois'),
+                    ),
+                  ],
                 ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          TextField(
-            controller: _title,
-            decoration: const InputDecoration(
-              labelText: 'Titre',
-              filled: true,
-              contentPadding: _pad,
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _description,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Description',
-              filled: true,
-              contentPadding: _pad,
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _url,
-            keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              labelText: 'Lien du document (Drive, PDF, etc.)',
-              filled: true,
-              contentPadding: _pad,
-              prefixIcon: Icon(Icons.link_rounded),
-            ),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _year,
-            decoration: const InputDecoration(
-              labelText: 'Année académique (ex. 2025-2026)',
-              filled: true,
-              contentPadding: _pad,
-            ),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AkadexColors.danger.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: AkadexColors.danger),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _error!,
-                      style: const TextStyle(color: AkadexColors.danger),
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Toute contribution passe par une modération. '
+                            'Après validation, tu reçois une notification avec tes points.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AkadexColors.inkMuted
+                                  .withValues(alpha: 0.95),
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          SoftCard(
+                            onTap: () => context.push('/contribute/course'),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 42,
+                                  height: 42,
+                                  decoration: BoxDecoration(
+                                    color: AkadexColors.primarySoft,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.menu_book_outlined,
+                                    color: AkadexColors.primary,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Proposer un cours universitaire',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                          color: AkadexColors.ink,
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'UE, cycle, semestre — validation admin',
+                                        style: TextStyle(
+                                          fontSize: 12.5,
+                                          color: AkadexColors.inkMuted,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Icon(
+                                  Icons.chevron_right_rounded,
+                                  color: AkadexColors.inkMuted
+                                      .withValues(alpha: 0.7),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          _sectionTitle('1. Type de contenu'),
+                          SoftCard(
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final t in _types)
+                                  FilterChip(
+                                    label: Text(t.$2),
+                                    selected: _type == t.$1,
+                                    onSelected: (_) =>
+                                        setState(() => _type = t.$1),
+                                    showCheckmark: true,
+                                    selectedColor: AkadexColors.primary,
+                                    checkmarkColor: Colors.white,
+                                    labelStyle: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: _type == t.$1
+                                          ? Colors.white
+                                          : AkadexColors.ink,
+                                    ),
+                                    side: BorderSide(
+                                      color: _type == t.$1
+                                          ? AkadexColors.primary
+                                          : AkadexColors.inkMuted
+                                              .withValues(alpha: 0.25),
+                                    ),
+                                    backgroundColor: Colors.white,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          _sectionTitle('2. Document'),
+                          _softField(
+                            child: TextField(
+                              controller: _title,
+                              textCapitalization:
+                                  TextCapitalization.sentences,
+                              textInputAction: TextInputAction.next,
+                              decoration: _dec(
+                                'Titre *',
+                                icon: Icons.title_rounded,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _softField(
+                            child: TextField(
+                              controller: _description,
+                              maxLines: 4,
+                              textCapitalization:
+                                  TextCapitalization.sentences,
+                              decoration: _dec(
+                                'Description',
+                                icon: Icons.notes_outlined,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _softField(
+                            child: TextField(
+                              controller: _url,
+                              keyboardType: TextInputType.url,
+                              textInputAction: TextInputAction.next,
+                              decoration: _dec(
+                                'Lien du document (Drive, PDF…)',
+                                icon: Icons.link_rounded,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _softField(
+                            child: TextField(
+                              controller: _year,
+                              textInputAction: TextInputAction.done,
+                              onSubmitted: (_) =>
+                                  _loading ? null : _submit(),
+                              decoration: _dec(
+                                'Année académique (ex. 2025-2026)',
+                                icon: Icons.calendar_today_outlined,
+                              ),
+                            ),
+                          ),
+                          if (_error != null) ...[
+                            const SizedBox(height: 14),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFDECEC),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AkadexColors.danger
+                                      .withValues(alpha: 0.25),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    color: AkadexColors.danger,
+                                    size: 22,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      _error!,
+                                      style: const TextStyle(
+                                        color: AkadexColors.danger,
+                                        fontWeight: FontWeight.w600,
+                                        height: 1.35,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 22),
+                          SizedBox(
+                            height: 52,
+                            child: FilledButton(
+                              onPressed: _loading ? null : _submit,
+                              child: _loading
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text('Envoyer en modération'),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _loading ? null : _submit,
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Text('Envoyer en modération'),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
