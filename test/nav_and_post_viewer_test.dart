@@ -70,21 +70,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          coursesProvider.overrideWith((ref) async => const [
-                Course(
-                  id: '1',
-                  title: 'Algorithmes',
-                  code: 'INFO101',
-                  teacher: 'Mukendi',
-                  teacherTitle: 'Prof.',
-                  teacherFullName: 'David Mukendi',
-                  semester: 'L1',
-                  promotion: 'L1',
-                  credits: 5,
-                  department: 'Informatique',
-                  faculty: 'FASI',
-                ),
-              ]),
+          coursesProvider.overrideWith(_FakeCoursesNotifier.new),
         ],
         child: MaterialApp(
           theme: AkadexTheme.light(),
@@ -127,4 +113,23 @@ void main() {
     expect(find.text('Bonjour campus Akadex'), findsOneWidget);
     expect(find.text('Aicha'), findsWidgets);
   });
+}
+
+class _FakeCoursesNotifier extends CoursesNotifier {
+  @override
+  Future<List<Course>> build() async => const [
+        Course(
+          id: '1',
+          title: 'Algorithmes',
+          code: 'INFO101',
+          teacher: 'Mukendi',
+          teacherTitle: 'Prof.',
+          teacherFullName: 'David Mukendi',
+          semester: 'L1',
+          promotion: 'L1',
+          credits: 5,
+          department: 'Informatique',
+          faculty: 'FASI',
+        ),
+      ];
 }
