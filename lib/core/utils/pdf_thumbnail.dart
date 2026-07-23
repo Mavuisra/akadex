@@ -42,6 +42,9 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
         defaultTargetPlatform == TargetPlatform.iOS;
 
     if (data != null && data.isNotEmpty) {
+      // Les runners CI / desktop n’ont pas toujours le moteur PDF natif
+      // attaché à la plate-forme. On retourne un fallback sûr plutôt que de
+      // laisser le plugin exploser avec MissingPluginException.
       if (kIsWeb || !supportsNativePdfRender) {
         return PdfThumbnailResult(
           bytes: _fallbackPdfThumbnailBytes,
