@@ -52,14 +52,8 @@ class LearnScreen extends ConsumerWidget {
       );
     }
 
-    final counts = <String, int>{
-      for (final d in LearnDomains.all) d.id: courses.where(d.matches).length,
-    };
-    final trending = [
-      ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isNotEmpty),
-      ...courses.where((c) => c.code.startsWith('AKX-') && c.coverUrl.isEmpty),
-      ...courses.where((c) => !c.code.startsWith('AKX-')),
-    ].take(8).toList();
+    final counts = LearnDomains.vitrineCounts(courses);
+    final trending = LearnDomains.vitrineCourses(courses, limit: 3);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF0F2F5),
@@ -176,7 +170,7 @@ class LearnScreen extends ConsumerWidget {
                   color: Colors.white,
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: const Text(
-                    'Cours populaires',
+                    'Cours vidéo',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -190,7 +184,7 @@ class LearnScreen extends ConsumerWidget {
                   child: Padding(
                     padding: EdgeInsets.all(24),
                     child: Text(
-                      'Aucun cours disponible pour le moment.',
+                      'Aucun cours vidéo pour le moment.',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: TimelineTokens.meta),
                     ),

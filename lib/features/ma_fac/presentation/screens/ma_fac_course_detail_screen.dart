@@ -17,13 +17,8 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
 
   final String courseId;
 
-  String? _domainSlug(Course course) {
-    if (course.primaryDomainSlug.isNotEmpty) return course.primaryDomainSlug;
-    for (final d in LearnDomains.all) {
-      if (d.matches(course)) return d.id;
-    }
-    return null;
-  }
+  String? _domainSlug(Course course) =>
+      LearnDomains.resolveDomainSlug(course);
 
   String _domainLabel(Course course, String? slug) {
     if (course.domainNames.isNotEmpty) return course.domainNames.first;

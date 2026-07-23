@@ -1,6 +1,10 @@
 import '../../../../domain/models/models.dart';
 
-/// Filtrage des cours selon le profil académique connecté.
+/// Filtrage des cours Ma Fac (programme / contributions de promo).
+///
+/// Indépendant d’Apprendre : les codes `AKX-*` sont la vitrine vidéo et
+/// n’apparaissent jamais ici. Le pont vers Apprendre se fait via le domaine
+/// ([LearnDomains.resolveDomainSlug]), pas en fusionnant les catalogues.
 abstract final class MaFacScope {
   static bool courseMatchesUser(Course c, UserProfile me) {
     final fac = me.faculty.trim().toLowerCase();

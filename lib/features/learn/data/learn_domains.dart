@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../../domain/models/models.dart';
 
 /// Domaine académique affiché en « story » sur Apprendre.
+///
+/// Indépendant du catalogue Ma Fac (UE de promo) : les contenus vidéo
+/// Apprendre sont la vitrine `AKX-*`. Un cours de fac n’est pas un cours
+/// Apprendre — on résout seulement son **domaine** pour y renvoyer.
 class LearnDomain {
   const LearnDomain({
     required this.id,
@@ -20,7 +24,8 @@ class LearnDomain {
   final List<Color> colors;
   final List<String> keywords;
 
-  bool matches(Course course) {
+  /// Vrai si le cours (fac ou vitrine) relève de ce domaine (M2M ou keywords).
+  bool matchesDomain(Course course) {
     if (course.domainSlugs.contains(id)) return true;
     final hay = [
       course.faculty,
@@ -32,9 +37,18 @@ class LearnDomain {
     ].join(' ').toLowerCase();
     return keywords.any((k) => hay.contains(k.toLowerCase()));
   }
+
+  /// Alias — matching domaine (fac ou vitrine).
+  bool matches(Course course) => matchesDomain(course);
 }
 
 abstract final class LearnDomains {
+  /// Préfixe des cours vidéo du catalogue Apprendre (pas des UE de fac).
+  static const vitrinePrefix = 'AKX-';
+
+  static bool isVitrine(Course course) =>
+      course.code.startsWith(vitrinePrefix);
+
   static const all = <LearnDomain>[
     LearnDomain(
       id: 'informatique',
@@ -42,7 +56,16 @@ abstract final class LearnDomains {
       shortLabel: 'Info',
       icon: Icons.computer_rounded,
       colors: [Color(0xFF1877F2), Color(0xFF0A4DA6)],
-      keywords: ['informatique', 'fasi', 'génie logiciel', 'info', 'digital'],
+      keywords: [
+        'informatique',
+        'fasi',
+        'génie logiciel',
+        'info',
+        'digital',
+        'python',
+        'ia',
+        'intelligence artificielle',
+      ],
     ),
     LearnDomain(
       id: 'droit',
@@ -98,7 +121,14 @@ abstract final class LearnDomains {
       shortLabel: 'Lettres',
       icon: Icons.menu_book_rounded,
       colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
-      keywords: ['lettre', 'langue', 'histoire', 'socio', 'psycho', 'communication'],
+      keywords: [
+        'lettre',
+        'langue',
+        'histoire',
+        'socio',
+        'psycho',
+        'communication',
+      ],
     ),
     LearnDomain(
       id: 'ingenierie',
@@ -106,7 +136,14 @@ abstract final class LearnDomains {
       shortLabel: 'Ingé.',
       icon: Icons.engineering_rounded,
       colors: [Color(0xFF455A64), Color(0xFF263238)],
-      keywords: ['ingénieur', 'ingenieur', 'polytech', 'civil', 'électri', 'electri'],
+      keywords: [
+        'ingénieur',
+        'ingenieur',
+        'polytech',
+        'civil',
+        'électri',
+        'electri',
+      ],
     ),
     LearnDomain(
       id: 'agronomie',
@@ -125,9 +162,36 @@ abstract final class LearnDomains {
     return null;
   }
 
+  /// Domaine Apprendre vers lequel renvoyer depuis un cours Ma Fac.
+  static String? resolveDomainSlug(Course course) {
+    if (course.primaryDomainSlug.isNotEmpty) return course.primaryDomainSlug;
+    for (final d in all) {
+      if (d.matchesDomain(course)) return d.id;
+    }
+    return null;
+  }
+
+  /// Contenu vidéo d’un domaine — **uniquement** la vitrine Apprendre (AKX).
   static List<Course> filterCourses(List<Course> courses, LearnDomain domain) {
-    final matched = courses.where(domain.matches).toList();
+    final matched = courses
+        .where((c) => isVitrine(c) && domain.matchesDomain(c))
+        .toList();
     matched.sort((a, b) => a.title.compareTo(b.title));
     return matched;
+  }
+
+  /// Cours vitrine pour l’accueil Apprendre (indépendants des promos).
+  static List<Course> vitrineCourses(List<Course> courses, {int limit = 3}) {
+    final allV = courses.where(isVitrine).toList();
+    final withCover = allV.where((c) => c.coverUrl.isNotEmpty).toList();
+    final without = allV.where((c) => c.coverUrl.isEmpty).toList();
+    return [...withCover, ...without].take(limit).toList();
+  }
+
+  static Map<String, int> vitrineCounts(List<Course> courses) {
+    final vitrine = courses.where(isVitrine);
+    return {
+      for (final d in all) d.id: vitrine.where(d.matchesDomain).length,
+    };
   }
 }

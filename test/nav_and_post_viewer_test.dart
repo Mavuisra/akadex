@@ -81,7 +81,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('Cours'), findsWidgets);
-    expect(find.text('Cours populaires'), findsOneWidget);
+    expect(find.text('Cours vidéo'), findsOneWidget);
     expect(find.text('Informatique'), findsWidgets);
   });
 

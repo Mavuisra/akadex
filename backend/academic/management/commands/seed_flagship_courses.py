@@ -6,7 +6,7 @@ enseignants professionnels, images académiques africaines.
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
-from academic.models import Course, Department, Faculty, University
+from academic.models import Course, Department, Faculty, LearningDomain, University
 from learning.models import CourseLesson, CourseModule
 
 User = get_user_model()
@@ -46,6 +46,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-IA101',
         'title': 'Fondamentaux de l’Intelligence Artificielle',
+        'domain_slug': 'informatique',
         'dept_keywords': ['info', 'fasi', 'génie', 'computer'],
         'semester': 'L2',
         'credits': 6,
@@ -137,6 +138,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-PY101',
         'title': 'Python pour les sciences et le numérique',
+        'domain_slug': 'informatique',
         'dept_keywords': ['info', 'fasi', 'math', 'science'],
         'semester': 'L1',
         'credits': 5,
@@ -226,6 +228,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-DR201',
         'title': 'Introduction au droit public congolais',
+        'domain_slug': 'droit',
         'dept_keywords': ['droit', 'jurid'],
         'semester': 'L1',
         'credits': 5,
@@ -307,6 +310,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-ECO201',
         'title': 'Économie du développement en Afrique',
+        'domain_slug': 'economie',
         'dept_keywords': ['écon', 'econ', 'gestion', 'commerce'],
         'semester': 'L2',
         'credits': 5,
@@ -388,6 +392,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-MED101',
         'title': 'Bases de la santé publique',
+        'domain_slug': 'medecine',
         'dept_keywords': ['méd', 'med', 'santé', 'sante', 'pharma'],
         'semester': 'L1',
         'credits': 4,
@@ -469,6 +474,7 @@ FLAGSHIP = [
     {
         'code': 'AKX-ENT301',
         'title': 'Entrepreneuriat digital en Afrique',
+        'domain_slug': 'economie',
         'dept_keywords': ['gestion', 'écon', 'econ', 'commerce', 'info'],
         'semester': 'L3',
         'credits': 6,
@@ -620,6 +626,15 @@ def _seed_course(spec, stdout):
     )
     course.teachers.set([teacher])
 
+    # Domaine Apprendre explicite (indépendant du programme de promo).
+    domain_slug = (spec.get('domain_slug') or '').strip()
+    if domain_slug:
+        domain = LearningDomain.objects.filter(
+            slug=domain_slug, is_active=True
+        ).first()
+        if domain:
+            course.domains.set([domain])
+
     # Remplacer modules pour un contenu propre
     course.modules.all().delete()
     for mi, mod in enumerate(spec['modules'], start=1):
@@ -647,7 +662,15 @@ def _seed_course(spec, stdout):
 
 
 class Command(BaseCommand):
-    help = 'Cree 6 cours vitrine complets (YouTube, modules, enseignants pro).'
+    help = 'Cree des cours vitrine complets (YouTube, modules, enseignants pro).'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--limit',
+            type=int,
+            default=0,
+            help='Nombre de cours a creer (0 = tous). Ex. --limit 3',
+        )
 
     def handle(self, *args, **options):
         if not Department.objects.exists():
@@ -656,7 +679,11 @@ class Command(BaseCommand):
             )
             return
 
-        self.stdout.write(self.style.NOTICE('Seed des 6 cours vitrine Akadex...'))
-        for spec in FLAGSHIP:
+        limit = options.get('limit') or 0
+        specs = FLAGSHIP[:limit] if limit > 0 else FLAGSHIP
+        self.stdout.write(
+            self.style.NOTICE(f'Seed de {len(specs)} cours vitrine Akadex...')
+        )
+        for spec in specs:
             _seed_course(spec, self.stdout)
-        self.stdout.write(self.style.SUCCESS('Termine - 6 cours prets.'))
+        self.stdout.write(self.style.SUCCESS(f'Termine - {len(specs)} cours prets.'))

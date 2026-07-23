@@ -90,7 +90,12 @@ class DomainCoursesScreen extends ConsumerWidget {
                 const SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
-                    child: Text('Aucun cours dans ce domaine.'),
+                    child: Text(
+                      'Aucun cours vidéo dans ce domaine pour l’instant.\n'
+                      'Les UE de ta fac restent dans Ma Fac ; ici ce sont '
+                      'uniquement les ressources Apprendre.',
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
               else

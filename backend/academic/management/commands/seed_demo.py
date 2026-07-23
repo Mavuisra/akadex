@@ -116,11 +116,17 @@ def seed_learning_domains():
 
 
 def link_courses_to_domains(domains):
-    """Associe automatiquement les cours seedés aux domaines via mots-clés."""
+    """Lie les UE Ma Fac (hors vitrine AKX) aux domaines Apprendre.
+
+    Sert uniquement de pont : un cours de fac n’apparaît pas dans Apprendre,
+    mais son domaine permet d’ouvrir `/learn/domain/:slug`.
+    """
     linked = 0
     for course in Course.objects.select_related(
         'department', 'department__faculty'
     ).prefetch_related('domains'):
+        if course.code.startswith('AKX-'):
+            continue
         if course.domains.exists():
             continue
         hay = ' '.join(
@@ -1244,18 +1250,36 @@ class Command(BaseCommand):
             alumni_esther=alumni_esther,
         )
 
-        # Pas de cours vitrine AKX dans le catalogue Ma Fac (promotions).
-        # Les ressources Apprendre restent gérées via les domaines.
-        purged, _ = Course.objects.filter(submitted_by__isnull=True).delete()
+        # Ma Fac ≠ Apprendre :
+        # - purge des grilles seedées (pas les contributions étudiantes)
+        # - 3 cours vidéo AKX = catalogue Apprendre uniquement
+        # - link_courses_to_domains = pont domaine pour les UE de fac
+        purged, _ = (
+            Course.objects.filter(submitted_by__isnull=True)
+            .exclude(code__startswith='AKX-')
+            .delete()
+        )
         self.stdout.write(
             self.style.WARNING(
                 f'Cours seedés / fictifs purgés : {purged} '
-                '(conservées : contributions étudiantes uniquement).'
+                '(conservées : contributions étudiantes + vitrine AKX).'
             )
         )
 
+        from academic.management.commands.seed_flagship_courses import (
+            FLAGSHIP,
+            _seed_course,
+        )
+
+        self.stdout.write('Vitrine Apprendre (3 cours vidéo AKX)…')
+        for spec in FLAGSHIP[:3]:
+            _seed_course(spec, self.stdout)
+
         linked = link_courses_to_domains(domains)
-        self.stdout.write(f'Domaines liés à {linked} cours.')
+        self.stdout.write(
+            f'Domaines liés à {linked} cours Ma Fac '
+            '(pont vers Apprendre, hors AKX).'
+        )
 
         self.stdout.write(self.style.SUCCESS('Catalogue RDC + démo chargés.'))
         self.stdout.write(

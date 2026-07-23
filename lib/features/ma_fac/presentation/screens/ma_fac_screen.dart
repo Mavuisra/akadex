@@ -13,6 +13,7 @@ import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/document_type.dart';
 import '../../../../domain/models/models.dart';
+import '../../../learn/data/learn_domains.dart';
 import '../../data/career_outlets.dart';
 import '../../data/ma_fac_categories.dart';
 import '../../data/ma_fac_scope.dart';
@@ -946,8 +947,8 @@ class _CoursePostCard extends StatelessWidget {
                 Expanded(
                   child: TextButton.icon(
                     onPressed: () {
-                      final slug = course.primaryDomainSlug;
-                      if (slug.isNotEmpty) {
+                      final slug = LearnDomains.resolveDomainSlug(course);
+                      if (slug != null && slug.isNotEmpty) {
                         context.push('/learn/domain/$slug');
                       } else {
                         context.push('/learn');

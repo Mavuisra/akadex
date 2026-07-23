@@ -89,20 +89,21 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
   }
 
   List<Course> _filterCourses(List<Course> courses, String q) {
+    // Apprendre = vitrine vidéo uniquement (pas les UE Ma Fac).
+    final vitrine = courses.where(LearnDomains.isVitrine).toList();
     if (q.isEmpty) {
-      return courses.where((c) => c.code.startsWith('AKX-')).take(8).toList();
+      return LearnDomains.vitrineCourses(vitrine, limit: 3);
     }
     final lower = q.toLowerCase();
-    final matched = courses.where((c) {
+    final matched = vitrine.where((c) {
       final hay = [
         c.title,
         c.code,
         c.displayTeacher,
         c.faculty,
         c.department,
-        c.targetPromotion,
-        c.university,
         c.description,
+        ...c.domainNames,
         ...c.academicTags,
       ].join(' ').toLowerCase();
       return hay.contains(lower);
@@ -110,10 +111,7 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
     matched.sort((a, b) {
       final at = a.title.toLowerCase().startsWith(lower) ? 0 : 1;
       final bt = b.title.toLowerCase().startsWith(lower) ? 0 : 1;
-      if (at != bt) return at.compareTo(bt);
-      final af = a.code.startsWith('AKX-') ? 0 : 1;
-      final bf = b.code.startsWith('AKX-') ? 0 : 1;
-      return af.compareTo(bf);
+      return at.compareTo(bt);
     });
     return matched.take(40).toList();
   }
