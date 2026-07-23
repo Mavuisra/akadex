@@ -35,6 +35,7 @@ import '../../features/lmd/presentation/screens/lmd_assistant_screen.dart';
 import '../../features/lmd/presentation/screens/lmd_guide_screen.dart';
 import '../../features/messaging/presentation/screens/chat_screen.dart';
 import '../../features/messaging/presentation/screens/conversations_screen.dart';
+import '../../features/professor/presentation/screens/professor_create_course_screen.dart';
 import '../../features/professor/presentation/screens/professor_hub_screen.dart';
 import '../../features/professor/presentation/screens/professor_publish_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -395,6 +396,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const SuggestCourseScreen()),
+      ),
+      GoRoute(
+        path: '/teacher-course',
+        parentNavigatorKey: _rootKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ProfessorCreateCourseScreen()),
       ),
       GoRoute(
         path: '/my-contributions',

@@ -438,7 +438,14 @@ class CourseSerializer(serializers.ModelSerializer):
 
 
 class CourseContributeSerializer(serializers.ModelSerializer):
-    """Soumission collaborative d’un cours par un étudiant."""
+    """Soumission d’un cours (étudiant en attente, enseignant publié)."""
+
+    domain_slugs = serializers.ListField(
+        child=serializers.SlugField(max_length=64),
+        required=False,
+        allow_empty=True,
+        write_only=True,
+    )
 
     class Meta:
         model = Course
@@ -448,23 +455,28 @@ class CourseContributeSerializer(serializers.ModelSerializer):
             'code',
             'description',
             'objectives',
+            'skills',
             'prerequisites',
             'estimated_hours',
             'teacher_name',
             'semester',
             'credits',
             'level_label',
+            'cover_url',
+            'domain_slugs',
         ]
         extra_kwargs = {
             'code': {'required': False, 'allow_blank': True},
             'description': {'required': False, 'allow_blank': True},
             'objectives': {'required': False, 'allow_blank': True},
+            'skills': {'required': False, 'allow_blank': True},
             'prerequisites': {'required': False, 'allow_blank': True},
             'estimated_hours': {'required': False},
             'teacher_name': {'required': False, 'allow_blank': True},
             'semester': {'required': False, 'allow_blank': True},
             'credits': {'required': False},
             'level_label': {'required': False, 'allow_blank': True},
+            'cover_url': {'required': False, 'allow_blank': True},
         }
 
     def validate_title(self, value):
@@ -474,6 +486,17 @@ class CourseContributeSerializer(serializers.ModelSerializer):
                 'L’intitulé du cours est trop court.'
             )
         return title
+
+    def create(self, validated_data):
+        domain_slugs = validated_data.pop('domain_slugs', None) or []
+        course = super().create(validated_data)
+        if domain_slugs:
+            domains = LearningDomain.objects.filter(
+                slug__in=domain_slugs,
+                is_active=True,
+            )
+            course.domains.set(domains)
+        return course
 
 
 class DocumentCommentSerializer(serializers.ModelSerializer):

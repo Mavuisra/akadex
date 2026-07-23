@@ -180,28 +180,64 @@ class CourseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         import uuid
 
+        from accounts.models import User
+
         user = self.request.user
         if not user.department_id:
             raise ValidationError(
                 {
                     'department': (
                         'Complétez votre département dans le profil '
-                        'avant de proposer un cours.'
+                        'avant de publier un cours.'
                     )
                 }
             )
         code = (serializer.validated_data.get('code') or '').strip()
         if not code:
-            code = f'PROP-{uuid.uuid4().hex[:8].upper()}'
+            prefix = 'ENS' if user.role == User.Role.TEACHER else 'PROP'
+            code = f'{prefix}-{uuid.uuid4().hex[:8].upper()}'
         semester = (serializer.validated_data.get('semester') or '').strip()
         if not semester and user.promotion_id:
             semester = user.promotion.level or user.promotion.name
+
+        is_teacher = user.role == User.Role.TEACHER or user.is_staff
+        teacher_name = (
+            serializer.validated_data.get('teacher_name') or ''
+        ).strip()
+        if not teacher_name:
+            teacher_name = user.get_full_name() or user.email
+
+        if is_teacher:
+            course = serializer.save(
+                department=user.department,
+                promotion=user.promotion,
+                submitted_by=user,
+                validated_by=user,
+                code=code,
+                semester=semester,
+                teacher_name=teacher_name,
+                is_approved=True,
+                moderation_status=Course.ModerationStatus.APPROVED,
+            )
+            course.teachers.add(user)
+            CourseValidationLog.objects.create(
+                course=course,
+                actor=user,
+                action=CourseValidationLog.Action.APPROVED,
+                note='Publication enseignant',
+                domain_slugs=','.join(
+                    d.slug for d in course.domains.all()
+                ),
+            )
+            return
+
         course = serializer.save(
             department=user.department,
             promotion=user.promotion,
             submitted_by=user,
             code=code,
             semester=semester,
+            teacher_name=teacher_name,
             is_approved=False,
             moderation_status=Course.ModerationStatus.PENDING,
         )

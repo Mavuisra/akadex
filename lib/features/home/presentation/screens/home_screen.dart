@@ -38,6 +38,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ('summary', 'Résumés'),
     ('notes', 'Notes'),
     ('support', 'Supports'),
+    ('rapport', 'Rapports de stage'),
+    ('projet_tutore', 'Projets tuteurés'),
+    ('tfc', 'TFC'),
+    ('memoire', 'Mémoires'),
     ('discussion', 'Discussions'),
     ('question', 'Questions'),
   ];

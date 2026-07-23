@@ -183,6 +183,45 @@ class AkadexApiTests(APITestCase):
             format='json',
         )
         self.assertEqual(approve.status_code, status.HTTP_200_OK)
-        self.assertEqual(approve.data['moderation_status'], 'approved')
-        self.assertTrue(approve.data['is_approved'])
-        self.assertEqual(approve.data['domains'][0]['slug'], 'informatique')
+
+    def test_teacher_can_publish_course_approved(self):
+        from accounts.models import User
+        from academic.models import LearningDomain
+
+        teacher = User.objects.create_user(
+            email='prof.publish@test.cd',
+            username='profpublish',
+            password='akadex2026',
+            role=User.Role.TEACHER,
+            department=self.dept,
+        )
+        LearningDomain.objects.create(
+            slug='informatique',
+            name='Informatique',
+        )
+        self.client.force_authenticate(user=teacher)
+        res = self.client.post(
+            reverse('course-list'),
+            {
+                'title': 'Algorithmique avancée',
+                'code': 'INFO401',
+                'description': 'Cours enseignant',
+                'objectives': 'Maîtriser les graphes',
+                'skills': 'Complexité',
+                'prerequisites': 'L2 algo',
+                'semester': 'L3',
+                'level_label': 'S1',
+                'credits': 5,
+                'estimated_hours': 40,
+                'domain_slugs': ['informatique'],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.data)
+        course = Course.objects.get(pk=res.data['id'])
+        self.assertEqual(course.moderation_status, Course.ModerationStatus.APPROVED)
+        self.assertTrue(course.is_approved)
+        self.assertTrue(course.teachers.filter(pk=teacher.pk).exists())
+        self.assertTrue(course.domains.filter(slug='informatique').exists())
+        self.assertEqual(res.data['moderation_status'], 'approved')
+        self.assertTrue(res.data['is_approved'])

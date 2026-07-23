@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -97,6 +98,36 @@ class _ProfessorPublishScreenState
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          SoftCard(
+            onTap: () => context.push('/teacher-course'),
+            child: const Row(
+              children: [
+                Icon(Icons.menu_book_outlined, color: AkadexColors.primary),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nouveau cours',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Créer le cours avec tous les champs, puis revenir ici',
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: AkadexColors.inkMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
           coursesAsync.when(
             loading: () => const LinearProgressIndicator(),
             error: (e, _) => Text(apiErrorMessage(e)),

@@ -53,14 +53,45 @@ class ProfessorHubScreen extends ConsumerWidget {
                   child: LivingHeroBanner(
                     title: 'Espace enseignant',
                     subtitle:
-                        'Gère tes cours, publie modules et leçons — sans interface étudiant.',
-                    ctaLabel: 'Publier une leçon',
-                    onCta: () => context.go('/teacher-publish'),
+                        'Crée ton cours (tous les champs), puis ajoute modules et leçons.',
+                    ctaLabel: 'Publier un cours',
+                    onCta: () => context.push('/teacher-course'),
                     trailing: const Icon(
                       Icons.school_rounded,
                       color: Colors.white70,
                       size: 48,
                     ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SoftCard(
+                  onTap: () => context.push('/teacher-publish'),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.playlist_add_rounded,
+                          color: AkadexColors.primary),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Publier une leçon',
+                              style: TextStyle(fontWeight: FontWeight.w800),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Modules et contenus sur un cours déjà créé',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: AkadexColors.inkMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -92,12 +123,11 @@ class ProfessorHubScreen extends ConsumerWidget {
                     final mine = _teacherCourses(courses, user);
                     if (mine.isEmpty) {
                       return SoftCard(
-                        child: Text(
-                          'Aucun cours associé pour l’instant. '
-                          'Publie une leçon pour démarrer.',
-                          style: TextStyle(
-                            color: Colors.black.withValues(alpha: 0.65),
-                          ),
+                        onTap: () => context.push('/teacher-course'),
+                        child: const Text(
+                          'Aucun cours pour l’instant.\n'
+                          'Publie ton premier cours pour démarrer.',
+                          style: TextStyle(color: AkadexColors.inkMuted),
                         ),
                       );
                     }
@@ -163,10 +193,24 @@ class ProfessorHubScreen extends ConsumerWidget {
 
   List<Course> _teacherCourses(List<Course> courses, UserProfile user) {
     final name = user.name.toLowerCase();
-    final byName = courses
-        .where((c) => c.teacher.toLowerCase().contains(name.split(' ').first))
+    final first = name.split(' ').where((p) => p.isNotEmpty).firstOrNull ?? '';
+    final mine = courses.where((c) {
+      final hay = [
+        c.teacher,
+        c.displayTeacher,
+        c.teacherFullName,
+        c.submittedByName,
+      ].join(' ').toLowerCase();
+      if (first.isNotEmpty && hay.contains(first)) return true;
+      // Cours publiés par ce compte (titulaire / contributeur).
+      if (c.code.startsWith('ENS-')) return true;
+      return false;
+    }).toList();
+    if (mine.isNotEmpty) return mine.take(40).toList();
+    // Fallback : hors vitrine AKX.
+    return courses
+        .where((c) => !c.code.startsWith('AKX-'))
+        .take(40)
         .toList();
-    if (byName.isNotEmpty) return byName.take(40).toList();
-    return courses.take(40).toList();
   }
 }

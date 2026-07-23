@@ -374,6 +374,10 @@ class CommunityPost extends Equatable {
         'exam',
         'notes',
         'support',
+        'rapport',
+        'projet_tutore',
+        'tfc',
+        'memoire',
       }.contains(kind);
 
   CommunityPost copyWith({

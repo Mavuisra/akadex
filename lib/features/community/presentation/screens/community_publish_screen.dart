@@ -55,6 +55,10 @@ class _CommunityPublishScreenState
     ('summary', 'Résumé', Icons.menu_book_outlined),
     ('notes', 'Notes', Icons.notes_rounded),
     ('support', 'Support', Icons.description_outlined),
+    ('rapport', 'Rapport de stage', Icons.work_outline_rounded),
+    ('projet_tutore', 'Projet tuteuré', Icons.handyman_outlined),
+    ('tfc', 'TFC', Icons.school_outlined),
+    ('memoire', 'Mémoire', Icons.menu_book_rounded),
     ('question', 'Question', Icons.help_outline_rounded),
   ];
 
@@ -150,11 +154,18 @@ class _CommunityPublishScreenState
     }
 
     final title = content.isEmpty
-        ? (_kind == 'tp'
-            ? 'Nouveau TP'
-            : _kind == 'exam'
-                ? 'Examen partagé'
-                : 'Publication')
+        ? switch (_kind) {
+            'tp' => 'Nouveau TP',
+            'exam' => 'Examen partagé',
+            'rapport' => 'Rapport de stage',
+            'projet_tutore' => 'Projet tuteuré',
+            'tfc' => 'TFC partagé',
+            'memoire' => 'Mémoire partagée',
+            'summary' => 'Résumé partagé',
+            'notes' => 'Notes partagées',
+            'support' => 'Support partagé',
+            _ => 'Publication',
+          }
         : (content.length > 80 ? '${content.substring(0, 77)}…' : content);
 
     final bg = (_canUseBg && _bgColor != null)

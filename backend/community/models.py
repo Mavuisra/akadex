@@ -10,6 +10,10 @@ class PostKind(models.TextChoices):
     EXAM = 'exam', 'Examen corrigé'
     NOTES = 'notes', 'Notes de cours'
     SUPPORT = 'support', 'Support de cours'
+    RAPPORT = 'rapport', 'Rapport de stage'
+    PROJET_TUTORE = 'projet_tutore', 'Projet tuteuré'
+    TFC = 'tfc', 'TFC'
+    MEMOIRE = 'memoire', 'Mémoire'
     ALUMNI_ADVICE = 'alumni_advice', 'Conseil académique'
     ALUMNI_PATH = 'alumni_path', 'Parcours universitaire'
     ALUMNI_CAREER = 'alumni_career', 'Parcours professionnel'
@@ -23,6 +27,10 @@ ACADEMIC_SHARE_KINDS = {
     PostKind.EXAM,
     PostKind.NOTES,
     PostKind.SUPPORT,
+    PostKind.RAPPORT,
+    PostKind.PROJET_TUTORE,
+    PostKind.TFC,
+    PostKind.MEMOIRE,
 }
 
 
