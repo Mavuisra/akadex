@@ -1,5 +1,6 @@
 from django.db.models import Count, F, Q
 from django.utils import timezone
+from datetime import timedelta
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -248,33 +249,153 @@ class CourseViewSet(viewsets.ModelViewSet):
             note='Contribution étudiante',
         )
 
+    def _user_owns_course(self, course, user):
+        if user.is_staff:
+            return True
+        if course.submitted_by_id == user.id:
+            return True
+        return course.teachers.filter(id=user.id).exists()
+
     def perform_update(self, serializer):
+        from accounts.models import User
+
         course = self.get_object()
         user = self.request.user
-        if not user.is_staff:
-            if course.submitted_by_id != user.id:
-                raise PermissionDenied()
-            if course.moderation_status not in (
-                Course.ModerationStatus.PENDING,
-                Course.ModerationStatus.CHANGES_REQUESTED,
-            ):
-                raise PermissionDenied(
-                    'Seul un cours en attente ou à modifier peut être édité.'
-                )
-            # Empêche de forcer une validation côté client.
-            course = serializer.save(
-                is_approved=False,
-                moderation_status=Course.ModerationStatus.PENDING,
-                moderation_note='',
-            )
-            CourseValidationLog.objects.create(
-                course=course,
-                actor=user,
-                action=CourseValidationLog.Action.SUBMITTED,
-                note='Resoumission après modification',
-            )
+        if user.is_staff:
+            serializer.save()
             return
-        serializer.save()
+
+        if not self._user_owns_course(course, user):
+            raise PermissionDenied()
+
+        is_teacher = user.role in (User.Role.TEACHER, User.Role.ADMIN)
+        if is_teacher:
+            # Les enseignants peuvent mettre à jour leurs cours publiés.
+            serializer.save()
+            return
+
+        if course.moderation_status not in (
+            Course.ModerationStatus.PENDING,
+            Course.ModerationStatus.CHANGES_REQUESTED,
+        ):
+            raise PermissionDenied(
+                'Seul un cours en attente ou à modifier peut être édité.'
+            )
+        course = serializer.save(
+            is_approved=False,
+            moderation_status=Course.ModerationStatus.PENDING,
+            moderation_note='',
+        )
+        CourseValidationLog.objects.create(
+            course=course,
+            actor=user,
+            action=CourseValidationLog.Action.SUBMITTED,
+            note='Resoumission après modification',
+        )
+
+    @action(detail=True, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def stats(self, request, pk=None):
+        """Stats enseignant : visites, étudiants, modules, activité 7 jours."""
+        from learning.models import CourseLesson, CourseModule, LessonProgress
+
+        course = self.get_object()
+        if not self._user_owns_course(course, request.user) and not request.user.is_staff:
+            raise PermissionDenied()
+
+        lesson_ids = CourseLesson.objects.filter(
+            module__course=course,
+        ).values_list('id', flat=True)
+        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids)
+        students = progress_qs.values('user_id').distinct().count()
+        completed = progress_qs.filter(completed=True).values('user_id').distinct().count()
+        modules = CourseModule.objects.filter(course=course).count()
+        lessons = len(lesson_ids)
+
+        # Activité sur 7 jours (mises à jour de progression)
+        days = []
+        today = timezone.localdate()
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            count = progress_qs.filter(updated_at__date=day).count()
+            days.append({'date': day.isoformat(), 'label': day.strftime('%a'), 'value': count})
+
+        return Response({
+            'course_id': course.id,
+            'views': course.views,
+            'students': students,
+            'students_completed': completed,
+            'modules': modules,
+            'lessons': lessons,
+            'comments': course.course_comments.count(),
+            'activity_7d': days,
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def teacher_dashboard(self, request):
+        """Tableau de bord agrégé pour l’enseignant connecté."""
+        from learning.models import CourseLesson, LessonProgress
+
+        user = request.user
+        courses = (
+            Course.objects.filter(Q(submitted_by=user) | Q(teachers=user))
+            .distinct()
+            .annotate(
+                approved_document_count=Count(
+                    'documents',
+                    filter=Q(documents__is_approved=True),
+                    distinct=True,
+                )
+            )
+        )
+        course_ids = list(courses.values_list('id', flat=True))
+        lesson_ids = list(
+            CourseLesson.objects.filter(
+                module__course_id__in=course_ids,
+            ).values_list('id', flat=True)
+        )
+        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids)
+        students = progress_qs.values('user_id').distinct().count()
+        views_sum = sum(c.views for c in courses)
+
+        per_course = []
+        for c in courses.order_by('-views', 'title')[:12]:
+            c_lessons = CourseLesson.objects.filter(module__course=c).values_list(
+                'id', flat=True
+            )
+            c_students = (
+                LessonProgress.objects.filter(lesson_id__in=c_lessons)
+                .values('user_id')
+                .distinct()
+                .count()
+            )
+            per_course.append({
+                'id': c.id,
+                'title': c.title,
+                'code': c.code,
+                'views': c.views,
+                'students': c_students,
+                'semester': c.semester,
+            })
+
+        days = []
+        today = timezone.localdate()
+        for i in range(6, -1, -1):
+            day = today - timedelta(days=i)
+            count = progress_qs.filter(updated_at__date=day).count()
+            days.append({
+                'date': day.isoformat(),
+                'label': day.strftime('%a'),
+                'value': count,
+            })
+
+        return Response({
+            'courses_count': len(course_ids),
+            'views': views_sum,
+            'students': students,
+            'lessons': len(lesson_ids),
+            'activity_7d': days,
+            'top_courses': per_course,
+        })
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

@@ -31,6 +31,18 @@ ALUMNI_KINDS = [
 ]
 
 
+class IsAuthorOrAdmin(permissions.BasePermission):
+    """Seul l'auteur (ou un admin) peut modifier / supprimer une publication."""
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_staff or getattr(user, 'role', None) == User.Role.ADMIN:
+            return True
+        return obj.author_id == user.id
+
+
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
     filterset_fields = ['department', 'author', 'kind']
@@ -140,6 +152,8 @@ class PostViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [permissions.AllowAny()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [permissions.IsAuthenticated(), IsAuthorOrAdmin()]
         return [permissions.IsAuthenticated()]
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])

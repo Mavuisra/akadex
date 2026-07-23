@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +12,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/theme/status_backgrounds.dart';
+import '../../../../core/utils/pdf_thumbnail.dart';
 import '../../../../core/widgets/academic_autocomplete.dart';
 import '../../../../core/widgets/post_academic_tags.dart';
 import '../../../../data/api/api_client.dart';
@@ -16,9 +20,11 @@ import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
 
-/// Écran « Nouvelle publication » inspiré Facebook.
+/// Écran « Nouvelle publication » / « Modifier la publication ».
 class CommunityPublishScreen extends ConsumerStatefulWidget {
-  const CommunityPublishScreen({super.key});
+  const CommunityPublishScreen({super.key, this.editingPost});
+
+  final CommunityPost? editingPost;
 
   @override
   ConsumerState<CommunityPublishScreen> createState() =>
@@ -28,14 +34,21 @@ class CommunityPublishScreen extends ConsumerStatefulWidget {
 class _CommunityPublishScreenState
     extends ConsumerState<CommunityPublishScreen> {
   final _content = TextEditingController();
+  final _scrollController = ScrollController();
+  final _mediaSectionKey = GlobalKey();
 
   String _kind = 'discussion';
   bool _loading = false;
+  bool _mediaBusy = false;
+  double _mediaProgress = 0;
+  String _mediaBusyLabel = '';
   String? _bgColor;
 
   String? _pdfPath;
   String? _pdfName;
   Uint8List? _pdfBytes;
+  Uint8List? _pdfThumbBytes;
+  int _pdfPageCount = 0;
 
   String? _imagePath;
   String? _imageName;
@@ -47,6 +60,9 @@ class _CommunityPublishScreenState
   String? _facultyName;
   String? _promotionId;
   String? _promotionName;
+
+  /// Limite UX + upload : 3 Mo pour PDF et images.
+  static const int _maxMediaBytes = 3 * 1024 * 1024;
 
   static const _kinds = [
     ('discussion', 'Publication', Icons.edit_outlined),
@@ -62,20 +78,328 @@ class _CommunityPublishScreenState
     ('question', 'Question', Icons.help_outline_rounded),
   ];
 
-  bool get _hasMedia =>
-      _pdfBytes != null ||
+  static const _academicPdfKinds = {
+    'exam',
+    'tp',
+    'summary',
+    'notes',
+    'support',
+    'rapport',
+    'projet_tutore',
+    'tfc',
+    'memoire',
+  };
+
+  bool get _isEditing => widget.editingPost != null;
+
+  bool get _hasExistingPdf =>
+      !_clearedExistingPdf && (widget.editingPost?.hasPdf ?? false);
+
+  bool get _hasExistingImage =>
+      !_clearedExistingImage && (widget.editingPost?.hasImage ?? false);
+
+  bool _clearedExistingPdf = false;
+  bool _clearedExistingImage = false;
+
+  bool get _hasPdf =>
+      (_pdfBytes != null && _pdfBytes!.isNotEmpty) ||
       (_pdfPath != null && _pdfPath!.isNotEmpty) ||
-      _imageBytes != null ||
-      (_imagePath != null && _imagePath!.isNotEmpty);
+      _hasExistingPdf;
+
+  bool get _hasImage =>
+      (_imageBytes != null && _imageBytes!.isNotEmpty) ||
+      (_imagePath != null && _imagePath!.isNotEmpty) ||
+      _hasExistingImage;
+
+  bool get _hasMedia => _hasPdf || _hasImage;
+
+  bool get _needsPdf => _academicPdfKinds.contains(_kind);
 
   bool get _canUseBg =>
       !_hasMedia && StatusBackgrounds.isShortEnough(_content.text);
 
-  bool get _canPublish =>
-      (_content.text.trim().isNotEmpty || _hasMedia) &&
-      (_universityName?.trim().isNotEmpty ?? false) &&
-      (_facultyName?.trim().isNotEmpty ?? false) &&
-      (_promotionName?.trim().isNotEmpty ?? false);
+  String? get _publishBlockedReason {
+    if (_loading || _mediaBusy) return 'Chargement en cours…';
+    if (_universityName?.trim().isEmpty ?? true) {
+      return 'Indique l’université.';
+    }
+    if (_facultyName?.trim().isEmpty ?? true) {
+      return 'Indique la faculté.';
+    }
+    if (_promotionName?.trim().isEmpty ?? true) {
+      return 'Indique la promotion.';
+    }
+    if (_needsPdf && !_hasPdf) {
+      return 'Pour $_kindLabel, appuie sur PDF et choisis un fichier (max 3 Mo).';
+    }
+    if (_content.text.trim().isEmpty && !_hasMedia) {
+      return 'Écris un texte ou ajoute une image / un PDF.';
+    }
+    return null;
+  }
+
+  String get _kindLabel => switch (_kind) {
+        'exam' => 'un examen',
+        'tp' => 'un TP',
+        'summary' => 'un résumé',
+        'notes' => 'des notes',
+        'support' => 'un support',
+        'rapport' => 'un rapport',
+        'projet_tutore' => 'un projet tuteuré',
+        'tfc' => 'un TFC',
+        'memoire' => 'un mémoire',
+        _ => 'cette publication',
+      };
+
+  bool get _canPublish => _publishBlockedReason == null;
+
+  void _toast(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+  }
+
+  bool _exceedsLimit(int bytes, {required String label}) {
+    if (bytes <= _maxMediaBytes) return false;
+    _toast(
+      '$label trop volumineux (${_formatMb(bytes)} Mo). '
+      'Maximum : 3 Mo.',
+    );
+    return true;
+  }
+
+  static String _formatMb(int bytes) =>
+      (bytes / (1024 * 1024)).toStringAsFixed(1);
+
+  Future<void> _pickPdf() async {
+    if (_loading || _mediaBusy) return;
+    setState(() {
+      _mediaBusy = true;
+      _mediaProgress = 0.08;
+      _mediaBusyLabel = 'Sélection du PDF…';
+    });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        withData: true,
+        allowMultiple: false,
+      );
+      if (result == null || result.files.isEmpty) {
+        _toast('Aucun PDF sélectionné.');
+        return;
+      }
+      final file = result.files.single;
+      final declaredSize = file.size;
+      if (declaredSize > 0 &&
+          _exceedsLimit(declaredSize, label: 'Ce PDF')) {
+        return;
+      }
+
+      setState(() {
+        _mediaProgress = 0.3;
+        _mediaBusyLabel = 'Lecture du fichier…';
+      });
+
+      Uint8List? bytes = file.bytes;
+      // Sur le web, `path` lance une exception si on y touche.
+      final path = kIsWeb ? null : file.path;
+      final hasPath = path != null && path.isNotEmpty;
+
+      if ((bytes == null || bytes.isEmpty) && hasPath && !kIsWeb) {
+        bytes = await File(path).readAsBytes();
+      }
+
+      final hasBytes = bytes != null && bytes.isNotEmpty;
+      if (!hasBytes) {
+        _toast(
+          kIsWeb
+              ? 'Impossible de lire ce PDF dans le navigateur. '
+                  'Choisis un fichier ≤ 3 Mo, ou utilise l’app Android.'
+              : 'Impossible de lire ce PDF. Réessaie avec un autre fichier.',
+        );
+        return;
+      }
+      final pdfBytes = bytes;
+      if (_exceedsLimit(pdfBytes.length, label: 'Ce PDF')) {
+        return;
+      }
+
+      // Aperçu immédiat (même cadre que l’image).
+      setState(() {
+        _imageBytes = null;
+        _imagePath = null;
+        _imageName = null;
+        _clearedExistingImage = true;
+        _clearedExistingPdf = false;
+        _pdfPath = hasPath ? path : null;
+        _pdfName = file.name.isNotEmpty ? file.name : 'document.pdf';
+        _pdfBytes = Uint8List.fromList(pdfBytes);
+        _pdfThumbBytes = null;
+        _pdfPageCount = 0;
+        _bgColor = null;
+        _mediaProgress = 0.55;
+        _mediaBusyLabel = 'Génération de la miniature…';
+        if (_kind == 'discussion' || _kind == 'question') {
+          _kind = 'support';
+        }
+      });
+      await _scrollToMedia();
+
+      final rendered = await renderPdfThumbnail(data: pdfBytes);
+      if (!mounted) return;
+      setState(() {
+        _pdfThumbBytes = rendered.bytes;
+        _pdfPageCount = rendered.pageCount;
+        _mediaProgress = 1;
+        _mediaBusyLabel =
+            rendered.hasImage ? 'Aperçu prêt' : 'PDF joint';
+      });
+      if (!rendered.hasImage) {
+        _toast('PDF joint — aperçu indisponible, tu peux publier.');
+      }
+    } catch (e) {
+      _toast('Erreur PDF : ${apiErrorMessage(e)}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _mediaBusy = false;
+          _mediaBusyLabel = '';
+          _mediaProgress = 0;
+        });
+      }
+    }
+  }
+
+  Future<void> _scrollToMedia() async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    if (!mounted) return;
+    final ctx = _mediaSectionKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: 0.1,
+    );
+  }
+
+  void _clearPdf() {
+    if (_mediaBusy || _loading) return;
+    setState(() {
+      _pdfBytes = null;
+      _pdfThumbBytes = null;
+      _pdfPath = null;
+      _pdfName = null;
+      _pdfPageCount = 0;
+      _clearedExistingPdf = true;
+      if (StatusBackgrounds.isShortEnough(_content.text)) {
+        _bgColor ??= StatusBackgrounds.defaultHex;
+      }
+    });
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    if (_loading || _mediaBusy) return;
+    setState(() {
+      _mediaBusy = true;
+      _mediaProgress = 0.12;
+      _mediaBusyLabel = source == ImageSource.camera
+          ? 'Ouverture de la caméra…'
+          : 'Chargement de l’image…';
+    });
+    try {
+      Uint8List? bytes;
+      String? path;
+      String? name;
+
+      // Sur le web, FilePicker est plus fiable que image_picker pour la galerie.
+      if (kIsWeb && source == ImageSource.gallery) {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          withData: true,
+          allowMultiple: false,
+        );
+        if (result == null || result.files.isEmpty) {
+          _toast('Aucune image sélectionnée.');
+          return;
+        }
+        final file = result.files.single;
+        bytes = file.bytes;
+        path = kIsWeb ? null : file.path;
+        name = file.name;
+      } else {
+        final file = await ImagePicker().pickImage(
+          source: source,
+          imageQuality: 85,
+          maxWidth: 1920,
+          maxHeight: 1920,
+        );
+        if (file == null) {
+          _toast('Aucune image sélectionnée.');
+          return;
+        }
+        setState(() {
+          _mediaProgress = 0.5;
+          _mediaBusyLabel = 'Optimisation de l’image…';
+        });
+        bytes = await file.readAsBytes();
+        path = file.path;
+        name = file.name;
+      }
+
+      if (bytes == null || bytes.isEmpty) {
+        _toast('Impossible de lire cette image.');
+        return;
+      }
+      if (_exceedsLimit(bytes.length, label: 'Cette image')) {
+        return;
+      }
+
+      final switchedFromAcademic = _needsPdf;
+      setState(() {
+        _pdfBytes = null;
+        _pdfThumbBytes = null;
+        _pdfPath = null;
+        _pdfName = null;
+        _pdfPageCount = 0;
+        _clearedExistingPdf = true;
+        _clearedExistingImage = false;
+        _imagePath = path;
+        _imageName = name;
+        _imageBytes = bytes;
+        _bgColor = null;
+        _mediaProgress = 1;
+        // Une image seule ne valide pas TFC/mémoire (PDF requis).
+        if (switchedFromAcademic) {
+          _kind = 'discussion';
+        }
+      });
+      await _scrollToMedia();
+      if (switchedFromAcademic) {
+        _toast(
+          'Image ajoutée. Type repassé en « Publication » '
+          '(TFC / mémoire exigent un PDF).',
+        );
+      }
+    } catch (e) {
+      _toast('Erreur image : ${apiErrorMessage(e)}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _mediaBusy = false;
+          _mediaBusyLabel = '';
+          _mediaProgress = 0;
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -91,11 +415,27 @@ class _CommunityPublishScreenState
           ? (user.level.isEmpty ? null : user.level)
           : user.promotion;
     }
+
+    final editing = widget.editingPost;
+    if (editing != null) {
+      _content.text = editing.content;
+      _kind = editing.kind;
+      _pdfPageCount = editing.pageCount;
+      _bgColor = editing.backgroundColor.trim().isEmpty
+          ? null
+          : editing.backgroundColor;
+      final uni = PostAcademicTags.universityOf(editing);
+      final fac = PostAcademicTags.facultyOf(editing);
+      final promo = PostAcademicTags.promotionOf(editing);
+      if (uni != null && uni.isNotEmpty) _universityName = uni;
+      if (fac != null && fac.isNotEmpty) _facultyName = fac;
+      if (promo != null && promo.isNotEmpty) _promotionName = promo;
+    }
+
     _content.addListener(() {
       if (!StatusBackgrounds.isShortEnough(_content.text) || _hasMedia) {
         _bgColor = null;
       } else {
-        // Texte court sans média → fond coloré par défaut (style Facebook).
         _bgColor ??= StatusBackgrounds.defaultHex;
       }
       setState(() {});
@@ -105,54 +445,17 @@ class _CommunityPublishScreenState
   @override
   void dispose() {
     _content.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickPdf() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['pdf'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.single;
-    setState(() {
-      _pdfPath = file.path;
-      _pdfName = file.name;
-      _pdfBytes = file.bytes;
-      _bgColor = null;
-      if (_kind == 'discussion') _kind = 'support';
-    });
-  }
-
-  Future<void> _pickImage(ImageSource source) async {
-    final file = await ImagePicker().pickImage(
-      source: source,
-      imageQuality: 85,
-    );
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
-    setState(() {
-      _imagePath = file.path;
-      _imageName = file.name;
-      _imageBytes = bytes;
-      _bgColor = null;
-    });
-  }
-
   Future<void> _submit() async {
-    final content = _content.text.trim();
-    if (!_canPublish) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Renseigne université, faculté et promotion avant de publier.',
-          ),
-        ),
-      );
+    final blocked = _publishBlockedReason;
+    if (blocked != null) {
+      _toast(blocked);
       return;
     }
-
+    final content = _content.text.trim();
     final title = content.isEmpty
         ? switch (_kind) {
             'tp' => 'Nouveau TP',
@@ -172,7 +475,11 @@ class _CommunityPublishScreenState
         ? _bgColor!
         : (_canUseBg ? StatusBackgrounds.defaultHex : '');
 
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _mediaProgress = 0.2;
+      _mediaBusyLabel = 'Envoi en cours…';
+    });
     try {
       final tags = <String>[_kind];
       if (bg.isNotEmpty) tags.add(StatusBackgrounds.tagFor(bg));
@@ -184,24 +491,60 @@ class _CommunityPublishScreenState
         (ref.read(authStateProvider).valueOrNull?.departmentId ?? ''),
       );
 
-      await ref.read(communityRepositoryProvider).createPost(
-            title: title,
-            content: content.isEmpty ? title : content,
-            kind: _kind,
-            departmentId: deptId,
-            filePath: _pdfPath,
-            fileBytes: _pdfBytes,
-            fileName: _pdfName,
-            imagePath: _imagePath,
-            imageBytes: _imageBytes,
-            imageName: _imageName,
-            backgroundColor: bg,
-            tags: tags,
-          );
+      setState(() => _mediaProgress = 0.55);
+
+      final repo = ref.read(communityRepositoryProvider);
+      final saved = _isEditing
+          ? await repo.updatePost(
+              id: widget.editingPost!.id,
+              title: title,
+              content: content.isEmpty ? title : content,
+              kind: _kind,
+              departmentId: deptId,
+              filePath: _pdfPath,
+              fileBytes: _pdfBytes,
+              fileName: _pdfName,
+              imagePath: _imagePath,
+              imageBytes: _imageBytes,
+              imageName: _imageName,
+              backgroundColor: bg,
+              pageCount: _pdfPageCount,
+              tags: tags,
+            )
+          : await repo.createPost(
+              title: title,
+              content: content.isEmpty ? title : content,
+              kind: _kind,
+              departmentId: deptId,
+              filePath: _pdfPath,
+              fileBytes: _pdfBytes,
+              fileName: _pdfName,
+              imagePath: _imagePath,
+              imageBytes: _imageBytes,
+              imageName: _imageName,
+              backgroundColor: bg,
+              pageCount: _pdfPageCount,
+              tags: tags,
+            );
+      if ((_pdfBytes != null && _pdfBytes!.isNotEmpty) && !saved.hasPdf) {
+        throw Exception(
+          'Le PDF n’a pas été enregistré par le serveur. Réessaie avec un fichier plus petit.',
+        );
+      }
+      setState(() => _mediaProgress = 1);
       ref.invalidate(postsProvider('community'));
+      ref.invalidate(timelinePostsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Publication envoyée.')),
+        SnackBar(
+          content: Text(
+            _isEditing
+                ? 'Publication mise à jour.'
+                : (saved.hasPdf
+                    ? 'Publication envoyée avec le PDF.'
+                    : 'Publication envoyée.'),
+          ),
+        ),
       );
       context.pop();
     } catch (e) {
@@ -210,7 +553,13 @@ class _CommunityPublishScreenState
         SnackBar(content: Text(apiErrorMessage(e))),
       );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _mediaBusyLabel = '';
+          _mediaProgress = 0;
+        });
+      }
     }
   }
 
@@ -226,12 +575,12 @@ class _CommunityPublishScreenState
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => context.pop(),
+          onPressed: (_loading || _mediaBusy) ? null : () => context.pop(),
           icon: const Icon(Icons.close, color: AkadexColors.primary, size: 26),
         ),
-        title: const Text(
-          'Nouvelle publication',
-          style: TextStyle(
+        title: Text(
+          _isEditing ? 'Modifier la publication' : 'Nouvelle publication',
+          style: const TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
             color: Color(0xFF050505),
@@ -246,14 +595,26 @@ class _CommunityPublishScreenState
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(0.5),
-          child: Container(height: 0.5, color: const Color(0xFFCED0D4)),
+          child: (_mediaBusy || _loading)
+              ? LinearProgressIndicator(
+                  value: _mediaProgress > 0 && _mediaProgress < 1
+                      ? _mediaProgress
+                      : null,
+                  minHeight: 3,
+                  backgroundColor: const Color(0xFFE7F3FF),
+                  color: TimelineTokens.likeActive,
+                )
+              : Container(height: 0.5, color: const Color(0xFFCED0D4)),
         ),
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
             child: ListView(
+              controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
                 _UserRow(user: user),
@@ -417,76 +778,296 @@ class _CommunityPublishScreenState
                     ),
                   ),
                 ],
-                if (_imageBytes != null) ...[
-                  const SizedBox(height: 12),
-                  Stack(
+                const SizedBox(height: 20),
+                KeyedSubtree(
+                  key: _mediaSectionKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.memory(
-                          _imageBytes!,
-                          height: 180,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Material(
-                          color: Colors.black54,
-                          shape: const CircleBorder(),
-                          child: IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: () => setState(() {
-                              _imageBytes = null;
-                              _imagePath = null;
-                              _imageName = null;
-                              if (StatusBackgrounds.isShortEnough(_content.text)) {
-                                _bgColor ??= StatusBackgrounds.defaultHex;
-                              }
-                            }),
+                      if (_mediaBusy || _loading) ...[
+                        Text(
+                          _mediaBusyLabel.isEmpty
+                              ? (_loading
+                                  ? 'Publication en cours…'
+                                  : 'Chargement…')
+                              : _mediaBusyLabel,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF050505),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
-                if (_pdfBytes != null ||
-                    (_pdfPath != null && _pdfPath!.isNotEmpty)) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F2F5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.picture_as_pdf,
-                            color: Colors.red.shade700, size: 32),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            _pdfName ?? 'Document PDF prêt à publier',
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                        const SizedBox(height: 14),
+                      ],
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MediaCard(
+                              icon: Icons.photo_library_outlined,
+                              label: 'Galerie',
+                              enabled: !_loading && !_mediaBusy,
+                              onTap: () => _pickImage(ImageSource.gallery),
+                            ),
                           ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _MediaCard(
+                              icon: Icons.picture_as_pdf_outlined,
+                              label: 'PDF',
+                              enabled: !_loading && !_mediaBusy,
+                              selected: _hasPdf,
+                              onTap: _pickPdf,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _MediaCard(
+                              icon: Icons.photo_camera_outlined,
+                              label: 'Caméra',
+                              enabled: !_loading && !_mediaBusy,
+                              onTap: () => _pickImage(ImageSource.camera),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        _needsPdf && !_hasPdf
+                            ? 'Type « ${_kinds.firstWhere((k) => k.$1 == _kind).$2} » : PDF obligatoire (max 3 Mo)'
+                            : 'PDF et images : 3 Mo maximum',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: _needsPdf && !_hasPdf
+                              ? const Color(0xFFB54708)
+                              : const Color(0xFF65676B),
                         ),
-                        IconButton(
-                          onPressed: () => setState(() {
-                            _pdfBytes = null;
-                            _pdfPath = null;
-                            _pdfName = null;
-                            if (StatusBackgrounds.isShortEnough(_content.text)) {
-                              _bgColor ??= StatusBackgrounds.defaultHex;
-                            }
-                          }),
-                          icon: const Icon(Icons.close),
+                      ),
+                      if (_publishBlockedReason != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          _publishBlockedReason!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFB54708),
+                          ),
                         ),
                       ],
-                    ),
+                      if (_hasImage) ...[
+                        const SizedBox(height: 14),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _imageBytes != null &&
+                                      _imageBytes!.isNotEmpty
+                                  ? Image.memory(
+                                      _imageBytes!,
+                                      height: 180,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl:
+                                          widget.editingPost?.imageUrl ?? '',
+                                      height: 180,
+                                      width: double.infinity,
+                                      fit: BoxFit.cover,
+                                      placeholder: (_, _) => Container(
+                                        height: 180,
+                                        color: const Color(0xFFF0F2F5),
+                                        alignment: Alignment.center,
+                                        child: const CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                      errorWidget: (_, _, _) => Container(
+                                        height: 180,
+                                        color: const Color(0xFFF0F2F5),
+                                        alignment: Alignment.center,
+                                        child: const Icon(
+                                          Icons.broken_image_outlined,
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Material(
+                                color: Colors.black54,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: () => setState(() {
+                                    _imageBytes = null;
+                                    _imagePath = null;
+                                    _imageName = null;
+                                    _clearedExistingImage = true;
+                                    if (StatusBackgrounds.isShortEnough(
+                                      _content.text,
+                                    )) {
+                                      _bgColor ??=
+                                          StatusBackgrounds.defaultHex;
+                                    }
+                                  }),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (_hasPdf) ...[
+                        const SizedBox(height: 14),
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: SizedBox(
+                                height: 180,
+                                width: double.infinity,
+                                child: _pdfThumbBytes != null &&
+                                        _pdfThumbBytes!.isNotEmpty
+                                    ? ColoredBox(
+                                        color: const Color(0xFFF0F2F5),
+                                        child: Image.memory(
+                                          _pdfThumbBytes!,
+                                          height: 180,
+                                          width: double.infinity,
+                                          fit: BoxFit.contain,
+                                          gaplessPlayback: true,
+                                        ),
+                                      )
+                                    : ColoredBox(
+                                        color: const Color(0xFFF0F2F5),
+                                        child: Center(
+                                          child: _mediaBusy
+                                              ? const Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    SizedBox(
+                                                      width: 28,
+                                                      height: 28,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2.5,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 10),
+                                                    Text(
+                                                      'Aperçu PDF…',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      Icons
+                                                          .picture_as_pdf_rounded,
+                                                      size: 48,
+                                                      color:
+                                                          Colors.red.shade400,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                        horizontal: 16,
+                                                      ),
+                                                      child: Text(
+                                                        _pdfName ??
+                                                            'Document PDF',
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: const TextStyle(
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Material(
+                                color: Colors.black54,
+                                shape: const CircleBorder(),
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
+                                  ),
+                                  onPressed: _clearPdf,
+                                ),
+                              ),
+                            ),
+                            if (_pdfThumbBytes != null &&
+                                _pdfThumbBytes!.isNotEmpty)
+                              Positioned(
+                                left: 10,
+                                bottom: 10,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.picture_as_pdf_rounded,
+                                        size: 14,
+                                        color: Colors.red.shade200,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        _pdfPageCount > 0
+                                            ? 'PDF · $_pdfPageCount p.'
+                                            : 'PDF',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
                 const SizedBox(height: 20),
                 const Text(
                   'Contexte académique *',
@@ -597,34 +1178,6 @@ class _CommunityPublishScreenState
                     _promotionName = name.trim().isEmpty ? null : name;
                   }),
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MediaCard(
-                        icon: Icons.photo_library_outlined,
-                        label: 'Galerie',
-                        onTap: () => _pickImage(ImageSource.gallery),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _MediaCard(
-                        icon: Icons.picture_as_pdf_outlined,
-                        label: 'PDF',
-                        onTap: _pickPdf,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _MediaCard(
-                        icon: Icons.photo_camera_outlined,
-                        label: 'Caméra',
-                        onTap: () => _pickImage(ImageSource.camera),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -669,11 +1222,17 @@ class _CommunityPublishScreenState
                   SizedBox(
                     height: 44,
                     child: ElevatedButton(
-                      onPressed: _canPublish && !_loading ? _submit : null,
+                      onPressed: _canPublish ? _submit : () => _toast(
+                            _publishBlockedReason ??
+                                'Complète le formulaire pour publier.',
+                          ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: TimelineTokens.likeActive,
+                        backgroundColor: _canPublish
+                            ? TimelineTokens.likeActive
+                            : const Color(0xFFE4E6EB),
                         disabledBackgroundColor: const Color(0xFFE4E6EB),
-                        foregroundColor: Colors.white,
+                        foregroundColor:
+                            _canPublish ? Colors.white : const Color(0xFF65676B),
                         disabledForegroundColor: const Color(0xFFBCC0C4),
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -691,15 +1250,17 @@ class _CommunityPublishScreenState
                                 color: Colors.white,
                               ),
                             )
-                          : const Text(
-                              'Publier',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                          : Text(
+                              _isEditing ? 'Enregistrer' : 'Publier',
+                              style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                     ),
                   ),
                 ],
               ),
             ),
+          ),
+        ],
           ),
         ],
       ),
@@ -811,38 +1372,61 @@ class _MediaCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.enabled = true,
+    this.selected = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final bool enabled;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF0F2F5),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Material(
+        color: selected ? const Color(0xFFE7F3FF) : const Color(0xFFF0F2F5),
         borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
-          height: 96,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 28, color: const Color(0xFF050505)),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            height: 96,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: selected
+                  ? Border.all(color: TimelineTokens.likeActive, width: 2)
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 28,
+                  color: selected
+                      ? TimelineTokens.likeActive
+                      : const Color(0xFF050505),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: selected
+                        ? TimelineTokens.likeActive
+                        : const Color(0xFF050505),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+

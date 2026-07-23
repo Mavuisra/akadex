@@ -184,6 +184,10 @@ class Course(models.Model):
         default=0,
         help_text='Volume horaire estimé',
     )
+    views = models.PositiveIntegerField(
+        default=0,
+        help_text='Nombre de consultations de la page cours',
+    )
     teacher_name = models.CharField(
         max_length=255,
         blank=True,

@@ -31,15 +31,16 @@ void main() {
     expect(find.text('Nouvelle publication'), findsOneWidget);
     expect(find.text('Quoi de neuf ?'), findsOneWidget);
     expect(find.text('Publier'), findsOneWidget);
-    expect(find.textContaining('Contexte académique'), findsOneWidget);
     expect(find.text('Public'), findsOneWidget);
     expect(find.text('Étudiant'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -800));
     await tester.pump();
     expect(find.text('Galerie'), findsOneWidget);
     expect(find.text('PDF'), findsOneWidget);
     expect(find.text('Caméra'), findsOneWidget);
+    expect(find.textContaining('3 Mo'), findsOneWidget);
+    expect(find.textContaining('Contexte académique'), findsOneWidget);
   });
 
   testWidgets('FilledButton thème ne casse plus un Row', (tester) async {

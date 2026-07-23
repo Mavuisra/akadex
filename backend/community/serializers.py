@@ -1,7 +1,7 @@
 from rest_framework import serializers
 import json
 
-from .models import AlumniFollow, Post, PostComment, SavedPost
+from .models import ACADEMIC_SHARE_KINDS, AlumniFollow, Post, PostComment, SavedPost
 
 
 class FlexibleTagsField(serializers.Field):
@@ -196,6 +196,30 @@ class PostSerializer(serializers.ModelSerializer):
             follower=request.user,
             alumni=obj.author,
         ).exists()
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        kind = attrs.get('kind')
+        if self.instance is not None and kind is None:
+            kind = self.instance.kind
+        if kind in ACADEMIC_SHARE_KINDS:
+            file = attrs.get('file')
+            file_url = (attrs.get('file_url') or '').strip()
+            if self.instance is not None:
+                if file is None and not file_url:
+                    if self.instance.file or (self.instance.file_url or '').strip():
+                        return attrs
+            else:
+                if not file and not file_url:
+                    raise serializers.ValidationError(
+                        {
+                            'file': (
+                                'Un PDF est obligatoire pour ce type de '
+                                'publication (examen, TP, mémoire, TFC, etc.).'
+                            ),
+                        }
+                    )
+        return attrs
 
 
 class AlumniFollowSerializer(serializers.ModelSerializer):

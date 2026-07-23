@@ -165,12 +165,14 @@ class Course extends Equatable {
     this.coverUrl = '',
     this.levelLabel = '',
     this.estimatedHours = 0,
+    this.views = 0,
     this.isApproved = true,
     this.moderationStatus = 'approved',
     this.moderationNote = '',
     this.domainSlugs = const [],
     this.domainNames = const [],
     this.submittedByName = '',
+    this.submittedById = '',
   });
 
   final String id;
@@ -198,12 +200,14 @@ class Course extends Equatable {
   final String coverUrl;
   final String levelLabel;
   final int estimatedHours;
+  final int views;
   final bool isApproved;
   final String moderationStatus;
   final String moderationNote;
   final List<String> domainSlugs;
   final List<String> domainNames;
   final String submittedByName;
+  final String submittedById;
 
   bool get needsModerationBadge =>
       moderationStatus != 'approved' && moderationStatus.isNotEmpty;

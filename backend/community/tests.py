@@ -31,6 +31,7 @@ class PostCreateApiTests(TestCase):
                 'content': 'Corrigé session juin',
                 'kind': PostKind.EXAM,
                 'tags': ['exam'],
+                'file_url': 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
             },
             format='json',
         )
@@ -39,12 +40,30 @@ class PostCreateApiTests(TestCase):
         self.assertEqual(res.data['tags'], ['exam'])
         self.assertTrue(Post.objects.filter(kind='exam').exists())
 
+    def test_academic_kind_requires_pdf(self):
+        res = self.client.post(
+            '/api/posts/',
+            {
+                'title': 'Mémoire sans fichier',
+                'content': 'Texte seul',
+                'kind': PostKind.MEMOIRE,
+                'tags': ['memoire'],
+            },
+            format='json',
+        )
+        self.assertEqual(res.status_code, 400, res.data)
+        self.assertIn('file', res.data)
+
     def test_create_tp_summary_notes_support(self):
         for kind in (
             PostKind.TP,
             PostKind.SUMMARY,
             PostKind.NOTES,
             PostKind.SUPPORT,
+            PostKind.RAPPORT,
+            PostKind.PROJET_TUTORE,
+            PostKind.TFC,
+            PostKind.MEMOIRE,
         ):
             res = self.client.post(
                 '/api/posts/',
@@ -53,6 +72,7 @@ class PostCreateApiTests(TestCase):
                     'content': f'Contenu {kind}',
                     'kind': kind,
                     'tags': [kind],
+                    'file_url': 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
                 },
                 format='json',
             )
@@ -162,3 +182,63 @@ class PostCreateApiTests(TestCase):
         self.assertEqual(media_res.status_code, 200, path)
         body = b''.join(media_res.streaming_content)
         self.assertGreater(len(body), 20)
+
+    def test_author_can_update_and_delete_own_post(self):
+        create = self.client.post(
+            '/api/posts/',
+            {
+                'title': 'Brouillon',
+                'content': 'Texte initial',
+                'kind': 'discussion',
+                'tags': ['discussion'],
+            },
+            format='json',
+        )
+        self.assertEqual(create.status_code, 201, create.data)
+        post_id = create.data['id']
+
+        patch = self.client.patch(
+            f'/api/posts/{post_id}/',
+            {'content': 'Texte modifié', 'title': 'Mis à jour'},
+            format='json',
+        )
+        self.assertEqual(patch.status_code, 200, patch.data)
+        self.assertEqual(patch.data['content'], 'Texte modifié')
+        self.assertEqual(patch.data['title'], 'Mis à jour')
+
+        delete = self.client.delete(f'/api/posts/{post_id}/')
+        self.assertEqual(delete.status_code, 204)
+        self.assertFalse(Post.objects.filter(pk=post_id).exists())
+
+    def test_other_user_cannot_edit_or_delete_post(self):
+        create = self.client.post(
+            '/api/posts/',
+            {
+                'title': 'Privé auteur',
+                'content': 'Contenu',
+                'kind': 'discussion',
+                'tags': ['discussion'],
+            },
+            format='json',
+        )
+        self.assertEqual(create.status_code, 201, create.data)
+        post_id = create.data['id']
+
+        other = User.objects.create_user(
+            email='other.student@unikin.ac.cd',
+            username='otherstudent',
+            password='akadex2026',
+            role=User.Role.STUDENT,
+        )
+        self.client.force_authenticate(other)
+
+        patch = self.client.patch(
+            f'/api/posts/{post_id}/',
+            {'content': 'Hack'},
+            format='json',
+        )
+        self.assertEqual(patch.status_code, 403)
+
+        delete = self.client.delete(f'/api/posts/{post_id}/')
+        self.assertEqual(delete.status_code, 403)
+        self.assertTrue(Post.objects.filter(pk=post_id).exists())

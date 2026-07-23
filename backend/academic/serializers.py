@@ -239,6 +239,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             'teacher_names',
             'teacher_full_name',
             'document_count',
+            'views',
             'is_approved',
             'moderation_status',
             'moderation_note',
@@ -352,6 +353,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'teacher_avatar_url',
             'teacher_university',
             'document_count',
+            'views',
             'domains',
             'domain_ids',
             'is_approved',
@@ -374,6 +376,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'validated_by',
             'validated_at',
             'validation_logs',
+            'views',
         ]
 
     def get_document_count(self, obj):

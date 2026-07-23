@@ -42,6 +42,15 @@ class CourseOutlineViewSet(viewsets.ReadOnlyModelViewSet):
             'modules__lessons',
         )
 
+    def retrieve(self, request, *args, **kwargs):
+        from django.db.models import F
+
+        instance = self.get_object()
+        Course.objects.filter(pk=instance.pk).update(views=F('views') + 1)
+        instance.refresh_from_db(fields=['views'])
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 
 class CourseModuleViewSet(viewsets.ModelViewSet):
     serializer_class = CourseModuleSerializer

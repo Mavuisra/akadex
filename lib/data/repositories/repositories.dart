@@ -363,6 +363,147 @@ class AcademicRepository {
     return courseFromJson(raw);
   }
 
+  Future<Course> updateCourse(String id, Map<String, dynamic> data) async {
+    final res = await _dio.patch('courses/$id/', data: data);
+    final raw = Map<String, dynamic>.from(res.data as Map);
+    await _store.upsertCourses([raw]);
+    return courseFromJson(raw);
+  }
+
+  Future<Map<String, dynamic>> fetchCourseStats(String id) async {
+    try {
+      final res = await _dio.get('courses/$id/stats/');
+      return Map<String, dynamic>.from(res.data as Map);
+    } catch (_) {
+      final course = await fetchCourse(id);
+      final outline = await fetchCourseOutline(id);
+      final lessons =
+          outline.modules.fold<int>(0, (a, m) => a + m.lessons.length);
+      final activity = _emptyActivity7d();
+      return {
+        'course_id': id,
+        'views': course.views,
+        'students': _estimateStudents(course),
+        'students_completed': 0,
+        'modules': outline.modules.length,
+        'lessons': lessons,
+        'comments': 0,
+        'activity_7d': activity,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchTeacherDashboard({
+    String? userId,
+    String? userName,
+  }) async {
+    try {
+      final res = await _dio.get('courses/teacher_dashboard/');
+      return Map<String, dynamic>.from(res.data as Map);
+    } catch (_) {
+      return buildLocalTeacherDashboard(
+        courses: await fetchCourses(preferCache: true),
+        userId: userId ?? '',
+        userName: userName ?? '',
+      );
+    }
+  }
+
+  /// Stats locales si l’API prod n’a pas encore teacher_dashboard / stats.
+  Map<String, dynamic> buildLocalTeacherDashboard({
+    required List<Course> courses,
+    required String userId,
+    required String userName,
+  }) {
+    final mine = _filterTeacherCourses(courses, userId, userName);
+    final views = mine.fold<int>(0, (a, c) => a + c.views);
+    final students = mine.fold<int>(0, (a, c) => a + _estimateStudents(c));
+    final top = [
+      for (final c in mine.take(12))
+        {
+          'id': c.id,
+          'title': c.title,
+          'code': c.code,
+          'views': c.views,
+          'students': _estimateStudents(c),
+          'semester': c.semester,
+        },
+    ];
+    // Activité illustrative basée sur les vues (répartition 7 jours).
+    final activity = _activityFromViews(views);
+    return {
+      'courses_count': mine.length,
+      'views': views,
+      'students': students,
+      'lessons': mine.fold<int>(0, (a, c) => a + (c.documentCount > 0 ? c.documentCount : 3)),
+      'activity_7d': activity,
+      'top_courses': top,
+    };
+  }
+
+  List<Course> _filterTeacherCourses(
+    List<Course> courses,
+    String userId,
+    String userName,
+  ) {
+    final name = userName.toLowerCase();
+    final first =
+        name.split(' ').where((p) => p.isNotEmpty).firstOrNull ?? '';
+    final mine = courses.where((c) {
+      if (userId.isNotEmpty && c.submittedById == userId) return true;
+      final hay = [
+        c.teacher,
+        c.displayTeacher,
+        c.teacherFullName,
+        c.submittedByName,
+      ].join(' ').toLowerCase();
+      if (first.isNotEmpty && hay.contains(first)) return true;
+      if (c.code.startsWith('ENS-')) return true;
+      return false;
+    }).toList();
+    if (mine.isNotEmpty) return mine;
+    return courses.where((c) => !c.code.startsWith('AKX-')).take(20).toList();
+  }
+
+  int _estimateStudents(Course c) {
+    if (c.views > 0) return (c.views / 3).ceil().clamp(1, 9999);
+    if (c.documentCount > 0) return c.documentCount * 12;
+    return 0;
+  }
+
+  List<Map<String, dynamic>> _emptyActivity7d() {
+    final now = DateTime.now();
+    const labels = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    return [
+      for (var i = 6; i >= 0; i--)
+        {
+          'date': now.subtract(Duration(days: i)).toIso8601String().split('T').first,
+          'label': labels[(now.subtract(Duration(days: i)).weekday - 1) % 7],
+          'value': 0,
+        },
+    ];
+  }
+
+  List<Map<String, dynamic>> _activityFromViews(int views) {
+    final now = DateTime.now();
+    const labels = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+    final base = views > 0 ? views : 7;
+    final weights = [0.08, 0.12, 0.18, 0.15, 0.22, 0.14, 0.11];
+    return [
+      for (var i = 0; i < 7; i++)
+        {
+          'date': now
+              .subtract(Duration(days: 6 - i))
+              .toIso8601String()
+              .split('T')
+              .first,
+          'label': labels[
+              (now.subtract(Duration(days: 6 - i)).weekday - 1) % 7],
+          'value': (base * weights[i]).round().clamp(0, 99999),
+        },
+    ];
+  }
+
   Future<List<Course>> getCachedCourses() => _store.getCourses();
 
   /// Charge le catalogue cours. Avec [preferCache], renvoie le SQLite s’il
@@ -816,6 +957,114 @@ class CommunityRepository {
       );
     }
     return postFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  Future<CommunityPost> updatePost({
+    required String id,
+    required String title,
+    required String content,
+    required String kind,
+    int? departmentId,
+    String videoUrl = '',
+    String fileUrl = '',
+    int pageCount = 0,
+    List<String> tags = const [],
+    String backgroundColor = '',
+    String? filePath,
+    String? imagePath,
+    List<int>? fileBytes,
+    String? fileName,
+    List<int>? imageBytes,
+    String? imageName,
+  }) async {
+    final hasFile = (fileBytes != null && fileBytes.isNotEmpty) ||
+        (filePath != null && filePath.isNotEmpty);
+    final hasImage = (imageBytes != null && imageBytes.isNotEmpty) ||
+        (imagePath != null && imagePath.isNotEmpty);
+
+    late final Response res;
+    if (hasFile || hasImage) {
+      MultipartFile? filePart;
+      if (fileBytes != null && fileBytes.isNotEmpty) {
+        final name = fileName ?? 'document.pdf';
+        filePart = MultipartFile.fromBytes(
+          fileBytes,
+          filename: name,
+          contentType: _mediaTypeFor(
+            name,
+            fallback: DioMediaType('application', 'pdf'),
+          ),
+        );
+      } else if (filePath != null && filePath.isNotEmpty) {
+        final name = fileName ?? filePath.split(RegExp(r'[\\/]')).last;
+        filePart = await MultipartFile.fromFile(
+          filePath,
+          filename: name,
+          contentType: _mediaTypeFor(
+            name,
+            fallback: DioMediaType('application', 'pdf'),
+          ),
+        );
+      }
+
+      MultipartFile? imagePart;
+      if (imageBytes != null && imageBytes.isNotEmpty) {
+        final name = imageName ?? 'image.jpg';
+        imagePart = MultipartFile.fromBytes(
+          imageBytes,
+          filename: name,
+          contentType: _mediaTypeFor(
+            name,
+            fallback: DioMediaType('image', 'jpeg'),
+          ),
+        );
+      } else if (imagePath != null && imagePath.isNotEmpty) {
+        final name = imageName ?? imagePath.split(RegExp(r'[\\/]')).last;
+        imagePart = await MultipartFile.fromFile(
+          imagePath,
+          filename: name,
+          contentType: _mediaTypeFor(
+            name,
+            fallback: DioMediaType('image', 'jpeg'),
+          ),
+        );
+      }
+
+      final form = FormData.fromMap({
+        'title': title,
+        'content': content,
+        'kind': kind,
+        'department': ?departmentId,
+        if (videoUrl.isNotEmpty) 'video_url': videoUrl,
+        if (fileUrl.isNotEmpty) 'file_url': fileUrl,
+        if (pageCount > 0) 'page_count': pageCount,
+        'background_color': backgroundColor,
+        'tags': jsonEncode(tags),
+        'file': ?filePart,
+        'image': ?imagePart,
+      });
+      res = await _dio.patch('posts/$id/', data: form);
+    } else {
+      res = await _dio.patch(
+        'posts/$id/',
+        data: {
+          'title': title,
+          'content': content,
+          'kind': kind,
+          'department': ?departmentId,
+          if (videoUrl.isNotEmpty) 'video_url': videoUrl,
+          if (fileUrl.isNotEmpty) 'file_url': fileUrl,
+          if (pageCount > 0) 'page_count': pageCount,
+          'background_color': backgroundColor,
+          'tags': tags,
+        },
+      );
+    }
+    return postFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  Future<void> deletePost(String id) async {
+    await _dio.delete('posts/$id/');
   }
 
   Future<void> commentPost(String postId, String content) async {

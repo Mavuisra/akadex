@@ -105,6 +105,7 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
             'cover_url',
             'level_label',
             'estimated_hours',
+            'views',
             'teacher_name',
             'department',
             'department_name',

@@ -222,6 +222,7 @@ Course courseFromJson(Map<String, dynamic> json) {
     coverUrl: (json['cover_url'] ?? '').toString(),
     levelLabel: (json['level_label'] ?? '').toString(),
     estimatedHours: asInt(json['estimated_hours']),
+    views: asInt(json['views']),
     isApproved: json['is_approved'] != false,
     moderationStatus: (json['moderation_status'] ??
             (json['is_approved'] == true ? 'approved' : 'pending'))
@@ -230,6 +231,7 @@ Course courseFromJson(Map<String, dynamic> json) {
     domainSlugs: domainSlugs,
     domainNames: domainNames,
     submittedByName: (json['submitted_by_name'] ?? '').toString(),
+    submittedById: (json['submitted_by'] ?? '').toString(),
   );
 }
 

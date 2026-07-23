@@ -36,6 +36,8 @@ import '../../features/lmd/presentation/screens/lmd_guide_screen.dart';
 import '../../features/messaging/presentation/screens/chat_screen.dart';
 import '../../features/messaging/presentation/screens/conversations_screen.dart';
 import '../../features/professor/presentation/screens/professor_create_course_screen.dart';
+import '../../features/professor/presentation/screens/professor_course_manage_screen.dart';
+import '../../features/professor/presentation/screens/professor_dashboard_screen.dart';
 import '../../features/professor/presentation/screens/professor_hub_screen.dart';
 import '../../features/professor/presentation/screens/professor_publish_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
@@ -46,7 +48,23 @@ import '../../features/search/presentation/screens/search_screen.dart';
 import '../../features/shell/student_shell.dart';
 import '../../features/shell/teacher_shell.dart';
 
-final _rootKey = GlobalKey<NavigatorState>();
+
+/// Clés stables — ne jamais recréer le GoRouter ni ces GlobalKey.
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
+final _teacherShellKey =
+    GlobalKey<StatefulNavigationShellState>(debugLabel: 'shell-teacher');
+final _studentShellKey =
+    GlobalKey<StatefulNavigationShellState>(debugLabel: 'shell-student');
+final _tNav0 = GlobalKey<NavigatorState>(debugLabel: 't-nav-0');
+final _tNav1 = GlobalKey<NavigatorState>(debugLabel: 't-nav-1');
+final _tNav2 = GlobalKey<NavigatorState>(debugLabel: 't-nav-2');
+final _tNav3 = GlobalKey<NavigatorState>(debugLabel: 't-nav-3');
+final _sNav0 = GlobalKey<NavigatorState>(debugLabel: 's-nav-0');
+final _sNav1 = GlobalKey<NavigatorState>(debugLabel: 's-nav-1');
+final _sNav2 = GlobalKey<NavigatorState>(debugLabel: 's-nav-2');
+final _sNav3 = GlobalKey<NavigatorState>(debugLabel: 's-nav-3');
+final _sNav4 = GlobalKey<NavigatorState>(debugLabel: 's-nav-4');
+final _sNav5 = GlobalKey<NavigatorState>(debugLabel: 's-nav-5');
 
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh(Ref ref) {
@@ -87,11 +105,14 @@ CupertinoPage<void> _cupertino(GoRouterState state, Widget child) {
   );
 }
 
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefresh(ref);
 
-  return GoRouter(
-    navigatorKey: _rootKey,
+  // GoRouter créé UNE seule fois. Les deux shells ont des clés distinctes ;
+  // RoleAccess redirige vers le bon shell selon le rôle.
+  final router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: '/onboarding',
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -132,13 +153,62 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) =>
             _cupertino(state, const RegisterScreen()),
       ),
-
       StatefulShellRoute.indexedStack(
+        key: _teacherShellKey,
+        builder: (context, state, navigationShell) {
+          return TeacherShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            navigatorKey: _tNav0,
+            routes: [
+              GoRoute(
+                path: '/teacher',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfessorHubScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _tNav1,
+            routes: [
+              GoRoute(
+                path: '/teacher-publish',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfessorPublishScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _tNav2,
+            routes: [
+              GoRoute(
+                path: '/teacher-dashboard',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfessorDashboardScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            navigatorKey: _tNav3,
+            routes: [
+              GoRoute(
+                path: '/teacher-profile',
+                pageBuilder: (context, state) =>
+                    _fadeSlide(state, const ProfileScreen()),
+              ),
+            ],
+          ),
+        ],
+      ),
+      StatefulShellRoute.indexedStack(
+        key: _studentShellKey,
         builder: (context, state, navigationShell) {
           return StudentShell(navigationShell: navigationShell);
         },
         branches: [
           StatefulShellBranch(
+            navigatorKey: _sNav0,
             routes: [
               GoRoute(
                 path: '/home',
@@ -148,6 +218,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: _sNav1,
             routes: [
               GoRoute(
                 path: '/learn',
@@ -156,7 +227,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'search',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) => _cupertino(
                       state,
                       const LearnSearchScreen(),
@@ -164,7 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'domain/:id',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) => _cupertino(
                       state,
                       DomainCoursesScreen(
@@ -177,6 +248,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: _sNav2,
             routes: [
               GoRoute(
                 path: '/library',
@@ -185,7 +257,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'docs/:categoryId',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) => _cupertino(
                       state,
                       MaFacDocsScreen(
@@ -195,7 +267,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'courses',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) => _cupertino(
                       state,
                       const MaFacCoursesScreen(),
@@ -203,7 +275,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'explore',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) {
                       final q = state.uri.queryParameters;
                       return _cupertino(
@@ -220,7 +292,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                   ),
                   GoRoute(
                     path: 'ue/:id',
-                    parentNavigatorKey: _rootKey,
+                    parentNavigatorKey: _rootNavigatorKey,
                     pageBuilder: (context, state) => _cupertino(
                       state,
                       MaFacCourseDetailScreen(
@@ -233,6 +305,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: _sNav3,
             routes: [
               GoRoute(
                 path: '/community',
@@ -242,6 +315,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: _sNav4,
             routes: [
               GoRoute(
                 path: '/alumni',
@@ -251,6 +325,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            navigatorKey: _sNav5,
             routes: [
               GoRoute(
                 path: '/profile',
@@ -261,54 +336,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-
-      StatefulShellRoute.indexedStack(
-        builder: (context, state, navigationShell) {
-          return TeacherShell(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/teacher',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfessorHubScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/teacher-publish',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfessorPublishScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/teacher-calendar',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const CalendarScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: '/teacher-profile',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfileScreen()),
-              ),
-            ],
-          ),
-        ],
-      ),
-
       GoRoute(
         path: '/library/course/:id',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => _cupertino(
           state,
           CourseDetailScreen(courseId: state.pathParameters['id']!),
@@ -316,7 +346,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/library/document/:id',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => _cupertino(
           state,
           DocumentDetailScreen(documentId: state.pathParameters['id']!),
@@ -324,7 +354,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/library/lesson/:id/play',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           final lesson = extra?['lesson'] as CourseLessonItem?;
@@ -351,79 +381,89 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/lmd',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const LmdGuideScreen()),
       ),
       GoRoute(
         path: '/lmd/assistant',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const LmdAssistantScreen()),
       ),
       GoRoute(
         path: '/search',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const SearchScreen()),
       ),
       GoRoute(
         path: '/ai',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const AiAssistantScreen()),
       ),
       GoRoute(
         path: '/calendar',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const CalendarScreen()),
       ),
       GoRoute(
         path: '/rewards',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const RewardsScreen()),
       ),
       GoRoute(
         path: '/contribute',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const ContributeScreen()),
       ),
       GoRoute(
         path: '/contribute/course',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const SuggestCourseScreen()),
       ),
       GoRoute(
         path: '/teacher-course',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const ProfessorCreateCourseScreen()),
       ),
       GoRoute(
+        path: '/teacher-course/:id',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => _cupertino(
+          state,
+          ProfessorCourseManageScreen(
+            courseId: state.pathParameters['id']!,
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/my-contributions',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const MyContributionsScreen()),
       ),
       GoRoute(
         path: '/profile/edit',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const EditProfileScreen()),
       ),
       GoRoute(
         path: '/profile/me',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const MyProfileScreen()),
       ),
       GoRoute(
         path: '/alumni/profile/:id',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => _cupertino(
           state,
           AlumniProfileScreen(
@@ -435,18 +475,23 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/alumni/publish',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const AlumniPublishScreen()),
       ),
       GoRoute(
         path: '/community/publish',
-        parentNavigatorKey: _rootKey,
-        builder: (context, state) => const CommunityPublishScreen(),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final extra = state.extra;
+          return CommunityPublishScreen(
+            editingPost: extra is CommunityPost ? extra : null,
+          );
+        },
       ),
       GoRoute(
         path: '/posts/:id',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
           final extra = state.extra;
           if (extra is! CommunityPost) {
@@ -462,7 +507,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/posts/:id/media',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
           final extra = state.extra;
           if (extra is! CommunityPost) {
@@ -478,7 +523,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/pdf-reader',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
           final extra = state.extra;
           var url = '';
@@ -495,13 +540,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/messages',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const ConversationsScreen()),
       ),
       GoRoute(
         path: '/messages/chat/:id',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => _cupertino(
           state,
           ChatScreen(conversationId: state.pathParameters['id']!),
@@ -509,7 +554,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/messages/with/:userId',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => _cupertino(
           state,
           StartConversationScreen(userId: state.pathParameters['userId']!),
@@ -517,14 +562,17 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/professor',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         redirect: (context, state) => '/teacher',
       ),
       GoRoute(
         path: '/professor/publish',
-        parentNavigatorKey: _rootKey,
+        parentNavigatorKey: _rootNavigatorKey,
         redirect: (context, state) => '/teacher-publish',
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+  return router;
 });

@@ -142,6 +142,47 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
     );
   }
 
+  Future<void> _confirmDelete() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer la publication ?'),
+        content: const Text(
+          'Cette action est définitive. La publication disparaîtra du fil.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFB3261E)),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(communityRepositoryProvider).deletePost(_post.id);
+      ref.invalidate(timelinePostsProvider);
+      ref.invalidate(postsProvider('community'));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Publication supprimée.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _sendComment() async {
     final me = ref.read(authStateProvider).valueOrNull;
     if (me == null) {
@@ -278,6 +319,48 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                     ),
                   if (_post.needsModerationBadge || me?.id == _post.authorId)
                     ModerationChip(status: _post.moderationStatus),
+                  if (me != null && me.id == _post.authorId)
+                    PopupMenuButton<String>(
+                      tooltip: 'Options',
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        color: TimelineTokens.meta,
+                      ),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          context.push('/community/publish', extra: _post);
+                        } else if (value == 'delete') {
+                          _confirmDelete();
+                        }
+                      },
+                      itemBuilder: (_) => const [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Modifier'),
+                          ),
+                        ),
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(
+                              Icons.delete_outline,
+                              color: Color(0xFFB3261E),
+                            ),
+                            title: Text(
+                              'Supprimer',
+                              style: TextStyle(color: Color(0xFFB3261E)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),

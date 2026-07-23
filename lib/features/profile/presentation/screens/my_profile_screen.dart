@@ -335,9 +335,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         onTap: () => context.go('/teacher-publish'),
                       ),
                       _MenuTile(
-                        icon: Icons.calendar_month_outlined,
-                        label: 'Agenda universitaire',
-                        onTap: () => context.go('/teacher-calendar'),
+                        icon: Icons.insights_outlined,
+                        label: 'Tableau de bord',
+                        onTap: () => context.go('/teacher-dashboard'),
                       ),
                     ],
                     const SizedBox(height: 12),

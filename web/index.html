@@ -16,20 +16,19 @@
 
   <title>Akadex</title>
   <link rel="manifest" href="manifest.json">
-</head>
-<body>
-  <!-- Requis par pdfx (aperçu PDF web) -->
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs" type="module"></script>
-  <script type="module">
-    var { pdfjsLib } = globalThis;
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.worker.mjs";
 
+  <!-- pdfx / pdf.js (UMD, non-module) — requis pour aperçu PDF dans Chrome -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
     var pdfRenderOptions = {
-      cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/cmaps/",
+      cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
       cMapPacked: true,
     };
   </script>
+</head>
+<body>
   <script>
     {{flutter_js}}
     {{flutter_build_config}}

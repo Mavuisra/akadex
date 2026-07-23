@@ -68,7 +68,7 @@ void main() {
 
     expect(find.text('Mes cours'), findsOneWidget);
     expect(find.text('Publier'), findsOneWidget);
-    expect(find.text('Agenda'), findsOneWidget);
+    expect(find.text('Tableau'), findsOneWidget);
     expect(find.text('Alumni'), findsNothing);
     expect(find.text('Communauté'), findsNothing);
     expect(find.text('Accueil'), findsNothing);

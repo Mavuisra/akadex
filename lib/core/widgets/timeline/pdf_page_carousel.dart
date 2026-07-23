@@ -8,19 +8,26 @@ import '../../theme/akadex_theme.dart';
 import '../../theme/timeline_tokens.dart';
 
 /// Aperçu PDF style LinkedIn : pages en défilement horizontal.
+///
+/// Passe [url] (réseau) et/ou [bytes] (fichier local avant publication).
 class PdfPageCarousel extends StatefulWidget {
   const PdfPageCarousel({
     super.key,
-    required this.url,
+    this.url = '',
+    this.bytes,
     this.pageCount = 0,
     this.onOpen,
     this.height = 220,
+    this.onPagesResolved,
   });
 
   final String url;
+  final Uint8List? bytes;
   final int pageCount;
   final VoidCallback? onOpen;
   final double height;
+  /// Appelé une fois le nombre de pages connu (utile à la publication).
+  final ValueChanged<int>? onPagesResolved;
 
   @override
   State<PdfPageCarousel> createState() => _PdfPageCarouselState();
@@ -43,7 +50,9 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
   @override
   void didUpdateWidget(covariant PdfPageCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.url != widget.url) {
+    final bytesChanged = oldWidget.bytes != widget.bytes;
+    final urlChanged = oldWidget.url != widget.url;
+    if (bytesChanged || urlChanged) {
       _load();
     }
   }
@@ -61,11 +70,20 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
       _previews.clear();
     });
     try {
-      final res = await Dio().get<List<int>>(
-        widget.url,
-        options: Options(responseType: ResponseType.bytes),
-      );
-      final doc = await PdfDocument.openData(Uint8List.fromList(res.data!));
+      late final Uint8List data;
+      final local = widget.bytes;
+      if (local != null && local.isNotEmpty) {
+        data = local;
+      } else if (widget.url.trim().isNotEmpty) {
+        final res = await Dio().get<List<int>>(
+          widget.url,
+          options: Options(responseType: ResponseType.bytes),
+        );
+        data = Uint8List.fromList(res.data!);
+      } else {
+        throw StateError('Aucun PDF à prévisualiser');
+      }
+      final doc = await PdfDocument.openData(data);
       final total = doc.pagesCount;
       final limit = total.clamp(1, 6);
       final rendered = <Uint8List>[];
@@ -74,18 +92,21 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
         final img = await page.render(
           width: page.width * 1.2,
           height: page.height * 1.2,
-          format: PdfPageImageFormat.jpeg,
+          format: PdfPageImageFormat.png,
+          backgroundColor: '#FFFFFF',
         );
         await page.close();
         if (img?.bytes != null) rendered.add(img!.bytes);
       }
       await doc.close();
       if (!mounted) return;
+      final resolved = widget.pageCount > 0 ? widget.pageCount : total;
       setState(() {
-        _pages = widget.pageCount > 0 ? widget.pageCount : total;
+        _pages = resolved;
         _previews.addAll(rendered);
         _loading = false;
       });
+      widget.onPagesResolved?.call(resolved);
     } catch (_) {
       if (!mounted) return;
       setState(() {
