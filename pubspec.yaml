@@ -1,7 +1,7 @@
 name: akadex
 description: "Plateforme academique et communautaire pour etudiants"
 publish_to: 'none'
-version: 1.1.14+16
+version: 1.1.16+18
 
 environment:
   sdk: ^3.11.0
@@ -104,5 +104,4 @@ flutter:
         - asset: assets/fonts/roboto-blackitalic.ttf
           weight: 900
           style: italic
-
 
