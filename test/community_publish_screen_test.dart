@@ -34,13 +34,18 @@ void main() {
     expect(find.text('Public'), findsOneWidget);
     expect(find.text('Étudiant'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView).first, const Offset(0, -800));
+    final contextField = find.textContaining('Contexte académique');
+    await tester.scrollUntilVisible(
+      contextField,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pump();
+    expect(contextField, findsOneWidget);
     expect(find.text('Galerie'), findsOneWidget);
     expect(find.text('PDF'), findsOneWidget);
     expect(find.text('Caméra'), findsOneWidget);
     expect(find.textContaining('3 Mo'), findsOneWidget);
-    expect(find.textContaining('Contexte académique'), findsOneWidget);
   });
 
   testWidgets('FilledButton thème ne casse plus un Row', (tester) async {
