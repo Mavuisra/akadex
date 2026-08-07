@@ -61,7 +61,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 17,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -84,55 +84,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onOpenProfile: () => context.push('/profile/me'),
                   onSettings: () => context.push('/profile/edit'),
                 ),
-                const SizedBox(height: 18),
-                const Text(
-                  'Vos raccourcis',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF050505),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 96,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: [
-                      _ShortcutTile(
-                        label: 'Communauté',
-                        icon: Icons.forum_outlined,
-                        color: const Color(0xFF1877F2),
-                        onTap: () => context.go('/community'),
-                      ),
-                      _ShortcutTile(
-                        label: 'Ma Fac',
-                        icon: Icons.account_balance_outlined,
-                        color: const Color(0xFF42B72A),
-                        onTap: () => context.go('/library'),
-                      ),
-                      _ShortcutTile(
-                        label: 'Alumni',
-                        icon: Icons.school_outlined,
-                        color: const Color(0xFFF7B928),
-                        onTap: () => context.go('/alumni'),
-                      ),
-                      _ShortcutTile(
-                        label: 'Messages',
-                        icon: Icons.chat_bubble_outline,
-                        color: const Color(0xFF8A3FFC),
-                        onTap: () => context.push('/messages'),
-                      ),
-                      _ShortcutTile(
-                        label: 'Calendrier',
-                        icon: Icons.calendar_month_outlined,
-                        color: const Color(0xFFFA383E),
-                        onTap: () => context.push('/calendar'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 _MenuItem(
                   icon: Icons.people_outline_rounded,
                   label: 'Ami(e)s',
@@ -192,8 +144,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           _showMore ? 'Voir moins' : 'Voir plus',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             fontSize: 15,
+                            color: Color(0xFF050505),
                           ),
                         ),
                       ),
@@ -316,7 +269,7 @@ class _MenuHeader extends StatelessWidget {
                                 ? '?'
                                 : user.name.characters.first.toUpperCase(),
                             style: const TextStyle(
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w600,
                               color: AkadexColors.primary,
                             ),
                           ),
@@ -326,8 +279,8 @@ class _MenuHeader extends StatelessWidget {
                     child: Text(
                       user.name,
                       style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                         color: Color(0xFF050505),
                       ),
                     ),
@@ -359,59 +312,6 @@ class _MenuHeader extends StatelessWidget {
   }
 }
 
-class _ShortcutTile extends StatelessWidget {
-  const _ShortcutTile({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 78,
-          child: Column(
-            children: [
-              Container(
-                height: 64,
-                width: 72,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE4E6EB)),
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MenuItem extends StatelessWidget {
   const _MenuItem({
     required this.icon,
@@ -432,7 +332,7 @@ class _MenuItem extends StatelessWidget {
         label,
         style: const TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Color(0xFF050505),
         ),
       ),
@@ -467,7 +367,8 @@ class _ExpandRow extends StatelessWidget {
             label,
             style: const TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF050505),
             ),
           ),
           trailing: Icon(
@@ -497,8 +398,8 @@ class _SubItem extends StatelessWidget {
         label,
         style: const TextStyle(
           fontSize: 15,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF050505),
+          fontWeight: FontWeight.w400,
+          color: Color(0xFF65676B),
         ),
       ),
       onTap: onTap,
