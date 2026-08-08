@@ -5,14 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
+import '../../../learn/data/cart_provider.dart';
 import '../../../learn/data/course_cover_images.dart';
+import '../../../learn/presentation/widgets/course_price_row.dart';
 
-/// Détail cours style Udemy (sans prix).
+/// Détail cours style Udemy.
 class CourseDetailScreen extends ConsumerStatefulWidget {
   const CourseDetailScreen({super.key, required this.courseId});
 
@@ -137,11 +140,11 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
         body: Center(child: CupertinoActivityIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
         ),
         body: Center(child: Text(apiErrorMessage(e))),
       ),
@@ -163,19 +166,33 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
 
         _seedModules(outline.modules);
 
+        final feed = TimelineTokens.of(context);
+        final primary = Theme.of(context).colorScheme.primary;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: feed.feedBg,
           body: CustomScrollView(
             slivers: [
               SliverAppBar(
                 pinned: true,
-                backgroundColor: Colors.white,
+                backgroundColor: feed.cardBg,
                 surfaceTintColor: Colors.transparent,
+                foregroundColor: feed.ink,
                 leading: IconButton(
                   onPressed: () => context.pop(),
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
                 actions: [
+                  IconButton(
+                    tooltip: 'Panier',
+                    onPressed: () => context.push('/cart'),
+                    icon: Badge(
+                      isLabelVisible: ref.watch(cartProvider).isNotEmpty,
+                      label: Text('${ref.watch(cartProvider).length}'),
+                      child: const Icon(Icons.shopping_cart_outlined),
+                    ),
+                  ),
                   IconButton(
                     onPressed: () {},
                     icon: const Icon(Icons.share_outlined),
@@ -183,9 +200,9 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                 ],
               ),
               SliverToBoxAdapter(
-                child: Column(
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
+                    children: [
                     // Breadcrumb
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -194,8 +211,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                           if (course.faculty.isNotEmpty) course.faculty,
                           if (course.department.isNotEmpty) course.department,
                         ].join(' › '),
-                        style: const TextStyle(
-                          color: AkadexColors.primary,
+                        style: TextStyle(
+                          color: primary,
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
@@ -267,22 +284,24 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                           ],
                           Text(
                             course.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF2D2F31),
+                              color: feed.ink,
                               height: 1.2,
                             ),
                           ),
+                          const SizedBox(height: 12),
+                          const CoursePriceRow(),
                           if (course.description.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
                               course.description,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
-                                color: Color(0xFF3E4143),
+                                color: feed.meta,
                                 height: 1.35,
                               ),
                             ),
@@ -296,27 +315,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                 for (final name in course.domainNames)
                                   _ChipBadge(
                                     label: name,
-                                    bg: AkadexColors.primarySoft,
-                                    fg: AkadexColors.primary,
+                                    bg: feed.softTint,
+                                    fg: primary,
                                   ),
                               ],
-                            ),
-                          ],
-                          if (course.primaryDomainSlug.isNotEmpty) ...[
-                            const SizedBox(height: 14),
-                            SizedBox(
-                              width: double.infinity,
-                              child: FilledButton.icon(
-                                onPressed: () => context.push(
-                                  '/learn/domain/${course.primaryDomainSlug}',
-                                ),
-                                icon: const Icon(Icons.play_circle_outline),
-                                label: Text(
-                                  course.domainNames.length == 1
-                                      ? 'Apprendre ce domaine'
-                                      : 'Apprendre : ${course.domainNames.first}',
-                                ),
-                              ),
                             ),
                           ],
                           const SizedBox(height: 10),
@@ -330,16 +332,28 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                     i++)
                                   _ChipBadge(
                                     label: course.academicTags[i],
-                                    bg: const [
-                                      Color(0xFFACE4DB),
-                                      Color(0xFFF3CA8C),
-                                      AkadexColors.primarySoft,
-                                    ][i % 3],
-                                    fg: const [
-                                      Color(0xFF1E6055),
-                                      Color(0xFF3D3C0A),
-                                      AkadexColors.primary,
-                                    ][i % 3],
+                                    bg: (isDark
+                                        ? const [
+                                            Color(0xFF1E3A36),
+                                            Color(0xFF3A3020),
+                                            Color(0xFF242424),
+                                          ]
+                                        : [
+                                            const Color(0xFFACE4DB),
+                                            const Color(0xFFF3CA8C),
+                                            feed.softTint,
+                                          ])[i % 3],
+                                    fg: (isDark
+                                        ? [
+                                            const Color(0xFF7DCEC0),
+                                            const Color(0xFFE0C070),
+                                            primary,
+                                          ]
+                                        : [
+                                            const Color(0xFF1E6055),
+                                            const Color(0xFF3D3C0A),
+                                            primary,
+                                          ])[i % 3],
                                   ),
                               ],
                             ),
@@ -348,14 +362,14 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             TextSpan(
                               style: const TextStyle(fontSize: 14),
                               children: [
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Créé par ',
-                                  style: TextStyle(color: Color(0xFF2D2F31)),
+                                  style: TextStyle(color: feed.ink),
                                 ),
                                 TextSpan(
                                   text: course.displayTeacher,
-                                  style: const TextStyle(
-                                    color: AkadexColors.primary,
+                                  style: TextStyle(
+                                    color: primary,
                                     fontWeight: FontWeight.w700,
                                     decoration: TextDecoration.underline,
                                   ),
@@ -386,10 +400,10 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                           const SizedBox(height: 14),
                           Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               border: Border(
-                                top: BorderSide(color: Color(0xFFD1D7DC)),
-                                bottom: BorderSide(color: Color(0xFFD1D7DC)),
+                                top: BorderSide(color: feed.divider),
+                                bottom: BorderSide(color: feed.divider),
                               ),
                             ),
                             child: Row(
@@ -416,9 +430,9 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                       ),
                                       Text(
                                         '$ratingCount avis',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 12,
-                                          color: AkadexColors.primary,
+                                          color: primary,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -428,12 +442,12 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                 Container(
                                     width: 1,
                                     height: 36,
-                                    color: const Color(0xFFD1D7DC)),
+                                    color: feed.divider),
                                 Expanded(
                                   child: Column(
                                     children: [
-                                      const Icon(Icons.workspace_premium,
-                                          color: AkadexColors.primary, size: 20),
+                                      Icon(Icons.workspace_premium,
+                                          color: primary, size: 20),
                                       const SizedBox(height: 2),
                                       Text(
                                         course.targetPromotion.isEmpty
@@ -450,7 +464,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                 Container(
                                     width: 1,
                                     height: 36,
-                                    color: const Color(0xFFD1D7DC)),
+                                    color: feed.divider),
                                 Expanded(
                                   child: Column(
                                     children: [
@@ -463,14 +477,14 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                           fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
                           // Ce que vous allez apprendre
                           if (learnItems.isNotEmpty) ...[
                             const Text(
@@ -486,29 +500,29 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
                                 border:
-                                    Border.all(color: const Color(0xFFD1D7DC)),
+                                    Border.all(color: feed.divider),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
                                 children: [
                                   for (final item in learnItems.take(8))
                                     Padding(
-                                      padding: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.only(bottom: 10),
                                       child: Row(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          const Icon(Icons.check,
+                                          Icon(Icons.check,
                                               size: 18,
-                                              color: Color(0xFF2D2F31)),
+                                              color: feed.ink),
                                           const SizedBox(width: 10),
                                           Expanded(
                                             child: Text(
                                               item,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 14,
                                                 height: 1.4,
-                                                color: Color(0xFF2D2F31),
+                                                color: feed.ink,
                                               ),
                                             ),
                                           ),
@@ -565,8 +579,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             '${outline.modules.length} section${outline.modules.length > 1 ? 's' : ''} · '
                             '${lessons.length} leçon${lessons.length > 1 ? 's' : ''} · '
                             '$durationLabel',
-                            style: const TextStyle(
-                              color: Color(0xFF6A6F73),
+                            style: TextStyle(
+                              color: feed.meta,
                               fontSize: 13,
                             ),
                           ),
@@ -609,8 +623,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             child: Padding(
                               padding:
                                   const EdgeInsets.symmetric(vertical: 14),
-                              child: Row(
-                                children: [
+                child: Row(
+                  children: [
                                   const Expanded(
                                     child: Text(
                                       'Prérequis',
@@ -636,13 +650,13 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                 course.prerequisites.isEmpty
                                     ? 'Aucun prérequis particulier.'
                                     : course.prerequisites,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   height: 1.45,
-                                  color: Color(0xFF2D2F31),
+                                  color: feed.ink,
                                 ),
                               ),
                             ),
-                          const Divider(height: 1, color: Color(0xFFD1D7DC)),
+                          Divider(height: 1, color: feed.divider),
                           // Description
                           const SizedBox(height: 16),
                           const Text(
@@ -663,9 +677,9 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             overflow: _descExpanded
                                 ? TextOverflow.visible
                                 : TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               height: 1.45,
-                              color: Color(0xFF2D2F31),
+                              color: feed.ink,
                             ),
                           ),
                           TextButton(
@@ -673,7 +687,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                               () => _descExpanded = !_descExpanded,
                             ),
                             style: TextButton.styleFrom(
-                              foregroundColor: AkadexColors.primary,
+                              foregroundColor: primary,
                               padding: EdgeInsets.zero,
                             ),
                             child: Text(
@@ -694,8 +708,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                           const SizedBox(height: 10),
                           Text(
                             course.displayTeacher,
-                            style: const TextStyle(
-                              color: AkadexColors.primary,
+                            style: TextStyle(
+                              color: primary,
                               fontWeight: FontWeight.w800,
                               fontSize: 17,
                             ),
@@ -704,8 +718,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             const SizedBox(height: 4),
                             Text(
                               course.teacherSpecialty,
-                              style: const TextStyle(
-                                color: Color(0xFF2D2F31),
+                              style: TextStyle(
+                                color: feed.ink,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
                               ),
@@ -720,8 +734,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                               course.teacherUniversity.isNotEmpty
                                   ? course.teacherUniversity
                                   : course.university,
-                              style: const TextStyle(
-                                color: Color(0xFF6A6F73),
+                              style: TextStyle(
+                                color: feed.meta,
                                 fontSize: 13,
                               ),
                             ),
@@ -732,7 +746,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 40,
-                                backgroundColor: AkadexColors.primarySoft,
+                                backgroundColor: feed.softTint,
                                 backgroundImage:
                                     course.teacherAvatarUrl.isNotEmpty
                                         ? CachedNetworkImageProvider(
@@ -744,11 +758,11 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                         course.teacher.isNotEmpty
                                             ? course.teacher[0].toUpperCase()
                                             : 'P',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 28,
                                           fontWeight: FontWeight.w800,
-                                          color: AkadexColors.primary,
-                                        ),
+                      color: primary,
+                    ),
                                       )
                                     : null,
                               ),
@@ -784,9 +798,9 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             const SizedBox(height: 12),
                             Text(
                               course.teacherBio,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 height: 1.45,
-                                color: Color(0xFF2D2F31),
+                                color: feed.ink,
                               ),
                             ),
                           ],
@@ -863,11 +877,11 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                             error: (e, _) => Text(apiErrorMessage(e)),
                             data: (comments) {
                               if (comments.isEmpty) {
-                                return const Padding(
+                                return Padding(
                                   padding: EdgeInsets.symmetric(vertical: 12),
                                   child: Text(
                                     'Aucun avis pour l’instant.',
-                                    style: TextStyle(color: Color(0xFF6A6F73)),
+                                    style: TextStyle(color: feed.meta),
                                   ),
                                 );
                               }
@@ -880,7 +894,7 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                       padding: const EdgeInsets.all(14),
                                       decoration: BoxDecoration(
                                         border: Border.all(
-                                          color: const Color(0xFFD1D7DC),
+                                          color: feed.divider,
                                         ),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
@@ -890,8 +904,8 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                         children: [
                                           Row(
                                             children: [
-                                              Expanded(
-                                                child: Text(
+                    Expanded(
+                      child: Text(
                                                   c.author,
                                                   style: const TextStyle(
                                                     fontWeight: FontWeight.w800,
@@ -901,16 +915,16 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                               CircleAvatar(
                                                 radius: 14,
                                                 backgroundColor:
-                                                    AkadexColors.primarySoft,
+                                                    feed.softTint,
                                                 child: Text(
                                                   c.author.isNotEmpty
                                                       ? c.author[0]
                                                           .toUpperCase()
                                                       : '?',
-                                                  style: const TextStyle(
+                        style: TextStyle(
                                                     fontSize: 12,
                                                     fontWeight: FontWeight.w800,
-                                                    color: AkadexColors.primary,
+                                                    color: primary,
                                                   ),
                                                 ),
                                               ),
@@ -935,8 +949,97 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
               ),
             ],
           ),
+          bottomNavigationBar: _CourseBuyBar(course: course),
         );
       },
+    );
+  }
+}
+
+class _CourseBuyBar extends ConsumerWidget {
+  const _CourseBuyBar({required this.course});
+
+  final Course course;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+    final cart = ref.watch(cartProvider);
+    final notifier = ref.read(cartProvider.notifier);
+    final inCart = cart.any((e) => e.courseId == course.id);
+
+    return Material(
+      color: feed.cardBg,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Row(
+            children: [
+              const CoursePriceRow(dense: true),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    if (inCart) {
+                      context.push('/cart');
+                      return;
+                    }
+                    final added = notifier.addCourse(course);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          added
+                              ? 'Ajouté au panier'
+                              : 'Déjà dans le panier',
+                        ),
+                        action: SnackBarAction(
+                          label: 'Voir',
+                          onPressed: () => context.push('/cart'),
+                        ),
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: primary,
+                    side: BorderSide(color: primary),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    inCart ? 'Voir le panier' : 'Ajouter',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: () {
+                    notifier.addCourse(course);
+                    context.push('/checkout');
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Acheter',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -985,12 +1088,12 @@ class _MetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF6A6F73)),
+          Icon(icon, size: 16, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF2D2F31)),
+              style: TextStyle(fontSize: 13, color: TimelineTokens.of(context).ink),
             ),
           ),
         ],
@@ -1011,12 +1114,12 @@ class _IncludeRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: const Color(0xFF2D2F31)),
+          Icon(icon, size: 20, color: TimelineTokens.of(context).ink),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(fontSize: 14, color: Color(0xFF2D2F31)),
+              style: TextStyle(fontSize: 14, color: TimelineTokens.of(context).ink),
             ),
           ),
         ],
@@ -1037,7 +1140,7 @@ class _InstrStat extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: const Color(0xFF2D2F31)),
+          Icon(icon, size: 16, color: TimelineTokens.of(context).ink),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text, style: const TextStyle(fontSize: 13)),
@@ -1066,7 +1169,7 @@ class _ModuleTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFFD1D7DC)),
+        border: Border.all(color: TimelineTokens.of(context).divider),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -1075,7 +1178,7 @@ class _ModuleTile extends StatelessWidget {
             onTap: onToggle,
             child: Container(
               width: double.infinity,
-              color: const Color(0xFFF7F9FA),
+              color: TimelineTokens.of(context).softTint,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
               child: Row(
                 children: [
@@ -1097,8 +1200,8 @@ class _ModuleTile extends StatelessWidget {
                   ),
                   Text(
                     '${module.lessons.length}',
-                    style: const TextStyle(
-                      color: Color(0xFF6A6F73),
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).meta,
                       fontSize: 12,
                     ),
                   ),
@@ -1121,17 +1224,17 @@ class _ModuleTile extends StatelessWidget {
                   style: const TextStyle(fontSize: 13),
                 ),
                 trailing: lesson.isVideo
-                    ? const Text(
+                    ? Text(
                         'Aperçu',
                         style: TextStyle(
-                          color: AkadexColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
                       )
                     : null,
                 onTap: () => onLesson(lesson),
-              ),
+          ),
         ],
       ),
     );

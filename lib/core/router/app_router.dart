@@ -18,9 +18,12 @@ import '../../features/community/presentation/screens/community_publish_screen.d
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/pdf_reader_screen.dart';
+import '../../features/learn/presentation/screens/cart_screen.dart';
+import '../../features/learn/presentation/screens/checkout_screen.dart';
 import '../../features/learn/presentation/screens/domain_courses_screen.dart';
 import '../../features/learn/presentation/screens/learn_screen.dart';
 import '../../features/learn/presentation/screens/learn_search_screen.dart';
+import '../../features/learn/presentation/screens/mobile_money_screen.dart';
 import '../../features/library/presentation/screens/contribute_screen.dart';
 import '../../core/widgets/post_viewer_screens.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
@@ -343,6 +346,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           state,
           CourseDetailScreen(courseId: state.pathParameters['id']!),
         ),
+      ),
+      GoRoute(
+        path: '/cart',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const CartScreen()),
+      ),
+      GoRoute(
+        path: '/checkout',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const CheckoutScreen()),
+      ),
+      GoRoute(
+        path: '/checkout/mobile-money',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const MobileMoneyScreen()),
       ),
       GoRoute(
         path: '/library/document/:id',

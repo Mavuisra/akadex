@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/status_backgrounds.dart';
+import '../theme/timeline_tokens.dart';
 
 /// Bloc texte style Facebook (fond coloré + texte blanc centré).
 class StatusTextBlock extends StatelessWidget {
@@ -81,10 +82,10 @@ class PostBodyText extends StatelessWidget {
 
     final child = Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 15,
         height: 1.4,
-        color: Color(0xFF050505),
+        color: TimelineTokens.of(context).ink,
       ),
     );
 

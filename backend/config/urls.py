@@ -22,6 +22,7 @@ urlpatterns = [
     path('api/', include('community.urls')),
     path('api/', include('messaging.urls')),
     path('api/', include('learning.urls')),
+    path('api/', include('payments.urls')),
     # Render tourne avec DEBUG=False : sans ça, les photos uploadées sont en 404.
     re_path(
         r'^media/(?P<path>.*)$',

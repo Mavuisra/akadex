@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/moderation_chip.dart';
@@ -87,6 +86,7 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
   @override
   Widget build(BuildContext context) {
     final coursesAsync = ref.watch(coursesProvider);
+    final feed = TimelineTokens.of(context);
     final scopeParts = [
       if (widget.facultyName.isNotEmpty) widget.facultyName,
       if (widget.departmentName.isNotEmpty) widget.departmentName,
@@ -94,9 +94,10 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
         surfaceTintColor: Colors.transparent,
         title: Text(
           widget.promotionName.isNotEmpty
@@ -104,13 +105,17 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
               : (widget.departmentName.isNotEmpty
                   ? widget.departmentName
                   : 'Recherche Ma Fac'),
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 17,
+            color: feed.ink,
+          ),
         ),
       ),
       body: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: feed.cardBg,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,8 +125,8 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
                       scopeParts.join(' · '),
-                      style: const TextStyle(
-                        color: TimelineTokens.meta,
+                      style: TextStyle(
+                        color: feed.meta,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -129,11 +134,13 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                   ),
                 TextField(
                   controller: _controller,
+                  style: TextStyle(color: feed.ink),
                   textInputAction: TextInputAction.search,
                   onChanged: (v) => setState(() => _query = v),
                   decoration: InputDecoration(
                     hintText: 'Rechercher un cours, un code, un titulaire…',
-                    prefixIcon: const Icon(Icons.search_rounded),
+                    hintStyle: TextStyle(color: feed.meta),
+                    prefixIcon: Icon(Icons.search_rounded, color: feed.meta),
                     suffixIcon: _query.isEmpty
                         ? null
                         : IconButton(
@@ -141,10 +148,10 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                               _controller.clear();
                               setState(() => _query = '');
                             },
-                            icon: const Icon(Icons.close_rounded),
+                            icon: Icon(Icons.close_rounded, color: feed.meta),
                           ),
                     filled: true,
-                    fillColor: TimelineTokens.feedBg,
+                    fillColor: feed.feedBg,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -161,7 +168,12 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
           Expanded(
             child: coursesAsync.when(
               loading: () => const LearnScreenSkeleton(cardCount: 4),
-              error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+              error: (e, _) => Center(
+                child: Text(
+                  apiErrorMessage(e),
+                  style: TextStyle(color: feed.ink),
+                ),
+              ),
               data: (all) {
                 final courses = _filter(all);
                 if (courses.isEmpty) {
@@ -173,8 +185,8 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                             ? 'Aucun cours pour cette sélection.\nPropose un cours manquant.'
                             : 'Aucun résultat pour « $_query ».',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: TimelineTokens.meta,
+                        style: TextStyle(
+                          color: feed.meta,
                           height: 1.4,
                         ),
                       ),
@@ -198,9 +210,10 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                               Expanded(
                                 child: Text(
                                   c.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w800,
                                     fontSize: 16,
+                                    color: feed.ink,
                                   ),
                                 ),
                               ),
@@ -217,8 +230,8 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
                                 c.targetPromotion,
                               if (c.department.isNotEmpty) c.department,
                             ].where((e) => e.isNotEmpty).join(' · '),
-                            style: const TextStyle(
-                              color: AkadexColors.inkMuted,
+                            style: TextStyle(
+                              color: feed.meta,
                               fontSize: 13,
                             ),
                           ),

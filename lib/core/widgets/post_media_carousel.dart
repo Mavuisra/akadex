@@ -97,17 +97,17 @@ class _FullBleedImage extends StatelessWidget {
           ),
         ),
         errorWidget: (_, _, _) => Container(
-          color: TimelineTokens.feedBg,
+          color: TimelineTokens.of(context).feedBg,
           alignment: Alignment.center,
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.broken_image_outlined,
-                  size: 40, color: TimelineTokens.meta),
+                  size: 40, color: TimelineTokens.of(context).meta),
               SizedBox(height: 8),
               Text(
                 'Image indisponible',
-                style: TextStyle(color: TimelineTokens.meta, fontSize: 13),
+                style: TextStyle(color: TimelineTokens.of(context).meta, fontSize: 13),
               ),
             ],
           ),

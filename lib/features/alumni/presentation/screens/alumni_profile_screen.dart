@@ -91,7 +91,7 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
     final focusPostId = widget.focusPostId?.trim() ?? '';
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: TimelineTokens.of(context).feedBg,
       body: profileAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (e, _) => Center(
@@ -149,7 +149,7 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                     children: [
                       Text(
                         user.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF050505),
@@ -189,8 +189,8 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                 setState(() => _bioExpanded = !_bioExpanded),
                             child: Text(
                               _bioExpanded ? 'Voir moins' : 'Voir plus',
-                              style: const TextStyle(
-                                color: TimelineTokens.likeActive,
+                              style: TextStyle(
+                                color: TimelineTokens.of(context).likeActive,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -277,7 +277,7 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                   selectedColor: const Color(0xFFE7F3FF),
                                   labelStyle: TextStyle(
                                     color: _tab == t
-                                        ? TimelineTokens.likeActive
+                                        ? TimelineTokens.of(context).likeActive
                                         : const Color(0xFF050505),
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -342,13 +342,13 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                     ),
                   )
                 else if (orderedPosts.isEmpty)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(28),
                       child: Center(
                         child: Text(
                           'Aucune publication pour l’instant.',
-                          style: TextStyle(color: TimelineTokens.meta),
+                          style: TextStyle(color: TimelineTokens.of(context).meta),
                         ),
                       ),
                     ),
@@ -363,7 +363,7 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: TimelineTokens.likeActive,
+                                color: TimelineTokens.of(context).likeActive,
                                 width: 2,
                               ),
                             ),
@@ -388,13 +388,13 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                     ),
                   )
                 else if (orderedDocs.isEmpty)
-                  const SliverToBoxAdapter(
+                  SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(28),
                       child: Center(
                         child: Text(
                           'Aucun document partagé.',
-                          style: TextStyle(color: TimelineTokens.meta),
+                          style: TextStyle(color: TimelineTokens.of(context).meta),
                         ),
                       ),
                     ),
@@ -541,7 +541,7 @@ class _FbDocumentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: highlighted
-            ? Border.all(color: TimelineTokens.likeActive, width: 2)
+            ? Border.all(color: TimelineTokens.of(context).likeActive, width: 2)
             : null,
       ),
       child: Column(
@@ -563,7 +563,7 @@ class _FbDocumentCard extends StatelessWidget {
                           author.name.isEmpty
                               ? '?'
                               : author.name.characters.first.toUpperCase(),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             color: AkadexColors.primary,
                           ),
@@ -585,8 +585,8 @@ class _FbDocumentCard extends StatelessWidget {
                       ),
                       Text(
                         doc.type.label,
-                        style: const TextStyle(
-                          color: TimelineTokens.meta,
+                        style: TextStyle(
+                          color: TimelineTokens.of(context).meta,
                           fontSize: 12,
                         ),
                       ),
@@ -601,10 +601,10 @@ class _FbDocumentCard extends StatelessWidget {
                       color: const Color(0xFFE7F3FF),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Trouvé',
                       style: TextStyle(
-                        color: TimelineTokens.likeActive,
+                        color: TimelineTokens.of(context).likeActive,
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -643,13 +643,13 @@ class _FbDocumentCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
             child: Text(
               '${formatCount(doc.downloads)} téléchargements · ${doc.sizeLabel}',
-              style: const TextStyle(
-                color: TimelineTokens.meta,
+              style: TextStyle(
+                color: TimelineTokens.of(context).meta,
                 fontSize: 13,
               ),
             ),
           ),
-          const Divider(height: 1, color: TimelineTokens.divider),
+          Divider(height: 1, color: TimelineTokens.of(context).divider),
           SizedBox(
             height: TimelineTokens.actionHeight,
             child: Row(
@@ -660,7 +660,7 @@ class _FbDocumentCard extends StatelessWidget {
                     icon: const Icon(Icons.download_outlined, size: 20),
                     label: const Text('Ouvrir'),
                     style: TextButton.styleFrom(
-                      foregroundColor: TimelineTokens.action,
+                      foregroundColor: TimelineTokens.of(context).action,
                     ),
                   ),
                 ),
@@ -685,7 +685,7 @@ class _InfoLine extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: TimelineTokens.meta),
+          Icon(icon, size: 18, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -720,7 +720,7 @@ class _AboutRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: TimelineTokens.meta),
+          Icon(icon, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -728,8 +728,8 @@ class _AboutRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: TimelineTokens.meta,
+                  style: TextStyle(
+                    color: TimelineTokens.of(context).meta,
                     fontSize: 13,
                   ),
                 ),
@@ -805,7 +805,7 @@ class _BlueBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: TimelineTokens.likeActive,
+      color: TimelineTokens.of(context).likeActive,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,

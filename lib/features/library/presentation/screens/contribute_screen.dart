@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/file_drop_validator.dart';
+import '../../../../core/widgets/file_drop_zone.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../data/api/api_client.dart';
@@ -27,6 +30,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
   final _year = TextEditingController();
 
   DocumentType _type = DocumentType.tp;
+  FileDropSelection? _file;
   bool _loading = false;
   String? _error;
 
@@ -48,6 +52,15 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
   ];
 
   static const _fieldPad = EdgeInsets.symmetric(horizontal: 16, vertical: 16);
+
+  bool get _isLinkOnly => _type == DocumentType.lien;
+
+  List<String> get _allowedExtensions {
+    final api = documentTypeToApi(_type) ?? 'pdf';
+    final exts = FileDropValidator.extensionsForDocumentType(api);
+    if (exts.isEmpty) return const ['pdf', 'doc', 'docx', 'zip'];
+    return exts;
+  }
 
   @override
   void dispose() {
@@ -74,14 +87,15 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
   }
 
   Widget _sectionTitle(String title) {
+    final feed = TimelineTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 15,
-          color: AkadexColors.ink,
+          color: feed.ink,
         ),
       ),
     );
@@ -97,8 +111,17 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
       setState(() => _error = 'Le titre est obligatoire.');
       return;
     }
-    if (_url.text.trim().isEmpty) {
-      setState(() => _error = 'Ajoute un lien vers le document (Drive, PDF…).');
+    final hasUrl = _url.text.trim().isNotEmpty;
+    final hasFile = _file != null && _file!.bytes.isNotEmpty;
+    if (_isLinkOnly && !hasUrl) {
+      setState(() => _error = 'Ajoute un lien vers la ressource.');
+      return;
+    }
+    if (!_isLinkOnly && !hasFile && !hasUrl) {
+      setState(
+        () => _error =
+            'Ajoute un fichier (glisser-déposer / parcourir) ou un lien.',
+      );
       return;
     }
     if (user.universityId.isEmpty) {
@@ -115,18 +138,21 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
     });
 
     try {
-      await ref.read(academicRepositoryProvider).createDocument({
-        'title': _title.text.trim(),
-        'description': _description.text.trim(),
-        'doc_type': documentTypeToApi(_type) ?? 'pdf',
-        'university': int.tryParse(user.universityId) ?? user.universityId,
-        if (user.departmentId.isNotEmpty)
-          'department':
-              int.tryParse(user.departmentId) ?? user.departmentId,
-        'external_url': _url.text.trim(),
-        if (_year.text.trim().isNotEmpty)
-          'academic_year': _year.text.trim(),
-      });
+      await ref.read(academicRepositoryProvider).createDocumentMultipart(
+            title: _title.text.trim(),
+            description: _description.text.trim(),
+            docType: documentTypeToApi(_type) ?? 'pdf',
+            universityId:
+                int.tryParse(user.universityId) ?? user.universityId,
+            departmentId: user.departmentId.isNotEmpty
+                ? (int.tryParse(user.departmentId) ?? user.departmentId)
+                : null,
+            externalUrl: _url.text.trim(),
+            academicYear: _year.text.trim(),
+            fileBytes: _file?.bytes,
+            fileName: _file?.name,
+            filePath: _file?.path,
+          );
       ref.invalidate(myDocumentsProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -149,6 +175,9 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PageAtmosphere(
@@ -161,21 +190,21 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                   children: [
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: Icon(Icons.arrow_back_rounded, color: feed.ink),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Proposer une contribution',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AkadexColors.ink,
+                          color: feed.ink,
                         ),
                       ),
                     ),
                     TextButton(
                       onPressed: () => context.push('/my-contributions'),
-                      child: const Text('Mes envois'),
+                      child: Text('Mes envois', style: TextStyle(color: primary)),
                     ),
                   ],
                 ),
@@ -194,8 +223,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                             'Après validation, tu reçois une notification avec tes points.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AkadexColors.inkMuted
-                                  .withValues(alpha: 0.95),
+                              color: feed.meta,
                               height: 1.35,
                             ),
                           ),
@@ -208,16 +236,16 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                   width: 42,
                                   height: 42,
                                   decoration: BoxDecoration(
-                                    color: AkadexColors.primarySoft,
+                                    color: feed.softTint,
                                     borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.menu_book_outlined,
-                                    color: AkadexColors.primary,
+                                    color: primary,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                const Expanded(
+                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -227,15 +255,15 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                         style: TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 15,
-                                          color: AkadexColors.ink,
+                                          color: feed.ink,
                                         ),
                                       ),
-                                      SizedBox(height: 2),
+                                      const SizedBox(height: 2),
                                       Text(
                                         'UE, cycle, semestre — validation admin',
                                         style: TextStyle(
                                           fontSize: 12.5,
-                                          color: AkadexColors.inkMuted,
+                                          color: feed.meta,
                                         ),
                                       ),
                                     ],
@@ -243,8 +271,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                 ),
                                 Icon(
                                   Icons.chevron_right_rounded,
-                                  color: AkadexColors.inkMuted
-                                      .withValues(alpha: 0.7),
+                                  color: feed.meta,
                                 ),
                               ],
                             ),
@@ -260,25 +287,28 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                   FilterChip(
                                     label: Text(t.$2),
                                     selected: _type == t.$1,
-                                    onSelected: (_) =>
-                                        setState(() => _type = t.$1),
+                                    onSelected: (_) => setState(() {
+                                      _type = t.$1;
+                                      if (t.$1 == DocumentType.lien) {
+                                        _file = null;
+                                      }
+                                    }),
                                     showCheckmark: true,
-                                    selectedColor: AkadexColors.primary,
+                                    selectedColor: primary,
                                     checkmarkColor: Colors.white,
                                     labelStyle: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,
                                       color: _type == t.$1
                                           ? Colors.white
-                                          : AkadexColors.ink,
+                                          : feed.ink,
                                     ),
                                     side: BorderSide(
                                       color: _type == t.$1
-                                          ? AkadexColors.primary
-                                          : AkadexColors.inkMuted
-                                              .withValues(alpha: 0.25),
+                                          ? primary
+                                          : feed.divider,
                                     ),
-                                    backgroundColor: Colors.white,
+                                    backgroundColor: feed.softTint,
                                   ),
                               ],
                             ),
@@ -310,6 +340,26 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                               ),
                             ),
                           ),
+                          if (!_isLinkOnly) ...[
+                            const SizedBox(height: 14),
+                            FileDropZone(
+                              allowedExtensions: _allowedExtensions,
+                              fileName: _file?.name,
+                              fileSize: _file?.size,
+                              enabled: !_loading,
+                              title: 'Glisser-déposer ton document',
+                              onChanged: (selection) =>
+                                  setState(() => _file = selection),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Ou colle un lien externe (optionnel si tu as déjà un fichier)',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: feed.meta,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           _softField(
                             child: TextField(
@@ -317,7 +367,9 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                               keyboardType: TextInputType.url,
                               textInputAction: TextInputAction.next,
                               decoration: _dec(
-                                'Lien du document (Drive, PDF…)',
+                                _isLinkOnly
+                                    ? 'Lien de la ressource *'
+                                    : 'Lien du document (Drive, PDF…)',
                                 icon: Icons.link_rounded,
                               ),
                             ),
@@ -410,11 +462,17 @@ class MyContributionsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final docsAsync = ref.watch(myDocumentsProvider);
+    final feed = TimelineTokens.of(context);
 
     return Scaffold(
-      backgroundColor: AkadexColors.background,
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        title: const Text('Mes contributions'),
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
+        title: Text(
+          'Mes contributions',
+          style: TextStyle(color: feed.ink, fontWeight: FontWeight.w800),
+        ),
         actions: [
           IconButton(
             onPressed: () => context.push('/contribute'),
@@ -433,9 +491,10 @@ class MyContributionsScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
+                    Text(
                       'Aucune contribution pour l’instant.',
                       textAlign: TextAlign.center,
+                      style: TextStyle(color: feed.meta),
                     ),
                     const SizedBox(height: 16),
                     FilledButton(
@@ -464,9 +523,10 @@ class MyContributionsScreen extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               d.title,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 16,
+                                color: feed.ink,
                               ),
                             ),
                           ),
@@ -476,8 +536,8 @@ class MyContributionsScreen extends ConsumerWidget {
                       const SizedBox(height: 6),
                       Text(
                         d.type.label,
-                        style: const TextStyle(
-                          color: AkadexColors.inkMuted,
+                        style: TextStyle(
+                          color: feed.meta,
                           fontSize: 13,
                         ),
                       ),

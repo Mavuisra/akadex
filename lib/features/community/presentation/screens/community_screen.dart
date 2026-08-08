@@ -8,23 +8,25 @@ class CommunityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+    final feed = TimelineTokens.of(context);
+
+    return Scaffold(
+      backgroundColor: feed.feedBg,
       body: SafeArea(
         child: Column(
           children: [
             ColoredBox(
-              color: Colors.white,
+              color: feed.cardBg,
               child: SizedBox(
                 width: double.infinity,
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                   child: Text(
                     'Communauté',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF050505),
+                      color: feed.ink,
                     ),
                   ),
                 ),
@@ -33,31 +35,31 @@ class CommunityScreen extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: EdgeInsets.all(32),
+                  padding: const EdgeInsets.all(32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.construction_rounded,
                         size: 40,
-                        color: TimelineTokens.meta,
+                        color: feed.meta,
                       ),
-                      SizedBox(height: 14),
+                      const SizedBox(height: 14),
                       Text(
                         'En maintenance',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF050505),
+                          color: feed.ink,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
                         'Cette section est en maintenance.\nReviens bientôt.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: TimelineTokens.meta,
+                          color: feed.meta,
                           height: 1.4,
                           fontSize: 14,
                         ),

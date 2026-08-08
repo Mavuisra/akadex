@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../core/widgets/timeline_post_card.dart';
@@ -121,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final kindSelected = _forYouMode ? 'all' : (_query.kind ?? 'all');
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: TimelineTokens.of(context).feedBg,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -196,7 +195,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             Expanded(
               child: RefreshIndicator(
-                color: AkadexColors.primary,
+                color: TimelineTokens.of(context).linkBlue,
                 onRefresh: () async {
                   ref.invalidate(timelinePostsProvider(_query));
                   await ref.read(timelinePostsProvider(_query).future);
@@ -260,8 +259,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       ? 'Aucune ressource pour ton parcours.\n$scopeHint\n\nPartage un TP, un résumé ou un examen corrigé.'
                                       : 'Aucune publication pour ces filtres.\nPartage un TP, un résumé ou un examen corrigé.',
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: AkadexColors.inkMuted,
+                                  style: TextStyle(
+                                    color: TimelineTokens.of(context).meta,
                                     height: 1.4,
                                   ),
                                 ),
@@ -405,7 +404,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return showModalBottomSheet<T>(
       context: context,
       showDragHandle: true,
-      backgroundColor: Colors.white,
+      backgroundColor: TimelineTokens.of(context).cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -447,77 +446,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 class _TimelineHeader extends StatelessWidget {
-  const _TimelineHeader({required this.user});
+  const _TimelineHeader({this.user});
 
+  // Reserved for future personalization (kept for call-site stability).
+  // ignore: unused_field
   final UserProfile? user;
 
   @override
   Widget build(BuildContext context) {
-    final avatar = user?.avatarUrl;
-    final name = user?.name ?? '';
-
     return Container(
       height: TimelineTokens.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: TimelineTokens.of(context).cardBg,
         border: Border(
-          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
         ),
       ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => context.push('/profile/me'),
-            child: Padding(
-              padding: const EdgeInsets.all(6),
-              child: CircleAvatar(
-                radius: 18,
-                backgroundColor: AkadexColors.primarySoft,
-                backgroundImage: avatar != null && avatar.isNotEmpty
-                    ? CachedNetworkImageProvider(avatar)
-                    : null,
-                child: avatar != null && avatar.isNotEmpty
-                    ? null
-                    : Text(
-                        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-                        style: const TextStyle(
-                          color: AkadexColors.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
+          Padding(
+            padding: const EdgeInsets.only(left: 10, right: 6),
+            child: Text(
+              'Akadex',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                color: TimelineTokens.of(context).linkBlue,
+                letterSpacing: -0.6,
               ),
             ),
           ),
           Expanded(
-            child: GestureDetector(
-              onTap: () => context.push('/search'),
-              child: Container(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: SizedBox(
                 height: 36,
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: TimelineTokens.feedBg,
-                  borderRadius:
-                      BorderRadius.circular(TimelineTokens.searchRadius),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.search_rounded,
-                        size: 18, color: TimelineTokens.meta),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Rechercher sur Akadex',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: TimelineTokens.meta,
-                          fontSize: 15,
-                        ),
-                      ),
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push('/search'),
+                  icon: Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: TimelineTokens.of(context).meta,
+                  ),
+                  label: Text(
+                    'Rechercher',
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
                     ),
-                  ],
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: TimelineTokens.of(context).feedBg,
+                    side: BorderSide(color: TimelineTokens.of(context).divider),
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(TimelineTokens.searchRadius),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
                 ),
               ),
             ),
@@ -553,7 +541,7 @@ class _KindFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: TimelineTokens.filterHeight,
-      color: Colors.white,
+      color: TimelineTokens.of(context).cardBg,
       alignment: Alignment.centerLeft,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -567,16 +555,16 @@ class _KindFilterBar extends StatelessWidget {
             label: Text(f.$2),
             selected: active,
             onSelected: (_) => onSelected(f.$1),
-            selectedColor: AkadexColors.primarySoft,
-            checkmarkColor: AkadexColors.primary,
+            selectedColor: TimelineTokens.of(context).softTint,
+            checkmarkColor: TimelineTokens.of(context).linkBlue,
             labelStyle: TextStyle(
-              color: active ? AkadexColors.primary : const Color(0xFF050505),
+              color: active ? TimelineTokens.of(context).linkBlue : TimelineTokens.of(context).ink,
               fontWeight: FontWeight.w600,
               fontSize: 13,
             ),
-            backgroundColor: TimelineTokens.feedBg,
+            backgroundColor: TimelineTokens.of(context).feedBg,
             side: BorderSide(
-              color: active ? AkadexColors.primary : Colors.transparent,
+              color: active ? TimelineTokens.of(context).linkBlue : Colors.transparent,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
@@ -637,10 +625,10 @@ class _AcademicFilterBar extends StatelessWidget {
 
     return Container(
       height: TimelineTokens.filterHeight,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: TimelineTokens.of(context).cardBg,
         border: Border(
-          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
         ),
       ),
       child: Row(
@@ -657,18 +645,18 @@ class _AcademicFilterBar extends StatelessWidget {
                   label: Text(c.$1),
                   onPressed: c.$2,
                   backgroundColor:
-                      c.$3 ? AkadexColors.primarySoft : TimelineTokens.feedBg,
+                      c.$3 ? TimelineTokens.of(context).softTint : TimelineTokens.of(context).feedBg,
                   labelStyle: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: c.$3
-                        ? AkadexColors.primary
-                        : const Color(0xFF050505),
+                        ? TimelineTokens.of(context).linkBlue
+                        : TimelineTokens.of(context).ink,
                   ),
                   side: BorderSide(
                     color: c.$3
-                        ? AkadexColors.primary
-                        : const Color(0xFFCED0D4),
+                        ? TimelineTokens.of(context).linkBlue
+                        : TimelineTokens.of(context).divider,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius:
@@ -706,7 +694,7 @@ class _ComposerCard extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(pad.left, 8, pad.right, 8),
       child: Material(
-        color: Colors.white,
+        color: TimelineTokens.of(context).cardBg,
         child: InkWell(
           onTap: onTap,
           child: Padding(
@@ -715,7 +703,7 @@ class _ComposerCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AkadexColors.primarySoft,
+                  backgroundColor: TimelineTokens.of(context).softTint,
                   backgroundImage: avatar != null && avatar.isNotEmpty
                       ? CachedNetworkImageProvider(avatar)
                       : null,
@@ -725,8 +713,8 @@ class _ComposerCard extends StatelessWidget {
                           name.isEmpty
                               ? '?'
                               : name.characters.first.toUpperCase(),
-                          style: const TextStyle(
-                            color: AkadexColors.primary,
+                          style: TextStyle(
+                            color: TimelineTokens.of(context).linkBlue,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -739,13 +727,13 @@ class _ComposerCard extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: TimelineTokens.feedBg,
+                      color: TimelineTokens.of(context).feedBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Quoi de neuf ? Partage un TP, résumé, examen…',
                       style: TextStyle(
-                        color: TimelineTokens.meta,
+                        color: TimelineTokens.of(context).meta,
                         fontSize: 15,
                       ),
                     ),

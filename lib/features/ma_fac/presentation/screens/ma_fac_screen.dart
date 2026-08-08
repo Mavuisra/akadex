@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/moderation_chip.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
@@ -81,7 +80,7 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
 
     if (coursesError) {
       return Scaffold(
-        backgroundColor: TimelineTokens.feedBg,
+        backgroundColor: TimelineTokens.of(context).feedBg,
         body: SafeArea(
           child: Center(
             child: Column(
@@ -168,7 +167,7 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
     }
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: TimelineTokens.of(context).feedBg,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -273,10 +272,10 @@ class _FbHeader extends StatelessWidget {
     return Container(
       height: TimelineTokens.headerHeight,
       padding: const EdgeInsets.symmetric(horizontal: 8),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: TimelineTokens.of(context).cardBg,
         border: Border(
-          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
         ),
       ),
       child: Row(
@@ -288,7 +287,7 @@ class _FbHeader extends StatelessWidget {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w900,
-                color: AkadexColors.primary,
+                color: TimelineTokens.of(context).linkBlue,
                 letterSpacing: -0.5,
               ),
             ),
@@ -301,14 +300,14 @@ class _FbHeader extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(horizontal: 6),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: TimelineTokens.feedBg,
+                  color: TimelineTokens.of(context).feedBg,
                   borderRadius:
                       BorderRadius.circular(TimelineTokens.searchRadius),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.search_rounded,
-                        size: 18, color: TimelineTokens.meta),
+                        size: 18, color: TimelineTokens.of(context).meta),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -316,7 +315,7 @@ class _FbHeader extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: TimelineTokens.meta,
+                          color: TimelineTokens.of(context).meta,
                           fontSize: 15,
                         ),
                       ),
@@ -342,7 +341,7 @@ class _FbHeader extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: CircleAvatar(
                 radius: 16,
-                backgroundColor: AkadexColors.primarySoft,
+                backgroundColor: TimelineTokens.of(context).softTint,
                 backgroundImage: avatar != null && avatar.isNotEmpty
                     ? CachedNetworkImageProvider(avatar)
                     : null,
@@ -352,8 +351,8 @@ class _FbHeader extends StatelessWidget {
                         name.isEmpty
                             ? '?'
                             : name.characters.first.toUpperCase(),
-                        style: const TextStyle(
-                          color: AkadexColors.primary,
+                        style: TextStyle(
+                          color: TimelineTokens.of(context).linkBlue,
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
                         ),
@@ -382,10 +381,10 @@ class _FbTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: TimelineTokens.filterHeight,
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: TimelineTokens.of(context).cardBg,
         border: Border(
-          bottom: BorderSide(color: TimelineTokens.divider, width: 0.5),
+          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
         ),
       ),
       alignment: Alignment.centerLeft,
@@ -401,15 +400,15 @@ class _FbTabBar extends StatelessWidget {
             selected: active,
             onSelected: (_) => onSelected(i),
             showCheckmark: false,
-            selectedColor: AkadexColors.primarySoft,
+            selectedColor: TimelineTokens.of(context).softTint,
             labelStyle: TextStyle(
-              color: active ? AkadexColors.primary : const Color(0xFF050505),
+              color: active ? TimelineTokens.of(context).linkBlue : TimelineTokens.of(context).ink,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
-            backgroundColor: TimelineTokens.feedBg,
+            backgroundColor: TimelineTokens.of(context).feedBg,
             side: BorderSide(
-              color: active ? AkadexColors.primary : Colors.transparent,
+              color: active ? TimelineTokens.of(context).linkBlue : Colors.transparent,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
@@ -481,7 +480,7 @@ class _ParcoursFeed extends StatelessWidget {
       children: [
         // ── Cover (page Facebook) ──
         Container(
-          color: Colors.white,
+          color: TimelineTokens.of(context).cardBg,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -490,7 +489,7 @@ class _ParcoursFeed extends StatelessWidget {
                   AspectRatio(
                     aspectRatio: 2.7,
                     child: DecoratedBox(
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -538,14 +537,14 @@ class _ParcoursFeed extends StatelessWidget {
                     right: 12,
                     bottom: 12,
                     child: Material(
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: TimelineTokens.of(context).cardBg.withValues(alpha: 0.92),
                       shape: const CircleBorder(),
                       child: IconButton(
                         tooltip: 'Proposer un travail',
                         onPressed: () => context.push('/contribute'),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.notifications_outlined,
-                          color: Color(0xFF050505),
+                          color: TimelineTokens.of(context).ink,
                         ),
                       ),
                     ),
@@ -559,18 +558,18 @@ class _ParcoursFeed extends StatelessWidget {
                   children: [
                     Text(
                       facultyName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF050505),
+                        color: TimelineTokens.of(context).ink,
                         height: 1.2,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       metaLine,
-                      style: const TextStyle(
-                        color: TimelineTokens.meta,
+                      style: TextStyle(
+                        color: TimelineTokens.of(context).meta,
                         fontSize: 13,
                         height: 1.35,
                       ),
@@ -583,8 +582,8 @@ class _ParcoursFeed extends StatelessWidget {
                             : '$userName · $followersHint',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: TimelineTokens.meta,
+                        style: TextStyle(
+                          color: TimelineTokens.of(context).meta,
                           fontSize: 13,
                           height: 1.35,
                         ),
@@ -620,10 +619,10 @@ class _ParcoursFeed extends StatelessWidget {
                                       : '/library/explore?$qs',
                                 );
                               },
-                              icon: const Icon(Icons.search_rounded, size: 18),
+                              icon: Icon(Icons.search_rounded, size: 18),
                               label: const Text('Explorer'),
                               style: FilledButton.styleFrom(
-                                backgroundColor: AkadexColors.primary,
+                                backgroundColor: TimelineTokens.of(context).linkBlue,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
@@ -646,8 +645,8 @@ class _ParcoursFeed extends StatelessWidget {
                           child: OutlinedButton(
                             onPressed: () => onOpenTab(2),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF050505),
-                              side: const BorderSide(color: Color(0xFFCED0D4)),
+                              foregroundColor: TimelineTokens.of(context).ink,
+                              side: BorderSide(color: TimelineTokens.of(context).divider),
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -670,9 +669,9 @@ class _ParcoursFeed extends StatelessWidget {
         _FbSection(
           title: 'Départements',
           child: departments.isEmpty
-              ? const Text(
+              ? Text(
                   'Aucun département trouvé pour ta faculté.',
-                  style: TextStyle(color: TimelineTokens.meta),
+                  style: TextStyle(color: TimelineTokens.of(context).meta),
                 )
               : SizedBox(
                   height: 40,
@@ -688,19 +687,19 @@ class _ParcoursFeed extends StatelessWidget {
                         selected: active,
                         showCheckmark: false,
                         onSelected: (_) => onExploreDept(d),
-                        selectedColor: AkadexColors.primarySoft,
+                        selectedColor: TimelineTokens.of(context).softTint,
                         labelStyle: TextStyle(
                           color: active
-                              ? AkadexColors.primary
-                              : const Color(0xFF050505),
+                              ? TimelineTokens.of(context).linkBlue
+                              : TimelineTokens.of(context).ink,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
-                        backgroundColor: TimelineTokens.feedBg,
+                        backgroundColor: TimelineTokens.of(context).feedBg,
                         side: BorderSide(
                           color: active
-                              ? AkadexColors.primary
-                              : const Color(0xFFCED0D4),
+                              ? TimelineTokens.of(context).linkBlue
+                              : TimelineTokens.of(context).divider,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
@@ -720,9 +719,9 @@ class _ParcoursFeed extends StatelessWidget {
         _FbSection(
           title: 'Promotions',
           child: promotions.isEmpty
-              ? const Text(
+              ? Text(
                   'Choisis un département pour voir ses promotions.',
-                  style: TextStyle(color: TimelineTokens.meta),
+                  style: TextStyle(color: TimelineTokens.of(context).meta),
                 )
               : SizedBox(
                   height: 40,
@@ -741,19 +740,19 @@ class _ParcoursFeed extends StatelessWidget {
                         selected: active,
                         showCheckmark: false,
                         onSelected: (_) => onExplorePromo(p),
-                        selectedColor: AkadexColors.primarySoft,
+                        selectedColor: TimelineTokens.of(context).softTint,
                         labelStyle: TextStyle(
                           color: active
-                              ? AkadexColors.primary
-                              : const Color(0xFF050505),
+                              ? TimelineTokens.of(context).linkBlue
+                              : TimelineTokens.of(context).ink,
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
                         ),
-                        backgroundColor: TimelineTokens.feedBg,
+                        backgroundColor: TimelineTokens.of(context).feedBg,
                         side: BorderSide(
                           color: active
-                              ? AkadexColors.primary
-                              : const Color(0xFFCED0D4),
+                              ? TimelineTokens.of(context).linkBlue
+                              : TimelineTokens.of(context).divider,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
@@ -771,25 +770,25 @@ class _ParcoursFeed extends StatelessWidget {
         const SizedBox(height: 8),
         // Feed posts (cours)
         Container(
-          color: Colors.white,
+          color: TimelineTokens.of(context).cardBg,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Publications',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
-                    color: Color(0xFF050505),
+                    color: TimelineTokens.of(context).ink,
                   ),
                 ),
               ),
               Text(
                 '$courseCount',
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: AkadexColors.primary,
+                  color: TimelineTokens.of(context).linkBlue,
                 ),
               ),
             ],
@@ -797,12 +796,12 @@ class _ParcoursFeed extends StatelessWidget {
         ),
         if (courses.isEmpty)
           Container(
-            color: Colors.white,
+            color: TimelineTokens.of(context).cardBg,
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: const Text(
+            child: Text(
               'Aucune publication de cours pour l’instant.\nPropose un cours pour enrichir la page.',
-              style: TextStyle(color: TimelineTokens.meta, height: 1.4),
+              style: TextStyle(color: TimelineTokens.of(context).meta, height: 1.4),
             ),
           )
         else
@@ -840,7 +839,7 @@ class _FbSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: TimelineTokens.of(context).cardBg,
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
       child: Column(
@@ -848,10 +847,10 @@ class _FbSection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w800,
               fontSize: 17,
-              color: Color(0xFF050505),
+              color: TimelineTokens.of(context).ink,
             ),
           ),
           const SizedBox(height: 10),
@@ -873,7 +872,7 @@ class _CoursePostCard extends StatelessWidget {
         ? 'C'
         : course.title.characters.first.toUpperCase();
     return Container(
-      color: Colors.white,
+      color: TimelineTokens.of(context).cardBg,
       margin: const EdgeInsets.only(top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -881,21 +880,21 @@ class _CoursePostCard extends StatelessWidget {
           ListTile(
             contentPadding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             leading: CircleAvatar(
-              backgroundColor: AkadexColors.primarySoft,
+              backgroundColor: TimelineTokens.of(context).softTint,
               child: Text(
                 initial,
-                style: const TextStyle(
-                  color: AkadexColors.primary,
+                style: TextStyle(
+                  color: TimelineTokens.of(context).linkBlue,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
             title: Text(
               course.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 15,
-                color: Color(0xFF050505),
+                color: TimelineTokens.of(context).ink,
               ),
             ),
             subtitle: Text(
@@ -904,8 +903,8 @@ class _CoursePostCard extends StatelessWidget {
                 if (course.displayTeacher.isNotEmpty) course.displayTeacher,
                 if (course.targetPromotion.isNotEmpty) course.targetPromotion,
               ].join(' · '),
-              style: const TextStyle(
-                color: TimelineTokens.meta,
+              style: TextStyle(
+                color: TimelineTokens.of(context).meta,
                 fontSize: 12.5,
               ),
             ),
@@ -921,14 +920,14 @@ class _CoursePostCard extends StatelessWidget {
                 course.description,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.35,
-                  color: Color(0xFF050505),
+                  color: TimelineTokens.of(context).ink,
                 ),
               ),
             ),
-          const Divider(height: 1, color: TimelineTokens.divider),
+          Divider(height: 1, color: TimelineTokens.of(context).divider),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             child: Row(
@@ -940,7 +939,7 @@ class _CoursePostCard extends StatelessWidget {
                     icon: const Icon(Icons.menu_book_outlined, size: 18),
                     label: const Text('Voir le cours'),
                     style: TextButton.styleFrom(
-                      foregroundColor: TimelineTokens.action,
+                      foregroundColor: TimelineTokens.of(context).action,
                     ),
                   ),
                 ),
@@ -954,10 +953,10 @@ class _CoursePostCard extends StatelessWidget {
                         context.push('/learn');
                       }
                     },
-                    icon: const Icon(Icons.play_circle_outline, size: 18),
+                    icon: Icon(Icons.play_circle_outline, size: 18),
                     label: const Text('Apprendre'),
                     style: TextButton.styleFrom(
-                      foregroundColor: TimelineTokens.action,
+                      foregroundColor: TimelineTokens.of(context).action,
                     ),
                   ),
                 ),
@@ -976,9 +975,6 @@ class _TravauxTab extends StatelessWidget {
   const _TravauxTab({required this.docs});
 
   static const _logoDoc = 'assets/images/logodoc.jpg';
-  static const _ink = Color(0xFF1C1E21);
-  static const _softBlue = Color(0xFFE8EEF8);
-  static const _rowBg = Color(0xFFF7F8FA);
 
   final List<AcademicDocument> docs;
 
@@ -996,18 +992,18 @@ class _TravauxTab extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 100),
       children: [
         Container(
-          color: Colors.white,
+          color: TimelineTokens.of(context).cardBg,
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Travaux',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 22,
-                  color: _ink,
+                  color: TimelineTokens.of(context).ink,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1016,8 +1012,8 @@ class _TravauxTab extends StatelessWidget {
                     ? 'Examens, TP, TFC, projets, stages et mémoires de ta filière.'
                     : '${docs.length} ressource${docs.length > 1 ? 's' : ''} · '
                         '${withDocs.length} catégorie${withDocs.length > 1 ? 's' : ''}',
-                style: const TextStyle(
-                  color: TimelineTokens.meta,
+                style: TextStyle(
+                  color: TimelineTokens.of(context).meta,
                   height: 1.35,
                   fontSize: 14,
                 ),
@@ -1031,7 +1027,7 @@ class _TravauxTab extends StatelessWidget {
                   icon: const Icon(Icons.upload_file_rounded, size: 18),
                   label: const Text('Partager un travail'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: AkadexColors.primary,
+                    backgroundColor: TimelineTokens.of(context).linkBlue,
                     foregroundColor: Colors.white,
                     textStyle: const TextStyle(
                       fontWeight: FontWeight.w700,
@@ -1050,7 +1046,7 @@ class _TravauxTab extends StatelessWidget {
         ...categories.map((cat) {
           final n = counts[cat.id] ?? 0;
           return Container(
-            color: Colors.white,
+            color: TimelineTokens.of(context).cardBg,
             child: Column(
               children: [
                 ListTile(
@@ -1062,7 +1058,7 @@ class _TravauxTab extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _softBlue,
+                      color: TimelineTokens.of(context).softTint,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     padding: const EdgeInsets.all(7),
@@ -1073,27 +1069,27 @@ class _TravauxTab extends StatelessWidget {
                   ),
                   title: Text(
                     cat.label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: _ink,
+                      color: TimelineTokens.of(context).ink,
                     ),
                   ),
                   subtitle: Text(
                     n == 0
                         ? 'Aucun document'
                         : '$n document${n > 1 ? 's' : ''}',
-                    style: const TextStyle(
-                      color: TimelineTokens.meta,
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).meta,
                       fontSize: 13,
                     ),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFF8A8D91),
+                    color: TimelineTokens.of(context).meta,
                   ),
                   onTap: () => context.push('/library/docs/${cat.id}'),
                 ),
-                const Divider(height: 1, color: TimelineTokens.divider),
+                Divider(height: 1, color: TimelineTokens.of(context).divider),
               ],
             ),
           );
@@ -1101,7 +1097,7 @@ class _TravauxTab extends StatelessWidget {
         const SizedBox(height: 8),
         if (docs.isEmpty)
           Container(
-            color: Colors.white,
+            color: TimelineTokens.of(context).cardBg,
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 28, 16, 28),
             child: Column(
@@ -1110,28 +1106,28 @@ class _TravauxTab extends StatelessWidget {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: _softBlue,
+                    color: TimelineTokens.of(context).softTint,
                     borderRadius: BorderRadius.circular(14),
                   ),
                   padding: const EdgeInsets.all(12),
                   child: Image.asset(_logoDoc, fit: BoxFit.contain),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'Aucun travail partagé pour l’instant',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: _ink,
+                    color: TimelineTokens.of(context).ink,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Sois le premier à déposer un examen, un TP ou un TFC pour ta promo.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: TimelineTokens.meta,
+                    color: TimelineTokens.of(context).meta,
                     height: 1.35,
                   ),
                 ),
@@ -1143,11 +1139,11 @@ class _TravauxTab extends StatelessWidget {
             title: 'Récents',
             trailing: TextButton(
               onPressed: () => context.push('/contribute'),
-              child: const Text(
+              child: Text(
                 'Ajouter',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: AkadexColors.primary,
+                  color: TimelineTokens.of(context).linkBlue,
                 ),
               ),
             ),
@@ -1155,14 +1151,14 @@ class _TravauxTab extends StatelessWidget {
               children: [
                 for (var i = 0; i < recent.length; i++) ...[
                   if (i > 0)
-                    const Divider(height: 1, color: TimelineTokens.divider),
+                    Divider(height: 1, color: TimelineTokens.of(context).divider),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Container(
                       width: 42,
                       height: 42,
                       decoration: BoxDecoration(
-                        color: _rowBg,
+                        color: TimelineTokens.of(context).feedBg,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: const EdgeInsets.all(6),
@@ -1172,22 +1168,22 @@ class _TravauxTab extends StatelessWidget {
                       recent[i].title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: _ink,
+                        color: TimelineTokens.of(context).ink,
                       ),
                     ),
                     subtitle: Text(
                       '${recent[i].type.label}'
                       '${recent[i].downloads > 0 ? ' · ${recent[i].downloads} téléch.' : ''}',
-                      style: const TextStyle(
-                        color: TimelineTokens.meta,
+                      style: TextStyle(
+                        color: TimelineTokens.of(context).meta,
                         fontSize: 13,
                       ),
                     ),
-                    trailing: const Icon(
+                    trailing: Icon(
                       Icons.chevron_right_rounded,
-                      color: Color(0xFF8A8D91),
+                      color: TimelineTokens.of(context).meta,
                     ),
                     onTap: () =>
                         context.push('/library/document/${recent[i].id}'),
@@ -1214,10 +1210,6 @@ class _DebouchesTab extends StatefulWidget {
 class _DebouchesTabState extends State<_DebouchesTab> {
   /// Une seule section ouverte à la fois.
   int? _openIndex = 0;
-
-  static const _ink = Color(0xFF1C1E21);
-  static const _softBlue = Color(0xFFE8EEF8);
-  static const _cardBorder = Color(0xFFE4E6EB);
 
   List<_DeboucheSection> get _sections {
     final o = widget.outlet;
@@ -1270,7 +1262,7 @@ class _DebouchesTabState extends State<_DebouchesTab> {
       children: [
         Container(
           width: double.infinity,
-          color: Colors.white,
+          color: TimelineTokens.of(context).cardBg,
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1279,13 +1271,13 @@ class _DebouchesTabState extends State<_DebouchesTab> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: _softBlue,
+                  color: TimelineTokens.of(context).softTint,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Text(
+                child: Text(
                   'Orientation',
                   style: TextStyle(
-                    color: AkadexColors.primary,
+                    color: TimelineTokens.of(context).linkBlue,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -1294,19 +1286,19 @@ class _DebouchesTabState extends State<_DebouchesTab> {
               const SizedBox(height: 14),
               Text(
                 outlet.title,
-                style: const TextStyle(
-                  color: _ink,
+                style: TextStyle(
+                  color: TimelineTokens.of(context).ink,
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   height: 1.25,
                 ),
               ),
               const SizedBox(height: 10),
-              const Text(
+              Text(
                 'Des pistes claires pour ta filière : métiers, compétences, '
                 'lieux de travail, stages et suites d’études.',
                 style: TextStyle(
-                  color: TimelineTokens.meta,
+                  color: TimelineTokens.of(context).meta,
                   fontSize: 15,
                   height: 1.45,
                 ),
@@ -1337,28 +1329,28 @@ class _DebouchesTabState extends State<_DebouchesTab> {
             margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: TimelineTokens.of(context).cardBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _cardBorder),
+              border: Border.all(color: TimelineTokens.of(context).divider),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Ce que disent les alumni',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
-                    color: _ink,
+                    color: TimelineTokens.of(context).ink,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   quote,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
-                    color: Color(0xFF3A3B3C),
+                    color: TimelineTokens.of(context).meta,
                   ),
                 ),
               ],
@@ -1368,7 +1360,7 @@ class _DebouchesTabState extends State<_DebouchesTab> {
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           padding: const EdgeInsets.fromLTRB(18, 16, 12, 12),
           decoration: BoxDecoration(
-            color: _softBlue,
+            color: TimelineTokens.of(context).softTint,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -1379,8 +1371,8 @@ class _DebouchesTabState extends State<_DebouchesTab> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     outlet.internshipsHint,
-                    style: const TextStyle(
-                      color: Color(0xFF3A3B3C),
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).meta,
                       fontSize: 14,
                       height: 1.45,
                     ),
@@ -1389,11 +1381,11 @@ class _DebouchesTabState extends State<_DebouchesTab> {
               ),
               TextButton(
                 onPressed: () => context.go('/alumni'),
-                child: const Text(
+                child: Text(
                   'Voir Alumni',
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AkadexColors.primary,
+                    color: TimelineTokens.of(context).linkBlue,
                   ),
                 ),
               ),
@@ -1426,10 +1418,6 @@ class _DeboucheAccordion extends StatelessWidget {
     required this.onToggle,
   });
 
-  static const _ink = Color(0xFF1C1E21);
-  static const _softBlue = Color(0xFFE8EEF8);
-  static const _cardBorder = Color(0xFFE4E6EB);
-
   final _DeboucheSection section;
   final bool expanded;
   final VoidCallback onToggle;
@@ -1440,10 +1428,10 @@ class _DeboucheAccordion extends StatelessWidget {
       duration: const Duration(milliseconds: 220),
       curve: Curves.easeOutCubic,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: TimelineTokens.of(context).cardBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: expanded ? AkadexColors.primary.withValues(alpha: 0.35) : _cardBorder,
+          color: expanded ? TimelineTokens.of(context).linkBlue.withValues(alpha: 0.35) : TimelineTokens.of(context).divider,
         ),
       ),
       child: Column(
@@ -1460,12 +1448,12 @@ class _DeboucheAccordion extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _softBlue,
+                      color: TimelineTokens.of(context).softTint,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       section.icon,
-                      color: AkadexColors.primary,
+                      color: TimelineTokens.of(context).linkBlue,
                       size: 22,
                     ),
                   ),
@@ -1476,18 +1464,18 @@ class _DeboucheAccordion extends StatelessWidget {
                       children: [
                         Text(
                           section.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
-                            color: _ink,
+                            color: TimelineTokens.of(context).ink,
                             height: 1.25,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           section.subtitle,
-                          style: const TextStyle(
-                            color: TimelineTokens.meta,
+                          style: TextStyle(
+                            color: TimelineTokens.of(context).meta,
                             fontSize: 13.5,
                             height: 1.35,
                           ),
@@ -1504,8 +1492,8 @@ class _DeboucheAccordion extends StatelessWidget {
                       child: Icon(
                         Icons.keyboard_arrow_down_rounded,
                         color: expanded
-                            ? AkadexColors.primary
-                            : const Color(0xFF8A8D91),
+                            ? TimelineTokens.of(context).linkBlue
+                            : TimelineTokens.of(context).meta,
                       ),
                     ),
                   ),
@@ -1520,7 +1508,7 @@ class _DeboucheAccordion extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Divider(height: 1, color: _cardBorder),
+                  Divider(height: 1, color: TimelineTokens.of(context).divider),
                   const SizedBox(height: 14),
                   for (var i = 0; i < section.items.length; i++) ...[
                     if (i > 0) const SizedBox(height: 10),
@@ -1531,8 +1519,8 @@ class _DeboucheAccordion extends StatelessWidget {
                           margin: const EdgeInsets.only(top: 7),
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
-                            color: AkadexColors.primary,
+                          decoration: BoxDecoration(
+                            color: TimelineTokens.of(context).linkBlue,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -1540,8 +1528,8 @@ class _DeboucheAccordion extends StatelessWidget {
                         Expanded(
                           child: Text(
                             section.items[i],
-                            style: const TextStyle(
-                              color: _ink,
+                            style: TextStyle(
+                              color: TimelineTokens.of(context).ink,
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
                               height: 1.4,
@@ -1579,7 +1567,7 @@ class _FeedBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.white,
+      color: TimelineTokens.of(context).cardBg,
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Column(
@@ -1590,10 +1578,10 @@ class _FeedBlock extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 17,
-                    color: Color(0xFF050505),
+                    color: TimelineTokens.of(context).ink,
                   ),
                 ),
               ),

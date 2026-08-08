@@ -44,18 +44,29 @@ class _PageAtmosphereState extends State<PageAtmosphere>
       animation: _pulse,
       builder: (context, _) {
         final t = _pulse.value;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final orbPrimary = isDark
+            ? AkadexColors.primaryOnDark
+            : AkadexColors.primary;
         return Stack(
           fit: StackFit.expand,
           children: [
-            const DecoratedBox(
-              decoration: BoxDecoration(gradient: AkadexColors.softWash),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: isDark
+                    ? AkadexColors.softWashDark
+                    : AkadexColors.softWash,
+              ),
             ),
             Positioned(
               top: -80 + 20 * math.sin(t * math.pi),
               right: -60,
               child: _Orb(
                 size: 220 * widget.intensity,
-                color: AkadexColors.primaryLight.withValues(alpha: 0.14),
+                color: (isDark
+                        ? AkadexColors.primaryOnDark
+                        : AkadexColors.primaryLight)
+                    .withValues(alpha: isDark ? 0.08 : 0.14),
               ),
             ),
             Positioned(
@@ -63,7 +74,8 @@ class _PageAtmosphereState extends State<PageAtmosphere>
               left: -90,
               child: _Orb(
                 size: 180 * widget.intensity,
-                color: AkadexColors.accent.withValues(alpha: 0.08 + 0.04 * t),
+                color: AkadexColors.accent
+                    .withValues(alpha: (isDark ? 0.04 : 0.08) + 0.04 * t),
               ),
             ),
             Positioned(
@@ -71,7 +83,7 @@ class _PageAtmosphereState extends State<PageAtmosphere>
               right: -40,
               child: _Orb(
                 size: 160 * widget.intensity,
-                color: AkadexColors.primary.withValues(alpha: 0.07),
+                color: orbPrimary.withValues(alpha: isDark ? 0.05 : 0.07),
               ),
             ),
             widget.child,
@@ -268,12 +280,23 @@ class _LivingHeroBannerState extends State<LivingHeroBanner>
                   const SizedBox(height: 16),
                   FilledButton(
                     style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: AkadexColors.primary,
+                      backgroundColor: Theme.of(context).brightness ==
+                              Brightness.dark
+                          ? Colors.white.withValues(alpha: 0.16)
+                          : Colors.white,
+                      foregroundColor: Theme.of(context).brightness ==
+                              Brightness.dark
+                          ? Colors.white
+                          : AkadexColors.primary,
                       minimumSize: const Size(0, 40),
                       padding: const EdgeInsets.symmetric(horizontal: 18),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
+                        side: Theme.of(context).brightness == Brightness.dark
+                            ? BorderSide(
+                                color: Colors.white.withValues(alpha: 0.45),
+                              )
+                            : BorderSide.none,
                       ),
                     ),
                     onPressed: widget.onCta,

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../../../data/api/api_client.dart';
@@ -92,14 +93,15 @@ class _SuggestCourseScreenState extends ConsumerState<SuggestCourseScreen> {
   }
 
   Widget _sectionTitle(String title) {
+    final feed = TimelineTokens.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10, top: 4),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 15,
-          color: AkadexColors.ink,
+          color: feed.ink,
         ),
       ),
     );
@@ -174,6 +176,8 @@ class _SuggestCourseScreenState extends ConsumerState<SuggestCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PageAtmosphere(
@@ -186,15 +190,15 @@ class _SuggestCourseScreenState extends ConsumerState<SuggestCourseScreen> {
                   children: [
                     IconButton(
                       onPressed: () => context.pop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
+                      icon: Icon(Icons.arrow_back_rounded, color: feed.ink),
                     ),
-                    const Expanded(
+                    Expanded(
                       child: Text(
                         'Proposer un cours',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AkadexColors.ink,
+                          color: feed.ink,
                         ),
                       ),
                     ),
@@ -215,8 +219,7 @@ class _SuggestCourseScreenState extends ConsumerState<SuggestCourseScreen> {
                             'les crédits et le cours. Validation admin ensuite.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AkadexColors.inkMuted
-                                  .withValues(alpha: 0.95),
+                              color: feed.meta,
                               height: 1.35,
                             ),
                           ),

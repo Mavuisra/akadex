@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
@@ -22,6 +22,8 @@ class MaFacDocsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cat = MaFacCategories.byId(categoryId);
     final me = ref.watch(authStateProvider).valueOrNull;
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
     final docsAsync = ref.watch(
       documentsProvider(
         DocumentQuery(
@@ -36,13 +38,14 @@ class MaFacDocsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
         surfaceTintColor: Colors.transparent,
         title: Text(
           cat?.label ?? 'Documents',
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, color: feed.ink),
         ),
       ),
       body: docsAsync.when(
@@ -54,7 +57,7 @@ class MaFacDocsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(apiErrorMessage(e)),
+              Text(apiErrorMessage(e), style: TextStyle(color: feed.ink)),
               TextButton(
                 onPressed: () => ref.invalidate(documentsProvider),
                 child: const Text('Réessayer'),
@@ -67,13 +70,13 @@ class MaFacDocsScreen extends ConsumerWidget {
               ? docs
               : docs.where((d) => cat.matches(d.type)).toList();
           if (filtered.isEmpty) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(28),
+                padding: const EdgeInsets.all(28),
                 child: Text(
                   'Aucun document dans cette catégorie pour ton parcours.\nTu peux en partager via Contribuer.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AkadexColors.inkMuted, height: 1.4),
+                  style: TextStyle(color: feed.meta, height: 1.4),
                 ),
               ),
             );
@@ -92,12 +95,12 @@ class MaFacDocsScreen extends ConsumerWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: AkadexColors.primarySoft,
+                        color: feed.softTint,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.picture_as_pdf_outlined,
-                        color: AkadexColors.primary,
+                        color: primary,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -109,22 +112,25 @@ class MaFacDocsScreen extends ConsumerWidget {
                             doc.title,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: feed.ink,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             '${doc.type.label} · ${doc.downloads} téléchargements',
-                            style: const TextStyle(
-                              color: AkadexColors.inkMuted,
+                            style: TextStyle(
+                              color: feed.meta,
                               fontSize: 12,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
-                      color: AkadexColors.inkSoft,
+                      color: feed.meta,
                     ),
                   ],
                 ),
@@ -145,28 +151,31 @@ class MaFacCoursesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final me = ref.watch(authStateProvider).valueOrNull;
     final coursesAsync = ref.watch(coursesProvider);
+    final feed = TimelineTokens.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
         surfaceTintColor: Colors.transparent,
-        title: const Text(
+        title: Text(
           'Cours de ma promo',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, color: feed.ink),
         ),
       ),
       body: coursesAsync.when(
         loading: () => const LearnScreenSkeleton(cardCount: 4),
-        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+        error: (e, _) => Center(
+          child: Text(apiErrorMessage(e), style: TextStyle(color: feed.ink)),
+        ),
         data: (all) {
-          // Même filtre que l’accueil Ma Fac.
           final courses = MaFacScreen.filterCourses(all, me);
           if (courses.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 'Aucun cours pour ton parcours.',
-                style: TextStyle(color: AkadexColors.inkMuted),
+                style: TextStyle(color: feed.meta),
               ),
             );
           }
@@ -183,9 +192,10 @@ class MaFacCoursesScreen extends ConsumerWidget {
                   children: [
                     Text(
                       c.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
+                        color: feed.ink,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -195,8 +205,8 @@ class MaFacCoursesScreen extends ConsumerWidget {
                         c.displayTeacher,
                         if (c.targetPromotion.isNotEmpty) c.targetPromotion,
                       ].where((e) => e.isNotEmpty).join(' · '),
-                      style: const TextStyle(
-                        color: AkadexColors.inkMuted,
+                      style: TextStyle(
+                        color: feed.meta,
                         fontSize: 13,
                       ),
                     ),

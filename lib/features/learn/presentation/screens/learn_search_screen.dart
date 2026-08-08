@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
@@ -121,25 +121,27 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
     final coursesAsync = ref.watch(coursesProvider);
     final q = _query;
     final domains = _filterDomains(q);
+    final feed = TimelineTokens.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: feed.ink,
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text(
+        title: Text(
           'Rechercher',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, color: feed.ink),
         ),
       ),
       body: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: feed.cardBg,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: SearchField(
               hint: 'Cours, module ou domaine…',
@@ -166,13 +168,13 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                     !_modulesLoading;
 
                 if (showEmpty) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(24),
                       child: Text(
                         'Aucun résultat pour cette recherche.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AkadexColors.inkMuted),
+                        style: TextStyle(color: feed.meta),
                       ),
                     ),
                   );
@@ -182,9 +184,7 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                   padding: const EdgeInsets.fromLTRB(0, 8, 0, 40),
                   children: [
                     if (domains.isNotEmpty) ...[
-                      _SectionTitle(
-                        q.isEmpty ? 'Domaines' : 'Domaines',
-                      ),
+                      const _SectionTitle('Domaines'),
                       SizedBox(
                         height: 108,
                         child: ListView.separated(
@@ -233,17 +233,15 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
                             _modulesError!,
-                            style: const TextStyle(
-                              color: AkadexColors.inkMuted,
-                            ),
+                            style: TextStyle(color: feed.meta),
                           ),
                         )
                       else if (_modules.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 20),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Text(
                             'Aucun module trouvé.',
-                            style: TextStyle(color: AkadexColors.inkMuted),
+                            style: TextStyle(color: feed.meta),
                           ),
                         )
                       else
@@ -266,13 +264,15 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                                           width: 44,
                                           height: 44,
                                           decoration: BoxDecoration(
-                                            color: AkadexColors.primarySoft,
+                                            color: feed.softTint,
                                             borderRadius:
                                                 BorderRadius.circular(12),
                                           ),
-                                          child: const Icon(
+                                          child: Icon(
                                             Icons.view_module_outlined,
-                                            color: AkadexColors.primary,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
@@ -285,9 +285,10 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                                                 m.title,
                                                 maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                   fontWeight: FontWeight.w700,
                                                   fontSize: 15,
+                                                  color: feed.ink,
                                                 ),
                                               ),
                                               if (m.courseTitle.isNotEmpty)
@@ -296,18 +297,17 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    color:
-                                                        AkadexColors.inkMuted,
+                                                  style: TextStyle(
+                                                    color: feed.meta,
                                                     fontSize: 13,
                                                   ),
                                                 ),
                                             ],
                                           ),
                                         ),
-                                        const Icon(
+                                        Icon(
                                           Icons.chevron_right_rounded,
-                                          color: AkadexColors.inkSoft,
+                                          color: feed.meta,
                                         ),
                                       ],
                                     ),
@@ -335,14 +335,15 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w800,
-          color: Color(0xFF2D2F31),
+          color: feed.ink,
         ),
       ),
     );

@@ -27,9 +27,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authStateProvider);
+    final feed = TimelineTokens.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: feed.feedBg,
       body: auth.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (e, _) => Center(
@@ -91,10 +92,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                     children: [
                       Text(
                         user.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF050505),
+                          color: TimelineTokens.of(context).ink,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -103,9 +104,9 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         '${formatCount(user.followersCount)} followers · '
                         '${formatCount(user.followingCount)} suivi(e)s · '
                         '${formatCount(user.postsCount > 0 ? user.postsCount : user.contributions)} publications',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Color(0xFF65676B),
+                          color: TimelineTokens.of(context).meta,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -117,10 +118,10 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                           overflow: _bioExpanded
                               ? TextOverflow.visible
                               : TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             height: 1.35,
-                            color: Color(0xFF050505),
+                            color: TimelineTokens.of(context).ink,
                           ),
                         ),
                         if ((user.bio.isNotEmpty ? user.bio : user.headline)
@@ -131,8 +132,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                                 setState(() => _bioExpanded = !_bioExpanded),
                             child: Text(
                               _bioExpanded ? 'Voir moins' : 'Voir plus',
-                              style: const TextStyle(
-                                color: TimelineTokens.likeActive,
+                              style: TextStyle(
+                                color: TimelineTokens.of(context).likeActive,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -189,7 +190,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFCED0D4)),
+                          border: Border.all(color: TimelineTokens.of(context).divider),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Column(
@@ -215,8 +216,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                                   : user.isAlumni
                                       ? 'Alumni · mentorat et partage d’expérience'
                                       : 'Étudiant · partage TP, résumés et examens',
-                              style: const TextStyle(
-                                color: Color(0xFF65676B),
+                              style: TextStyle(
+                                color: TimelineTokens.of(context).meta,
                                 height: 1.35,
                               ),
                             ),
@@ -244,8 +245,8 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                                   selectedColor: const Color(0xFFE7F3FF),
                                   labelStyle: TextStyle(
                                     color: _tab == t
-                                        ? TimelineTokens.likeActive
-                                        : const Color(0xFF050505),
+                                        ? TimelineTokens.of(context).likeActive
+                                        : TimelineTokens.of(context).ink,
                                     fontWeight: FontWeight.w700,
                                   ),
                                   side: BorderSide.none,
@@ -256,7 +257,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Divider(height: 1, color: Color(0xFFCED0D4)),
+                      Divider(height: 1, color: TimelineTokens.of(context).divider),
                       const SizedBox(height: 12),
                       if (_tab == 'À propos' || _tab == 'Tout') ...[
                         const Text(
@@ -403,7 +404,7 @@ class _FacebookProfileHeader extends StatelessWidget {
                   color: Colors.white,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: TimelineTokens.likeActive,
+                    color: TimelineTokens.of(context).likeActive,
                     width: 3.5,
                   ),
                 ),
@@ -425,6 +426,25 @@ class _FacebookProfileHeader extends StatelessWidget {
                           ),
                         )
                       : null,
+                ),
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 4,
+              left: 8,
+              child: Material(
+                color: Colors.black45,
+                shape: const CircleBorder(),
+                child: IconButton(
+                  tooltip: 'Retour',
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/home');
+                    }
+                  },
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                 ),
               ),
             ),
@@ -460,14 +480,14 @@ class _InfoLine extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: const Color(0xFF65676B)),
+          Icon(icon, size: 18, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF050505),
+                color: TimelineTokens.of(context).ink,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -496,16 +516,16 @@ class _AboutRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF65676B)),
+          Icon(icon, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 12),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: const TextStyle(fontSize: 15, color: Color(0xFF050505)),
+                style: TextStyle(fontSize: 15, color: TimelineTokens.of(context).ink),
                 children: [
                   TextSpan(
                     text: '$title ',
-                    style: const TextStyle(color: Color(0xFF65676B)),
+                    style: TextStyle(color: TimelineTokens.of(context).meta),
                   ),
                   TextSpan(
                     text: value,
@@ -580,7 +600,7 @@ class _BlueButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: TimelineTokens.likeActive,
+      color: TimelineTokens.of(context).likeActive,
       borderRadius: BorderRadius.circular(8),
       child: InkWell(
         onTap: onTap,
@@ -673,7 +693,7 @@ class _NotificationsBadge extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: TimelineTokens.likeActive,
+            color: TimelineTokens.of(context).likeActive,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(

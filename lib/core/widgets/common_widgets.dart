@@ -98,7 +98,10 @@ class _SoftCardState extends State<SoftCard>
             onTap: widget.onTap == null ? null : _tap,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: widget.fullBleed ? 1 : 0.94),
+                color: Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withValues(alpha: widget.fullBleed ? 1 : 0.94),
                 borderRadius: widget.fullBleed
                     ? BorderRadius.zero
                     : BorderRadius.circular(18),
@@ -106,20 +109,31 @@ class _SoftCardState extends State<SoftCard>
                     ? Border(
                         bottom: BorderSide(
                           color: widget.accentBorder
-                              ? AkadexColors.primary.withValues(alpha: 0.22)
-                              : AkadexColors.border,
+                              ? Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.22)
+                              : Theme.of(context).dividerColor,
                         ),
                       )
                     : Border.all(
                         color: widget.accentBorder
-                            ? AkadexColors.primary.withValues(alpha: 0.22)
-                            : AkadexColors.border.withValues(alpha: 0.85),
+                            ? Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withValues(alpha: 0.22)
+                            : Theme.of(context)
+                                .dividerColor
+                                .withValues(alpha: 0.85),
                       ),
                 boxShadow: widget.fullBleed
                     ? null
                     : [
                         BoxShadow(
-                          color: AkadexColors.primary.withValues(alpha: 0.06),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withValues(alpha: 0.06),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -157,20 +171,26 @@ class SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
+    final ink = isDark ? Colors.white : AkadexColors.ink;
+    final soft = isDark ? const Color(0xFF8A8A8A) : AkadexColors.inkSoft;
+    final bg = isDark ? const Color(0xFF242424) : Colors.white;
+
     final field = CupertinoSearchTextField(
       controller: controller,
       placeholder: hint,
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 15, color: AkadexColors.ink),
-      placeholderStyle: const TextStyle(
+      style: TextStyle(fontSize: 15, color: ink),
+      placeholderStyle: TextStyle(
         fontSize: 15,
-        color: AkadexColors.inkSoft,
+        color: soft,
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: bg,
       borderRadius: BorderRadius.circular(14),
-      prefixIcon: const Icon(
+      prefixIcon: Icon(
         CupertinoIcons.search,
-        color: AkadexColors.primary,
+        color: primary,
         size: 18,
       ),
     );
@@ -180,7 +200,7 @@ class SearchField extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: AkadexColors.primary.withValues(alpha: 0.06),
+            color: primary.withValues(alpha: isDark ? 0.12 : 0.06),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

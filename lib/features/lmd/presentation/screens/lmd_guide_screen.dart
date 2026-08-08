@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../data/lmd_knowledge.dart';
@@ -24,6 +24,9 @@ class LmdGuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PageAtmosphere(
@@ -35,20 +38,29 @@ class LmdGuideScreen extends StatelessWidget {
           slivers: [
             SliverAppBar(
               pinned: true,
-              backgroundColor: AkadexColors.background.withValues(alpha: 0.92),
+              backgroundColor: feed.cardBg.withValues(alpha: 0.94),
+              foregroundColor: feed.ink,
+              surfaceTintColor: Colors.transparent,
               leading: IconButton(
                 onPressed: () => context.pop(),
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: Icon(Icons.arrow_back_rounded, color: feed.ink),
               ),
-              title: const Text(
+              title: Text(
                 'Système LMD',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: feed.ink,
+                ),
               ),
               actions: [
                 TextButton.icon(
                   onPressed: () => context.push('/lmd/assistant'),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text('Assistant'),
+                  icon: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 18,
+                    color: primary,
+                  ),
+                  label: Text('Assistant', style: TextStyle(color: primary)),
                 ),
               ],
             ),
@@ -79,15 +91,18 @@ class LmdGuideScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Repères rapides',
-                            style: TextStyle(fontWeight: FontWeight.w800),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: feed.ink,
+                            ),
                           ),
                           const SizedBox(height: 10),
-                          Wrap(
+                          const Wrap(
                             spacing: 8,
                             runSpacing: 8,
-                            children: const [
+                            children: [
                               _ChipFact(label: 'Licence 3 ans / 6 sem.'),
                               _ChipFact(label: 'Maîtrise 2 ans / 4 sem.'),
                               _ChipFact(label: '30 crédits / semestre'),
@@ -128,9 +143,9 @@ class LmdGuideScreen extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.description_outlined,
-                            color: AkadexColors.primary,
+                            color: primary,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -139,17 +154,18 @@ class LmdGuideScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   s.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w700,
+                                    color: feed.ink,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   s.reference,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     height: 1.35,
-                                    color: AkadexColors.inkMuted,
+                                    color: feed.meta,
                                   ),
                                 ),
                                 if (s.url.isNotEmpty) ...[
@@ -159,8 +175,7 @@ class LmdGuideScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: AkadexColors.primary
-                                          .withValues(alpha: 0.9),
+                                      color: primary,
                                     ),
                                   ),
                                 ],
@@ -181,7 +196,7 @@ class LmdGuideScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 13,
                         height: 1.4,
-                        color: Colors.black.withValues(alpha: 0.65),
+                        color: feed.meta,
                       ),
                     ),
                   ),
@@ -209,18 +224,22 @@ class _ChipFact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AkadexColors.primarySoft,
+        color: feed.softTint,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: feed.divider),
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: AkadexColors.primaryDark,
+          color: primary,
         ),
       ),
     );
@@ -235,6 +254,9 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,18 +267,19 @@ class _SectionCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AkadexColors.primarySoft,
+                  color: feed.softTint,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: AkadexColors.primary, size: 22),
+                child: Icon(icon, color: primary, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   section.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
+                    color: feed.ink,
                   ),
                 ),
               ),
@@ -265,7 +288,11 @@ class _SectionCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             section.body,
-            style: const TextStyle(height: 1.45, fontSize: 14),
+            style: TextStyle(
+              height: 1.45,
+              fontSize: 14,
+              color: feed.ink,
+            ),
           ),
           if (section.bullets.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -275,15 +302,18 @@ class _SectionCard extends StatelessWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       '•  ',
                       style: TextStyle(
-                        color: AkadexColors.primary,
+                        color: primary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Expanded(
-                      child: Text(b, style: const TextStyle(height: 1.35)),
+                      child: Text(
+                        b,
+                        style: TextStyle(height: 1.35, color: feed.ink),
+                      ),
                     ),
                   ],
                 ),

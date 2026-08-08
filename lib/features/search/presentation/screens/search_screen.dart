@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
@@ -58,6 +57,38 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  Widget _typeChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required Color primary,
+    required Color ink,
+    required Color cardBg,
+    required Color softTint,
+    required Color divider,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: selected,
+        showCheckmark: selected,
+        checkmarkColor: primary,
+        onSelected: (_) => onTap(),
+        selectedColor: softTint,
+        labelStyle: TextStyle(
+          color: selected ? primary : ink,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+        backgroundColor: cardBg,
+        side: BorderSide(
+          color: selected ? primary : divider,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final docsAsync = ref.watch(
@@ -66,25 +97,28 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
     );
     final postsAsync = ref.watch(timelinePostsProvider(TimelineQuery.empty));
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: feed.ink,
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
-        title: const Text(
+        title: Text(
           'Recherche',
-          style: TextStyle(fontWeight: FontWeight.w800),
+          style: TextStyle(fontWeight: FontWeight.w800, color: feed.ink),
         ),
       ),
       body: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: feed.cardBg,
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
             child: SearchField(
               hint: 'Cours, document, auteur…',
@@ -93,35 +127,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ),
           Container(
-            color: Colors.white,
+            color: feed.cardBg,
             height: TimelineTokens.filterHeight,
             alignment: Alignment.centerLeft,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    label: const Text('Tous'),
-                    selected: _typeFilter == null,
-                    showCheckmark: false,
-                    onSelected: (_) => setState(() => _typeFilter = null),
-                    selectedColor: AkadexColors.primarySoft,
-                    labelStyle: TextStyle(
-                      color: _typeFilter == null
-                          ? AkadexColors.primary
-                          : const Color(0xFF050505),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                    backgroundColor: TimelineTokens.feedBg,
-                    side: BorderSide(
-                      color: _typeFilter == null
-                          ? AkadexColors.primary
-                          : Colors.transparent,
-                    ),
-                  ),
+                _typeChip(
+                  label: 'Tous',
+                  selected: _typeFilter == null,
+                  onTap: () => setState(() => _typeFilter = null),
+                  primary: primary,
+                  ink: feed.ink,
+                  cardBg: feed.feedBg,
+                  softTint: feed.softTint,
+                  divider: feed.divider,
                 ),
                 for (final t in [
                   DocumentType.examen,
@@ -130,41 +151,32 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   DocumentType.livre,
                   DocumentType.video,
                 ])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(t.label),
-                      selected: _typeFilter == t,
-                      showCheckmark: _typeFilter == t,
-                      checkmarkColor: AkadexColors.primary,
-                      onSelected: (_) => setState(() => _typeFilter = t),
-                      selectedColor: AkadexColors.primarySoft,
-                      labelStyle: TextStyle(
-                        color: _typeFilter == t
-                            ? AkadexColors.primary
-                            : const Color(0xFF050505),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                      backgroundColor: TimelineTokens.feedBg,
-                      side: BorderSide(
-                        color: _typeFilter == t
-                            ? AkadexColors.primary
-                            : const Color(0xFFCED0D4),
-                      ),
-                    ),
+                  _typeChip(
+                    label: t.label,
+                    selected: _typeFilter == t,
+                    onTap: () => setState(() => _typeFilter = t),
+                    primary: primary,
+                    ink: feed.ink,
+                    cardBg: feed.feedBg,
+                    softTint: feed.softTint,
+                    divider: feed.divider,
                   ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          Divider(height: 1, color: feed.divider),
           Expanded(
             child: docsAsync.when(
               loading: () => const Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 40),
                 child: ListFeedSkeleton(count: 6),
               ),
-              error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+              error: (e, _) => Center(
+                child: Text(
+                  apiErrorMessage(e),
+                  style: TextStyle(color: feed.ink),
+                ),
+              ),
               data: (docs) {
                 final q = _query.trim().toLowerCase();
                 final posts = (postsAsync.valueOrNull ?? const <CommunityPost>[])
@@ -180,10 +192,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 }).toList();
 
                 if (docs.isEmpty && posts.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'Aucun résultat.',
-                      style: TextStyle(color: AkadexColors.inkMuted),
+                      style: TextStyle(color: feed.meta),
                     ),
                   );
                 }
@@ -192,38 +204,40 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   padding: const EdgeInsets.only(bottom: 40),
                   children: [
                     if (docs.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         child: Text(
                           'Documents',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
+                            color: feed.ink,
                           ),
                         ),
                       ),
                       for (final doc in docs)
                         Container(
-                          color: Colors.white,
+                          color: feed.cardBg,
                           child: Column(
                             children: [
                               ListTile(
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.description_outlined,
-                                  color: AkadexColors.primary,
+                                  color: primary,
                                 ),
                                 title: Text(
                                   doc.title,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w700,
+                                    color: feed.ink,
                                   ),
                                 ),
                                 subtitle: Text(
                                   '${doc.type.label} · ${doc.author} · ${formatCount(doc.downloads)}',
-                                  style: const TextStyle(
-                                    color: TimelineTokens.meta,
+                                  style: TextStyle(
+                                    color: feed.meta,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -232,34 +246,32 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   documentId: doc.id,
                                 ),
                               ),
-                              const Divider(
-                                height: 1,
-                                color: TimelineTokens.divider,
-                              ),
+                              Divider(height: 1, color: feed.divider),
                             ],
                           ),
                         ),
                     ],
                     if (posts.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
                           'Publications',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
                             fontSize: 17,
+                            color: feed.ink,
                           ),
                         ),
                       ),
                       for (final post in posts)
                         Container(
-                          color: Colors.white,
+                          color: feed.cardBg,
                           child: Column(
                             children: [
                               ListTile(
-                                leading: const Icon(
+                                leading: Icon(
                                   Icons.article_outlined,
-                                  color: AkadexColors.primary,
+                                  color: primary,
                                 ),
                                 title: Text(
                                   post.title.isNotEmpty
@@ -267,14 +279,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                       : post.content,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w700,
+                                    color: feed.ink,
                                   ),
                                 ),
                                 subtitle: Text(
                                   post.author,
-                                  style: const TextStyle(
-                                    color: TimelineTokens.meta,
+                                  style: TextStyle(
+                                    color: feed.meta,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -283,10 +296,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                   post: post,
                                 ),
                               ),
-                              const Divider(
-                                height: 1,
-                                color: TimelineTokens.divider,
-                              ),
+                              Divider(height: 1, color: feed.divider),
                             ],
                           ),
                         ),

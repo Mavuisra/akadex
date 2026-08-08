@@ -31,7 +31,7 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
     final async = ref.watch(courseProvider(courseId));
 
     return Scaffold(
-      backgroundColor: TimelineTokens.feedBg,
+      backgroundColor: TimelineTokens.of(context).feedBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -86,7 +86,7 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: TimelineTokens.divider),
+                        border: Border.all(color: TimelineTokens.of(context).divider),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,7 +97,7 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
                           ],
                           Text(
                             course.title,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF050505),
@@ -109,8 +109,8 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
                             const SizedBox(height: 10),
                             Text(
                               course.moderationNote,
-                              style: const TextStyle(
-                                color: TimelineTokens.meta,
+                              style: TextStyle(
+                                color: TimelineTokens.of(context).meta,
                                 fontSize: 13,
                                 height: 1.35,
                               ),
@@ -129,18 +129,18 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: TimelineTokens.divider),
+                        border: Border.all(color: TimelineTokens.of(context).divider),
                       ),
                       child: Column(
                         children: [
                           for (var i = 0; i < rows.length; i++) ...[
                             _InfoRow(label: rows[i].$1, value: rows[i].$2),
                             if (i < rows.length - 1)
-                              const Divider(
+                              Divider(
                                 height: 1,
                                 indent: 12,
                                 endIndent: 12,
-                                color: TimelineTokens.divider,
+                                color: TimelineTokens.of(context).divider,
                               ),
                           ],
                         ],
@@ -182,10 +182,10 @@ class MaFacCourseDetailScreen extends ConsumerWidget {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     border: Border(
-                      top: BorderSide(color: TimelineTokens.divider),
+                      top: BorderSide(color: TimelineTokens.of(context).divider),
                     ),
                   ),
                   child: FilledButton.icon(
@@ -245,8 +245,8 @@ class _InfoRow extends StatelessWidget {
             width: 118,
             child: Text(
               label,
-              style: const TextStyle(
-                color: TimelineTokens.meta,
+              style: TextStyle(
+                color: TimelineTokens.of(context).meta,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -285,7 +285,7 @@ class _TextBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: TimelineTokens.divider),
+        border: Border.all(color: TimelineTokens.of(context).divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

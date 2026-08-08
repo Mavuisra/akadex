@@ -21,23 +21,23 @@ class DocumentDetailScreen extends ConsumerWidget {
     final docAsync = ref.watch(documentProvider(documentId));
 
     return docAsync.when(
-      loading: () => const Scaffold(
-        backgroundColor: TimelineTokens.feedBg,
+      loading: () => Scaffold(
+        backgroundColor: TimelineTokens.of(context).feedBg,
         body: Center(child: CupertinoActivityIndicator()),
       ),
       error: (e, _) => Scaffold(
-        backgroundColor: TimelineTokens.feedBg,
+        backgroundColor: TimelineTokens.of(context).feedBg,
         appBar: AppBar(
           backgroundColor: Colors.white,
           leading: IconButton(
             onPressed: () => context.pop(),
-            icon: const Icon(Icons.arrow_back_rounded),
+            icon: Icon(Icons.arrow_back_rounded),
           ),
         ),
         body: Center(child: Text(apiErrorMessage(e))),
       ),
       data: (doc) => Scaffold(
-        backgroundColor: TimelineTokens.feedBg,
+        backgroundColor: TimelineTokens.of(context).feedBg,
         appBar: AppBar(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
@@ -72,7 +72,7 @@ class DocumentDetailScreen extends ConsumerWidget {
                             doc.author.isEmpty
                                 ? '?'
                                 : doc.author.characters.first.toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w800,
                               color: AkadexColors.primary,
                             ),
@@ -93,17 +93,17 @@ class DocumentDetailScreen extends ConsumerWidget {
                               ),
                               Text(
                                 doc.type.label,
-                                style: const TextStyle(
-                                  color: TimelineTokens.meta,
+                                style: TextStyle(
+                                  color: TimelineTokens.of(context).meta,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.chevron_right_rounded,
-                          color: TimelineTokens.meta,
+                          color: TimelineTokens.of(context).meta,
                         ),
                       ],
                     ),
@@ -137,8 +137,8 @@ class DocumentDetailScreen extends ConsumerWidget {
                       if (doc.course.isNotEmpty) doc.course,
                       if (doc.year.isNotEmpty) doc.year,
                     ].join(' · '),
-                    style: const TextStyle(
-                      color: TimelineTokens.meta,
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).meta,
                       fontSize: 13,
                     ),
                   ),
@@ -147,14 +147,14 @@ class DocumentDetailScreen extends ConsumerWidget {
                     '${formatCount(doc.downloads)} téléch. · '
                     '${formatCount(doc.views)} vues · '
                     '${doc.sizeLabel}',
-                    style: const TextStyle(
-                      color: TimelineTokens.meta,
+                    style: TextStyle(
+                      color: TimelineTokens.of(context).meta,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Divider(height: 1, color: TimelineTokens.divider),
+                  Divider(height: 1, color: TimelineTokens.of(context).divider),
                   SizedBox(
                     height: TimelineTokens.actionHeight,
                     child: Row(
@@ -185,10 +185,10 @@ class DocumentDetailScreen extends ConsumerWidget {
                                 }
                               }
                             },
-                            icon: const Icon(Icons.download_outlined),
+                            icon: Icon(Icons.download_outlined),
                             label: const Text('Télécharger'),
                             style: TextButton.styleFrom(
-                              foregroundColor: TimelineTokens.likeActive,
+                              foregroundColor: TimelineTokens.of(context).likeActive,
                             ),
                           ),
                         ),

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/theme_mode_provider.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
@@ -22,13 +23,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _showMore = false;
   bool _helpOpen = false;
   bool _settingsOpen = false;
+  bool _themeOpen = false;
 
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authStateProvider);
+    final feed = TimelineTokens.of(context);
+    final themeMode = ref.watch(themeModeProvider);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: feed.feedBg,
       body: auth.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
         error: (e, _) => Center(
@@ -56,12 +61,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   children: [
                     const AkadexLogo(size: 64),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Connecte-toi pour ouvrir ton menu',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w500,
+                        color: feed.ink,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -81,6 +87,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 _MenuHeader(
                   user: user,
+                  ink: feed.ink,
+                  softTint: feed.softTint,
+                  chipBg: feed.commentBubble,
+                  primary: primary,
                   onOpenProfile: () => context.push('/profile/me'),
                   onSettings: () => context.push('/profile/edit'),
                 ),
@@ -88,44 +98,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 _MenuItem(
                   icon: Icons.people_outline_rounded,
                   label: 'Ami(e)s',
+                  ink: feed.ink,
                   onTap: () => context.go('/community'),
                 ),
                 _MenuItem(
                   icon: Icons.grid_view_rounded,
                   label: 'Tableau de bord',
+                  ink: feed.ink,
                   onTap: () => context.go('/home'),
                 ),
                 _MenuItem(
                   icon: Icons.bookmark_border_rounded,
                   label: 'Enregistrements',
+                  ink: feed.ink,
                   onTap: () => context.push('/my-contributions'),
                 ),
                 _MenuItem(
                   icon: Icons.auto_awesome,
                   label: 'Akadex IA',
+                  ink: feed.ink,
                   onTap: () => context.push('/ai'),
                 ),
                 if (user.usesStudentShell)
                   _MenuItem(
                     icon: Icons.card_giftcard_rounded,
                     label: 'Récompenses',
+                    ink: feed.ink,
                     onTap: () => context.push('/rewards'),
                   ),
                 if (_showMore) ...[
                   _MenuItem(
                     icon: Icons.upload_file_rounded,
                     label: 'Proposer une contribution',
+                    ink: feed.ink,
                     onTap: () => context.push('/contribute'),
                   ),
                   _MenuItem(
                     icon: Icons.explore_outlined,
                     label: 'Apprendre',
+                    ink: feed.ink,
                     onTap: () => context.go('/learn'),
                   ),
                   if (user.usesTeacherShell)
                     _MenuItem(
                       icon: Icons.cloud_upload_outlined,
                       label: 'Publier une leçon',
+                      ink: feed.ink,
                       onTap: () => context.go('/teacher-publish'),
                     ),
                 ],
@@ -133,7 +151,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: Material(
-                    color: const Color(0xFFE4E6EB),
+                    color: feed.commentBubble,
                     borderRadius: BorderRadius.circular(8),
                     child: InkWell(
                       onTap: () => setState(() => _showMore = !_showMore),
@@ -143,10 +161,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         child: Text(
                           _showMore ? 'Voir moins' : 'Voir plus',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.w500,
                             fontSize: 15,
-                            color: Color(0xFF050505),
+                            color: feed.ink,
                           ),
                         ),
                       ),
@@ -154,15 +172,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Divider(height: 1, color: Color(0xFFCED0D4)),
+                Divider(height: 1, color: feed.divider),
                 _ExpandRow(
                   icon: Icons.help_outline_rounded,
                   label: 'Aide et assistance',
+                  ink: feed.ink,
                   open: _helpOpen,
                   onTap: () => setState(() => _helpOpen = !_helpOpen),
                   children: [
                     _SubItem(
                       label: 'Centre d’aide',
+                      meta: feed.meta,
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -173,6 +193,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     _SubItem(
                       label: 'Signaler un problème',
+                      meta: feed.meta,
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -183,19 +204,54 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                 ),
-                const Divider(height: 1, color: Color(0xFFCED0D4)),
+                Divider(height: 1, color: feed.divider),
+                _ExpandRow(
+                  icon: Icons.palette_outlined,
+                  label: 'Thème',
+                  ink: feed.ink,
+                  open: _themeOpen,
+                  onTap: () => setState(() => _themeOpen = !_themeOpen),
+                  children: [
+                    _ThemeChoice(
+                      label: 'Clair',
+                      subtitle: 'Look d’origine',
+                      selected: themeMode == ThemeMode.light,
+                      meta: feed.meta,
+                      ink: feed.ink,
+                      primary: primary,
+                      onTap: () => ref
+                          .read(themeModeProvider.notifier)
+                          .setMode(ThemeMode.light),
+                    ),
+                    _ThemeChoice(
+                      label: 'Sombre',
+                      subtitle: 'Noir · cartes charcoal',
+                      selected: themeMode == ThemeMode.dark,
+                      meta: feed.meta,
+                      ink: feed.ink,
+                      primary: primary,
+                      onTap: () => ref
+                          .read(themeModeProvider.notifier)
+                          .setMode(ThemeMode.dark),
+                    ),
+                  ],
+                ),
+                Divider(height: 1, color: feed.divider),
                 _ExpandRow(
                   icon: Icons.settings_outlined,
                   label: 'Paramètres et confidentialité',
+                  ink: feed.ink,
                   open: _settingsOpen,
                   onTap: () => setState(() => _settingsOpen = !_settingsOpen),
                   children: [
                     _SubItem(
                       label: 'Modifier le profil',
+                      meta: feed.meta,
                       onTap: () => context.push('/profile/edit'),
                     ),
                     _SubItem(
                       label: 'Confidentialité',
+                      meta: feed.meta,
                       onTap: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -206,6 +262,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     _SubItem(
                       label: 'Se déconnecter',
+                      meta: feed.meta,
                       onTap: () async {
                         await ref.read(authStateProvider.notifier).logout();
                         if (context.mounted) context.go('/login');
@@ -213,12 +270,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                   ],
                 ),
-                const Divider(height: 1, color: Color(0xFFCED0D4)),
+                Divider(height: 1, color: feed.divider),
                 const SizedBox(height: 16),
                 Text(
                   'Akadex · campus numérique',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: feed.meta,
                     fontSize: 12,
                   ),
                 ),
@@ -234,11 +291,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 class _MenuHeader extends StatelessWidget {
   const _MenuHeader({
     required this.user,
+    required this.ink,
+    required this.softTint,
+    required this.chipBg,
+    required this.primary,
     required this.onOpenProfile,
     required this.onSettings,
   });
 
   final UserProfile user;
+  final Color ink;
+  final Color softTint;
+  final Color chipBg;
+  final Color primary;
   final VoidCallback onOpenProfile;
   final VoidCallback onSettings;
 
@@ -258,7 +323,7 @@ class _MenuHeader extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 22,
-                    backgroundColor: AkadexColors.primarySoft,
+                    backgroundColor: softTint,
                     backgroundImage: avatar != null && avatar.isNotEmpty
                         ? CachedNetworkImageProvider(avatar)
                         : null,
@@ -268,9 +333,9 @@ class _MenuHeader extends StatelessWidget {
                             user.name.isEmpty
                                 ? '?'
                                 : user.name.characters.first.toUpperCase(),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: AkadexColors.primary,
+                              color: primary,
                             ),
                           ),
                   ),
@@ -278,10 +343,10 @@ class _MenuHeader extends StatelessWidget {
                   Expanded(
                     child: Text(
                       user.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF050505),
+                        color: ink,
                       ),
                     ),
                   ),
@@ -291,20 +356,20 @@ class _MenuHeader extends StatelessWidget {
           ),
         ),
         Material(
-          color: const Color(0xFFE4E6EB),
+          color: chipBg,
           shape: const CircleBorder(),
           child: IconButton(
             onPressed: onSettings,
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(Icons.settings_outlined, color: ink),
           ),
         ),
         const SizedBox(width: 8),
         Material(
-          color: const Color(0xFFE4E6EB),
+          color: chipBg,
           shape: const CircleBorder(),
           child: IconButton(
             onPressed: onOpenProfile,
-            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+            icon: Icon(Icons.keyboard_arrow_down_rounded, color: ink),
           ),
         ),
       ],
@@ -316,24 +381,26 @@ class _MenuItem extends StatelessWidget {
   const _MenuItem({
     required this.icon,
     required this.label,
+    required this.ink,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final Color ink;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, size: 28, color: const Color(0xFF050505)),
+      leading: Icon(icon, size: 28, color: ink),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF050505),
+          color: ink,
         ),
       ),
       onTap: onTap,
@@ -345,6 +412,7 @@ class _ExpandRow extends StatelessWidget {
   const _ExpandRow({
     required this.icon,
     required this.label,
+    required this.ink,
     required this.open,
     required this.onTap,
     required this.children,
@@ -352,6 +420,7 @@ class _ExpandRow extends StatelessWidget {
 
   final IconData icon;
   final String label;
+  final Color ink;
   final bool open;
   final VoidCallback onTap;
   final List<Widget> children;
@@ -362,19 +431,20 @@ class _ExpandRow extends StatelessWidget {
       children: [
         ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: Icon(icon, size: 26, color: const Color(0xFF050505)),
+          leading: Icon(icon, size: 26, color: ink),
           title: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF050505),
+              color: ink,
             ),
           ),
           trailing: Icon(
             open
                 ? Icons.keyboard_arrow_up_rounded
                 : Icons.keyboard_arrow_down_rounded,
+            color: ink,
           ),
           onTap: onTap,
         ),
@@ -385,9 +455,14 @@ class _ExpandRow extends StatelessWidget {
 }
 
 class _SubItem extends StatelessWidget {
-  const _SubItem({required this.label, required this.onTap});
+  const _SubItem({
+    required this.label,
+    required this.meta,
+    required this.onTap,
+  });
 
   final String label;
+  final Color meta;
   final VoidCallback onTap;
 
   @override
@@ -396,11 +471,55 @@ class _SubItem extends StatelessWidget {
       contentPadding: const EdgeInsets.only(left: 48, right: 8),
       title: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w400,
-          color: Color(0xFF65676B),
+          color: meta,
         ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _ThemeChoice extends StatelessWidget {
+  const _ThemeChoice({
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+    required this.meta,
+    required this.ink,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final String label;
+  final String subtitle;
+  final bool selected;
+  final Color meta;
+  final Color ink;
+  final Color primary;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.only(left: 48, right: 8),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: ink,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 12, color: meta),
+      ),
+      trailing: Icon(
+        selected ? Icons.check_circle_rounded : Icons.circle_outlined,
+        color: selected ? primary : meta,
       ),
       onTap: onTap,
     );

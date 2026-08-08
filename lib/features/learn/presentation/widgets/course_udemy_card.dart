@@ -2,12 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../domain/models/models.dart';
 import '../../data/course_cover_images.dart';
 import '../../data/learn_domains.dart';
+import 'course_price_row.dart';
 
-/// Carte cours style Udemy (sans prix) avec vraie photo de couverture.
+/// Carte cours style Udemy avec prix promo.
 class CourseUdemyCard extends StatelessWidget {
   const CourseUdemyCard({
     super.key,
@@ -23,9 +24,12 @@ class CourseUdemyCard extends StatelessWidget {
     final rating = 4.5 + (course.id.hashCode.abs() % 5) / 10;
     final ratingsCount = 80 + (course.id.hashCode.abs() % 900);
     final cover = CourseCoverImages.resolve(course);
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
-      color: Colors.white,
+      color: feed.cardBg,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -34,7 +38,7 @@ class CourseUdemyCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFD1D7DC)),
+            border: Border.all(color: feed.divider),
           ),
           clipBehavior: Clip.antiAlias,
           child: Column(
@@ -61,9 +65,10 @@ class CourseUdemyCard extends StatelessWidget {
                         'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => Container(
-                          color: AkadexColors.primarySoft,
+                          color: feed.softTint,
                           alignment: Alignment.center,
-                          child: const Icon(Icons.school_outlined, size: 40),
+                          child: Icon(Icons.school_outlined,
+                              size: 40, color: feed.meta),
                         ),
                       ),
                     ),
@@ -117,10 +122,10 @@ class CourseUdemyCard extends StatelessWidget {
                       course.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
-                        color: Color(0xFF2D2F31),
+                        color: feed.ink,
                         height: 1.25,
                       ),
                     ),
@@ -129,9 +134,9 @@ class CourseUdemyCard extends StatelessWidget {
                       course.displayTeacher,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6A6F73),
+                        color: feed.meta,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -141,9 +146,9 @@ class CourseUdemyCard extends StatelessWidget {
                         course.teacherSpecialty,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF6A6F73),
+                          color: feed.meta,
                         ),
                       ),
                     ],
@@ -157,11 +162,44 @@ class CourseUdemyCard extends StatelessWidget {
                       ].join(' · '),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6A6F73),
+                        color: feed.meta,
                         height: 1.35,
                       ),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const CoursePriceRow(dense: true),
+                        const Spacer(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                size: 16, color: Color(0xFFF69C08)),
+                            const SizedBox(width: 3),
+                            Text(
+                              rating.toStringAsFixed(1),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: isDark
+                                    ? const Color(0xFFF0C060)
+                                    : const Color(0xFF4D3105),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '($ratingsCount)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: feed.meta,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Wrap(
@@ -172,45 +210,29 @@ class CourseUdemyCard extends StatelessWidget {
                         if (course.levelLabel.isNotEmpty)
                           _Badge(
                             label: course.levelLabel,
-                            bg: const Color(0xFFACE4DB),
-                            fg: const Color(0xFF1E6055),
+                            bg: isDark
+                                ? const Color(0xFF1E3A36)
+                                : const Color(0xFFACE4DB),
+                            fg: isDark
+                                ? const Color(0xFF7DCEC0)
+                                : const Color(0xFF1E6055),
                           ),
                         if (course.targetPromotion.isNotEmpty)
                           _Badge(
                             label: course.targetPromotion,
-                            bg: AkadexColors.primarySoft,
-                            fg: AkadexColors.primary,
+                            bg: feed.softTint,
+                            fg: primary,
                           ),
                         if (course.estimatedHours > 0)
                           _Badge(
                             label: '${course.estimatedHours} h',
-                            bg: const Color(0xFFF3CA8C),
-                            fg: const Color(0xFF3D3C0A),
+                            bg: isDark
+                                ? const Color(0xFF3A3020)
+                                : const Color(0xFFF3CA8C),
+                            fg: isDark
+                                ? const Color(0xFFE0C070)
+                                : const Color(0xFF3D3C0A),
                           ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.star_rounded,
-                                size: 16, color: Color(0xFFF69C08)),
-                            const SizedBox(width: 3),
-                            Text(
-                              rating.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 13,
-                                color: Color(0xFF4D3105),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '($ratingsCount)',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6A6F73),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ],
@@ -321,14 +343,17 @@ class _CreateDomainCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 104,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: feed.cardBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFCED0D4)),
+          border: Border.all(color: feed.divider),
         ),
         child: Column(
           children: [
@@ -338,22 +363,23 @@ class _CreateDomainCard extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: AkadexColors.primarySoft,
+                    color: feed.softTint,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AkadexColors.primary, width: 2),
+                    border: Border.all(color: primary, width: 2),
                   ),
-                  child: const Icon(Icons.add, color: AkadexColors.primary),
+                  child: Icon(Icons.add, color: primary),
                 ),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
               child: Text(
                 'Guide LMD',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
+                  color: feed.ink,
                 ),
               ),
             ),

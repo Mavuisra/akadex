@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'community',
     'messaging',
     'learning',
+    'payments',
 ]
 
 MIDDLEWARE = [
@@ -254,3 +255,11 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# --- PawaPay (Mobile Money) ---
+# Token uniquement côté serveur (.env). Ne jamais le mettre dans Flutter.
+PAWAPAY_API_TOKEN = os.getenv('PAWAPAY_API_TOKEN', '')
+PAWAPAY_BASE_URL = os.getenv('PAWAPAY_BASE_URL', 'https://api.pawapay.io').rstrip('/')
+PAWAPAY_CURRENCY = os.getenv('PAWAPAY_CURRENCY', 'USD')
+PAWAPAY_COUNTRY = os.getenv('PAWAPAY_COUNTRY', 'COD')
+

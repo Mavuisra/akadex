@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
+import '../../data/cart_provider.dart';
 import '../../data/learn_domains.dart';
 import '../widgets/course_udemy_card.dart';
 
@@ -23,24 +23,30 @@ class LearnScreen extends ConsumerWidget {
     final courses = coursesAsync.valueOrNull ?? const <Course>[];
     final busy = coursesAsync.isLoading && courses.isEmpty;
     final failed = coursesAsync.hasError && courses.isEmpty;
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
 
     if (busy) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF0F2F5),
-        body: LearnScreenSkeleton(),
+      return Scaffold(
+        backgroundColor: feed.feedBg,
+        body: const LearnScreenSkeleton(),
       );
     }
 
     if (failed) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF0F2F5),
+        backgroundColor: feed.feedBg,
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(apiErrorMessage(coursesAsync.error!), textAlign: TextAlign.center),
+                Text(
+                  apiErrorMessage(coursesAsync.error!),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: feed.ink),
+                ),
                 TextButton(
                   onPressed: () => ref.invalidate(coursesProvider),
                   child: const Text('Réessayer'),
@@ -56,151 +62,159 @@ class LearnScreen extends ConsumerWidget {
     final trending = LearnDomains.vitrineCourses(courses, limit: 3);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: feed.feedBg,
       body: CustomScrollView(
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                automaticallyImplyLeading: false,
-                backgroundColor: Colors.white,
-                surfaceTintColor: Colors.transparent,
-                title: const Text(
-                  'Cours',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF050505),
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    onPressed: () => context.push('/lmd/assistant'),
-                    icon: const Icon(Icons.chat_bubble_outline_rounded),
-                  ),
-                ],
+        physics: const BouncingScrollPhysics(
+          parent: AlwaysScrollableScrollPhysics(),
+        ),
+        slivers: [
+          SliverAppBar(
+            pinned: true,
+            automaticallyImplyLeading: false,
+            backgroundColor: feed.cardBg,
+            surfaceTintColor: Colors.transparent,
+            foregroundColor: feed.ink,
+            title: Text(
+              'Cours',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: feed.ink,
               ),
-              SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AkadexColors.primarySoft,
-                        backgroundImage: me?.avatarUrl != null &&
-                                me!.avatarUrl!.isNotEmpty
-                            ? NetworkImage(me.avatarUrl!)
-                            : null,
-                        child: me?.avatarUrl == null || me!.avatarUrl!.isEmpty
-                            ? Text(
-                                (me?.name.isNotEmpty == true
-                                        ? me!.name[0]
-                                        : '?')
-                                    .toUpperCase(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AkadexColors.primary,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => context.push('/learn/search'),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
+            ),
+            actions: [
+              IconButton(
+                tooltip: 'Panier',
+                onPressed: () => context.push('/cart'),
+                icon: Badge(
+                  isLabelVisible: ref.watch(cartProvider).isNotEmpty,
+                  label: Text('${ref.watch(cartProvider).length}'),
+                  child: Icon(Icons.shopping_cart_outlined, color: feed.ink),
+                ),
+              ),
+              IconButton(
+                onPressed: () => context.push('/lmd/assistant'),
+                icon: Icon(Icons.chat_bubble_outline_rounded, color: feed.ink),
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              color: feed.cardBg,
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: feed.softTint,
+                    backgroundImage: me?.avatarUrl != null &&
+                            me!.avatarUrl!.isNotEmpty
+                        ? NetworkImage(me.avatarUrl!)
+                        : null,
+                    child: me?.avatarUrl == null || me!.avatarUrl!.isEmpty
+                        ? Text(
+                            (me?.name.isNotEmpty == true ? me!.name[0] : '?')
+                                .toUpperCase(),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: primary,
                             ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F2F5),
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Text(
-                              'Rechercher un cours, module ou domaine…',
-                              style: TextStyle(
-                                color: Color(0xFF65676B),
-                                fontSize: 15,
-                              ),
-                            ),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => context.push('/learn/search'),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: feed.feedBg,
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        child: Text(
+                          'Rechercher un cours, module ou domaine…',
+                          style: TextStyle(
+                            color: feed.meta,
+                            fontSize: 15,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Column(
-                        children: [
-                          Icon(Icons.menu_book_outlined,
-                              color: Colors.green.shade700, size: 22),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Cours',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Column(
+                    children: [
+                      Icon(Icons.menu_book_outlined,
+                          color: Colors.green.shade700, size: 22),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Cours',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.green.shade700,
+                        ),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: DomainStoriesRow(
-                    domains: LearnDomains.all,
-                    courseCounts: counts,
-                    onTap: (domain) {
-                      context.push('/learn/domain/${domain.id}');
-                    },
-                  ),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: const Text(
-                    'Cours vidéo',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF2D2F31),
-                    ),
-                  ),
-                ),
-              ),
-              if (trending.isEmpty)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: Text(
-                      'Aucun cours vidéo pour le moment.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: TimelineTokens.meta),
-                    ),
-                  ),
-                )
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                  sliver: SliverList.separated(
-                    itemCount: trending.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 14),
-                    itemBuilder: (_, i) => CourseUdemyCard(course: trending[i]),
-                  ),
-                ),
-            ],
+            ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+            child: Container(
+              color: feed.cardBg,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: DomainStoriesRow(
+                domains: LearnDomains.all,
+                courseCounts: counts,
+                onTap: (domain) {
+                  context.push('/learn/domain/${domain.id}');
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+            child: Container(
+              color: feed.cardBg,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Text(
+                'Cours vidéo',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: feed.ink,
+                ),
+              ),
+            ),
+          ),
+          if (trending.isEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'Aucun cours vidéo pour le moment.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: feed.meta),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+              sliver: SliverList.separated(
+                itemCount: trending.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
+                itemBuilder: (_, i) => CourseUdemyCard(course: trending[i]),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

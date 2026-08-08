@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../data/learn_domains.dart';
@@ -18,39 +19,48 @@ class DomainCoursesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final domain = LearnDomains.byId(domainId);
     final coursesAsync = ref.watch(coursesProvider);
+    final feed = TimelineTokens.of(context);
 
     if (domain == null) {
       return Scaffold(
+        backgroundColor: feed.feedBg,
         appBar: AppBar(
+          backgroundColor: feed.cardBg,
+          foregroundColor: feed.ink,
           leading: IconButton(
             onPressed: () => context.pop(),
             icon: const Icon(Icons.arrow_back_rounded),
           ),
         ),
-        body: const Center(child: Text('Domaine introuvable.')),
+        body: Center(
+          child: Text('Domaine introuvable.', style: TextStyle(color: feed.ink)),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
         surfaceTintColor: Colors.transparent,
+        foregroundColor: feed.ink,
         leading: IconButton(
           onPressed: () => context.pop(),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         title: Text(
           domain.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w800,
-            color: Color(0xFF2D2F31),
+            color: feed.ink,
           ),
         ),
       ),
       body: coursesAsync.when(
         loading: () => const Center(child: CupertinoActivityIndicator()),
-        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+        error: (e, _) => Center(
+          child: Text(apiErrorMessage(e), style: TextStyle(color: feed.ink)),
+        ),
         data: (all) {
           final courses = LearnDomains.filterCourses(all, domain);
           return CustomScrollView(
@@ -69,7 +79,7 @@ class DomainCoursesScreen extends ConsumerWidget {
                           fontWeight: FontWeight.w800,
                           color: Color.lerp(
                             domain.colors.first,
-                            Colors.black,
+                            feed.ink,
                             0.35,
                           ),
                         ),
@@ -77,8 +87,8 @@ class DomainCoursesScreen extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${courses.length} cours · ${domain.name}',
-                        style: const TextStyle(
-                          color: Color(0xFF6A6F73),
+                        style: TextStyle(
+                          color: feed.meta,
                           fontSize: 14,
                         ),
                       ),
@@ -87,14 +97,18 @@ class DomainCoursesScreen extends ConsumerWidget {
                 ),
               ),
               if (courses.isEmpty)
-                const SliverFillRemaining(
+                SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
-                    child: Text(
-                      'Aucun cours vidéo dans ce domaine pour l’instant.\n'
-                      'Les UE de ta fac restent dans Ma Fac ; ici ce sont '
-                      'uniquement les ressources Apprendre.',
-                      textAlign: TextAlign.center,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        'Aucun cours vidéo dans ce domaine pour l’instant.\n'
+                        'Les UE de ta fac restent dans Ma Fac ; ici ce sont '
+                        'uniquement les ressources Apprendre.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: feed.meta, height: 1.4),
+                      ),
                     ),
                   ),
                 )

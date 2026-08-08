@@ -576,7 +576,7 @@ class _CommunityPublishScreenState
         elevation: 0,
         leading: IconButton(
           onPressed: (_loading || _mediaBusy) ? null : () => context.pop(),
-          icon: const Icon(Icons.close, color: AkadexColors.primary, size: 26),
+          icon: Icon(Icons.close, color: AkadexColors.primary, size: 26),
         ),
         title: Text(
           _isEditing ? 'Modifier la publication' : 'Nouvelle publication',
@@ -602,7 +602,7 @@ class _CommunityPublishScreenState
                       : null,
                   minHeight: 3,
                   backgroundColor: const Color(0xFFE7F3FF),
-                  color: TimelineTokens.likeActive,
+                  color: TimelineTokens.of(context).likeActive,
                 )
               : Container(height: 0.5, color: const Color(0xFFCED0D4)),
         ),
@@ -726,7 +726,7 @@ class _CommunityPublishScreenState
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: selected
-                                      ? TimelineTokens.likeActive
+                                      ? TimelineTokens.of(context).likeActive
                                       : const Color(0xFFCED0D4),
                                   width: selected ? 3 : 1,
                                 ),
@@ -1185,7 +1185,7 @@ class _CommunityPublishScreenState
             color: Colors.white,
             child: Container(
               padding: EdgeInsets.fromLTRB(12, 8, 12, 10 + bottomInset),
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(color: Color(0xFFCED0D4), width: 0.5),
                 ),
@@ -1228,7 +1228,7 @@ class _CommunityPublishScreenState
                           ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _canPublish
-                            ? TimelineTokens.likeActive
+                            ? TimelineTokens.of(context).likeActive
                             : const Color(0xFFE4E6EB),
                         disabledBackgroundColor: const Color(0xFFE4E6EB),
                         foregroundColor:
@@ -1298,7 +1298,7 @@ class _KindChip extends StatelessWidget {
                 icon,
                 size: 16,
                 color: selected
-                    ? TimelineTokens.likeActive
+                    ? TimelineTokens.of(context).likeActive
                     : const Color(0xFF050505),
               ),
               const SizedBox(width: 6),
@@ -1308,7 +1308,7 @@ class _KindChip extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: selected
-                      ? TimelineTokens.likeActive
+                      ? TimelineTokens.of(context).likeActive
                       : const Color(0xFF050505),
                 ),
               ),
@@ -1397,7 +1397,7 @@ class _MediaCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: selected
-                  ? Border.all(color: TimelineTokens.likeActive, width: 2)
+                  ? Border.all(color: TimelineTokens.of(context).likeActive, width: 2)
                   : null,
             ),
             child: Column(
@@ -1407,7 +1407,7 @@ class _MediaCard extends StatelessWidget {
                   icon,
                   size: 28,
                   color: selected
-                      ? TimelineTokens.likeActive
+                      ? TimelineTokens.of(context).likeActive
                       : const Color(0xFF050505),
                 ),
                 const SizedBox(height: 8),
@@ -1417,7 +1417,7 @@ class _MediaCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                     color: selected
-                        ? TimelineTokens.likeActive
+                        ? TimelineTokens.of(context).likeActive
                         : const Color(0xFF050505),
                   ),
                 ),

@@ -192,7 +192,7 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
                     : 'Document PDF',
                 style: TextStyle(
                   fontSize: TimelineTokens.metaSize,
-                  color: TimelineTokens.meta,
+                  color: TimelineTokens.of(context).meta,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -239,7 +239,7 @@ class _FallbackPreview extends StatelessWidget {
           if (pageCount > 0)
             Text(
               '$pageCount pages',
-              style: TextStyle(color: TimelineTokens.meta),
+              style: TextStyle(color: TimelineTokens.of(context).meta),
             ),
           const SizedBox(height: 8),
           FilledButton.tonal(

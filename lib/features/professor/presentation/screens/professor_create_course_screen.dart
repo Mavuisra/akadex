@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/widgets/file_drop_validator.dart';
+import '../../../../core/widgets/file_drop_zone.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -26,6 +28,19 @@ class _DraftLesson {
   final TextEditingController title;
   final TextEditingController videoUrl;
   String contentType = 'video';
+  List<int>? fileBytes;
+  String? fileName;
+  String? filePath;
+
+  bool get hasFile =>
+      (fileBytes != null && fileBytes!.isNotEmpty) ||
+      (fileName != null && fileName!.isNotEmpty);
+
+  void clearFile() {
+    fileBytes = null;
+    fileName = null;
+    filePath = null;
+  }
 
   void dispose() {
     title.dispose();
@@ -185,6 +200,14 @@ class _ProfessorCreateCourseScreenState
           );
           return;
         }
+        if (l.contentType != 'video' && !l.hasFile) {
+          setState(
+            () => _error =
+                'Module ${i + 1}, leçon ${j + 1} : ajoute un fichier '
+                '(glisser-déposer ou parcourir).',
+          );
+          return;
+        }
       }
     }
 
@@ -222,15 +245,18 @@ class _ProfessorCreateCourseScreenState
         });
         for (var j = 0; j < draft.lessons.length; j++) {
           final lesson = draft.lessons[j];
-          await repo.createLesson({
-            'module': int.tryParse(module.id) ?? module.id,
-            'title': lesson.title.text.trim(),
-            'description': '',
-            'content_type': lesson.contentType,
-            'order': j + 1,
-            'video_url': lesson.videoUrl.text.trim(),
-            'is_published': true,
-          });
+          await repo.createLessonMultipart(
+            moduleId: int.tryParse(module.id) ?? module.id,
+            title: lesson.title.text.trim(),
+            description: '',
+            contentType: lesson.contentType,
+            order: j + 1,
+            videoUrl: lesson.videoUrl.text.trim(),
+            isPublished: true,
+            fileBytes: lesson.fileBytes,
+            fileName: lesson.fileName,
+            filePath: lesson.filePath,
+          );
         }
       }
 
@@ -608,9 +634,27 @@ class _ProfessorCreateCourseScreenState
                     onAddLesson: () => _addLesson(mi),
                     onRemoveLesson: (li) => _removeLesson(mi, li),
                     onLessonType: (li, type) {
-                      setState(
-                        () => _modules[mi].lessons[li].contentType = type,
-                      );
+                      setState(() {
+                        final lesson = _modules[mi].lessons[li];
+                        lesson.contentType = type;
+                        if (type == 'video') {
+                          lesson.clearFile();
+                        } else {
+                          lesson.videoUrl.clear();
+                        }
+                      });
+                    },
+                    onLessonFile: (li, selection) {
+                      setState(() {
+                        final lesson = _modules[mi].lessons[li];
+                        if (selection == null) {
+                          lesson.clearFile();
+                        } else {
+                          lesson.fileBytes = selection.bytes;
+                          lesson.fileName = selection.name;
+                          lesson.filePath = selection.path;
+                        }
+                      });
                     },
                   ),
                 ],
@@ -736,6 +780,7 @@ class _ModuleBlock extends StatelessWidget {
     required this.onAddLesson,
     required this.onRemoveLesson,
     required this.onLessonType,
+    required this.onLessonFile,
   });
 
   final int index;
@@ -747,6 +792,8 @@ class _ModuleBlock extends StatelessWidget {
   final VoidCallback onAddLesson;
   final ValueChanged<int> onRemoveLesson;
   final void Function(int lessonIndex, String type) onLessonType;
+  final void Function(int lessonIndex, FileDropSelection? selection)
+      onLessonFile;
 
   static const _fbMuted = Color(0xFF65676B);
   static const _fbBlue = Color(0xFF0866FF);
@@ -813,6 +860,7 @@ class _ModuleBlock extends StatelessWidget {
               lessonTypes: lessonTypes,
               onRemove: () => onRemoveLesson(li),
               onType: (t) => onLessonType(li, t),
+              onFile: (selection) => onLessonFile(li, selection),
             ),
           ],
           const SizedBox(height: 8),
@@ -843,6 +891,7 @@ class _LessonBlock extends StatelessWidget {
     required this.lessonTypes,
     required this.onRemove,
     required this.onType,
+    required this.onFile,
   });
 
   final int index;
@@ -852,6 +901,7 @@ class _LessonBlock extends StatelessWidget {
   final List<(String, String, IconData)> lessonTypes;
   final VoidCallback onRemove;
   final ValueChanged<String> onType;
+  final ValueChanged<FileDropSelection?> onFile;
 
   static const _fbMuted = Color(0xFF65676B);
   static const _fbInk = Color(0xFF050505);
@@ -939,6 +989,16 @@ class _LessonBlock extends StatelessWidget {
                 'Lien vidéo (YouTube, Vimeo…)',
                 icon: Icons.videocam_outlined,
               ),
+            ),
+          ] else ...[
+            const SizedBox(height: 12),
+            FileDropZone(
+              allowedExtensions:
+                  FileDropValidator.extensionsForLessonType(lesson.contentType),
+              fileName: lesson.fileName,
+              fileSize: lesson.fileBytes?.length,
+              onChanged: onFile,
+              title: 'Glisser-déposer le fichier de la leçon',
             ),
           ],
         ],

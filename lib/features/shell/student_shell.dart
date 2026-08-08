@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/akadex_theme.dart';
+import '../../core/theme/timeline_tokens.dart';
 import '../../core/widgets/living_ui.dart';
 
 /// Navigation campus verrouillée pour tous :
@@ -23,19 +24,28 @@ class StudentShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PageAtmosphere(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: navigationShell,
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.94),
-            border: const Border(
-              top: BorderSide(color: AkadexColors.border, width: 0.6),
+            color: feed.cardBg.withValues(alpha: isDark ? 0.96 : 0.94),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? feed.divider : AkadexColors.border,
+                width: 0.6,
+              ),
             ),
             boxShadow: [
               BoxShadow(
-                color: AkadexColors.primary.withValues(alpha: 0.08),
+                color: (isDark
+                        ? AkadexColors.primaryOnDark
+                        : AkadexColors.primary)
+                    .withValues(alpha: isDark ? 0.12 : 0.08),
                 blurRadius: 18,
                 offset: const Offset(0, -4),
               ),
@@ -44,8 +54,10 @@ class StudentShell extends StatelessWidget {
           child: CupertinoTabBar(
             currentIndex: navigationShell.currentIndex,
             onTap: _onTap,
-            activeColor: AkadexColors.primary,
-            inactiveColor: AkadexColors.inkSoft,
+            activeColor: isDark
+                ? AkadexColors.primaryOnDark
+                : AkadexColors.primary,
+            inactiveColor: isDark ? feed.meta : AkadexColors.inkSoft,
             backgroundColor: Colors.transparent,
             border: Border.all(color: Colors.transparent),
             items: const [

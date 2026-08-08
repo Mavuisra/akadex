@@ -82,6 +82,8 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
   Widget build(BuildContext context) {
     final me = ref.watch(authStateProvider).valueOrNull;
     final commentsAsync = ref.watch(postCommentsProvider(_post.id));
+    final feed = TimelineTokens.of(context);
+    final primary = Theme.of(context).colorScheme.primary;
     final bg = StatusBackgrounds.resolveDisplayColor(
       content: _post.content,
       hasMedia: _post.hasMedia,
@@ -90,9 +92,10 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: feed.feedBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
@@ -102,7 +105,7 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: AkadexColors.primarySoft,
+              backgroundColor: feed.softTint,
               backgroundImage: _post.authorAvatarUrl.isNotEmpty
                   ? CachedNetworkImageProvider(_post.authorAvatarUrl)
                   : null,
@@ -111,9 +114,9 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                       _post.author.isEmpty
                           ? '?'
                           : _post.author[0].toUpperCase(),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AkadexColors.primary,
+                        color: primary,
                         fontSize: 12,
                       ),
                     )
@@ -126,17 +129,17 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                 children: [
                   Text(
                     _post.author,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 15,
-                      color: Color(0xFF050505),
+                      color: feed.ink,
                     ),
                   ),
                   Text(
                     '${timeAgo(_post.createdAt)} · Public',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: TimelineTokens.meta,
+                      color: feed.meta,
                     ),
                   ),
                 ],
@@ -165,10 +168,10 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     child: Text(
                       _post.content,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 17,
                         height: 1.4,
-                        color: Color(0xFF050505),
+                        color: feed.ink,
                       ),
                     ),
                   ),
@@ -177,22 +180,22 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                   child: Row(
                     children: [
                       if (_post.likes > 0) ...[
-                        const Icon(Icons.thumb_up,
-                            size: 16, color: TimelineTokens.likeActive),
+                        Icon(Icons.thumb_up,
+                            size: 16, color: feed.likeActive),
                         const SizedBox(width: 6),
                         Text('${_post.likes}',
-                            style: const TextStyle(color: TimelineTokens.meta)),
+                            style: TextStyle(color: feed.meta)),
                       ],
                       const Spacer(),
                       if (_post.comments > 0)
                         Text(
                           '${_post.comments} commentaires',
-                          style: const TextStyle(color: TimelineTokens.meta),
+                          style: TextStyle(color: feed.meta),
                         ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: feed.divider),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Row(
@@ -212,15 +215,15 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                                 ? Icons.thumb_up
                                 : Icons.thumb_up_outlined,
                             color: _post.isLiked
-                                ? TimelineTokens.likeActive
-                                : TimelineTokens.action,
+                                ? feed.likeActive
+                                : feed.action,
                           ),
                           label: Text(
                             'J’aime',
                             style: TextStyle(
                               color: _post.isLiked
-                                  ? TimelineTokens.likeActive
-                                  : TimelineTokens.action,
+                                  ? feed.likeActive
+                                  : feed.action,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -229,30 +232,37 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                       Expanded(
                         child: IconButton(
                           onPressed: () {},
-                          icon: const Icon(Icons.chat_bubble_outline,
-                              color: TimelineTokens.action),
+                          icon: Icon(Icons.chat_bubble_outline,
+                              color: feed.action),
                         ),
                       ),
                       Expanded(
                         child: TextButton.icon(
                           onPressed: () {},
-                          icon: const Icon(Icons.share_outlined,
-                              color: TimelineTokens.action),
-                          label: const Text('Partager',
-                              style: TextStyle(
-                                  color: TimelineTokens.action,
-                                  fontWeight: FontWeight.w700)),
+                          icon: Icon(Icons.share_outlined,
+                              color: feed.action),
+                          label: Text(
+                            'Partager',
+                            style: TextStyle(
+                              color: feed.action,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Divider(height: 1),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
+                Divider(height: 1, color: feed.divider),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Text(
                     'Commentaires',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      color: feed.ink,
+                    ),
                   ),
                 ),
                 commentsAsync.when(
@@ -262,15 +272,18 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                   ),
                   error: (e, _) => Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text(apiErrorMessage(e)),
+                    child: Text(
+                      apiErrorMessage(e),
+                      style: TextStyle(color: feed.ink),
+                    ),
                   ),
                   data: (list) {
                     if (list.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(24),
+                      return Padding(
+                        padding: const EdgeInsets.all(24),
                         child: Text(
                           'Aucun commentaire pour l’instant.',
-                          style: TextStyle(color: TimelineTokens.meta),
+                          style: TextStyle(color: feed.meta),
                         ),
                       );
                     }
@@ -280,28 +293,29 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                           ListTile(
                             leading: CircleAvatar(
                               radius: 18,
-                              backgroundColor: AkadexColors.primarySoft,
+                              backgroundColor: feed.softTint,
                               child: Text(
                                 c.author.isEmpty
                                     ? '?'
                                     : c.author[0].toUpperCase(),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w800,
-                                  color: AkadexColors.primary,
+                                  color: primary,
                                 ),
                               ),
                             ),
                             title: Text(
                               c.author,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.w800,
                                 fontSize: 14,
+                                color: feed.ink,
                               ),
                             ),
                             subtitle: Text(
                               c.content,
-                              style: const TextStyle(
-                                color: Color(0xFF050505),
+                              style: TextStyle(
+                                color: feed.ink,
                                 height: 1.35,
                               ),
                             ),
@@ -317,22 +331,22 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
           SafeArea(
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: Color(0xFFCED0D4))),
-                color: Colors.white,
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: feed.divider)),
+                color: feed.cardBg,
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 16,
-                    backgroundColor: AkadexColors.primarySoft,
+                    backgroundColor: feed.softTint,
                     child: Text(
                       (me?.name.isNotEmpty == true)
                           ? me!.name[0].toUpperCase()
                           : '?',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: AkadexColors.primary,
+                        color: primary,
                         fontSize: 12,
                       ),
                     ),
@@ -341,12 +355,14 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                   Expanded(
                     child: TextField(
                       controller: _comment,
+                      style: TextStyle(color: feed.ink),
                       decoration: InputDecoration(
                         hintText: me == null
                             ? 'Connecte-toi pour commenter'
                             : 'Commenter en tant que ${me.name.split(' ').first}…',
+                        hintStyle: TextStyle(color: feed.meta),
                         filled: true,
-                        fillColor: const Color(0xFFF0F2F5),
+                        fillColor: feed.commentBubble,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(22),
                           borderSide: BorderSide.none,
@@ -367,8 +383,7 @@ class _TextPostViewerScreenState extends ConsumerState<TextPostViewerScreen> {
                             height: 18,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.send_rounded,
-                            color: TimelineTokens.likeActive),
+                        : Icon(Icons.send_rounded, color: feed.likeActive),
                   ),
                 ],
               ),
@@ -458,14 +473,17 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
       context.push('/login');
       return;
     }
+    final feed = TimelineTokens.of(context);
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: feed.cardBg,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (ctx) {
+        final sheetFeed = TimelineTokens.of(ctx);
+        final primary = Theme.of(ctx).colorScheme.primary;
         return Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(ctx).bottom,
@@ -479,21 +497,22 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCED0D4),
+                    color: sheetFeed.divider,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'Commentaires',
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
+                      color: sheetFeed.ink,
                     ),
                   ),
                 ),
-                const Divider(height: 1),
+                Divider(height: 1, color: sheetFeed.divider),
                 Expanded(
                   child: Consumer(
                     builder: (context, ref, _) {
@@ -503,13 +522,18 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                         loading: () => const Center(
                           child: CupertinoActivityIndicator(),
                         ),
-                        error: (e, _) => Center(child: Text(apiErrorMessage(e))),
+                        error: (e, _) => Center(
+                          child: Text(
+                            apiErrorMessage(e),
+                            style: TextStyle(color: sheetFeed.ink),
+                          ),
+                        ),
                         data: (list) {
                           if (list.isEmpty) {
-                            return const Center(
+                            return Center(
                               child: Text(
                                 'Aucun commentaire pour l’instant.',
-                                style: TextStyle(color: TimelineTokens.meta),
+                                style: TextStyle(color: sheetFeed.meta),
                               ),
                             );
                           }
@@ -525,14 +549,14 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                                   children: [
                                     CircleAvatar(
                                       radius: 16,
-                                      backgroundColor: AkadexColors.primarySoft,
+                                      backgroundColor: sheetFeed.softTint,
                                       child: Text(
                                         c.author.isEmpty
                                             ? '?'
                                             : c.author[0].toUpperCase(),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w800,
-                                          color: AkadexColors.primary,
+                                          color: primary,
                                         ),
                                       ),
                                     ),
@@ -544,7 +568,7 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                                           vertical: 8,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: TimelineTokens.commentBubble,
+                                          color: sheetFeed.commentBubble,
                                           borderRadius:
                                               BorderRadius.circular(16),
                                         ),
@@ -554,13 +578,19 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                                           children: [
                                             Text(
                                               c.author,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontWeight: FontWeight.w700,
                                                 fontSize: 13,
+                                                color: sheetFeed.ink,
                                               ),
                                             ),
                                             const SizedBox(height: 2),
-                                            Text(c.content),
+                                            Text(
+                                              c.content,
+                                              style: TextStyle(
+                                                color: sheetFeed.ink,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -584,10 +614,12 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                         Expanded(
                           child: TextField(
                             controller: _comment,
+                            style: TextStyle(color: sheetFeed.ink),
                             decoration: InputDecoration(
                               hintText: 'Écrire un commentaire…',
+                              hintStyle: TextStyle(color: sheetFeed.meta),
                               filled: true,
-                              fillColor: const Color(0xFFF0F2F5),
+                              fillColor: sheetFeed.commentBubble,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(24),
                                 borderSide: BorderSide.none,
@@ -604,7 +636,7 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                         IconButton.filled(
                           onPressed: _sending ? null : _sendComment,
                           style: IconButton.styleFrom(
-                            backgroundColor: TimelineTokens.likeActive,
+                            backgroundColor: sheetFeed.likeActive,
                             foregroundColor: Colors.white,
                           ),
                           icon: _sending
@@ -648,7 +680,7 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                         placeholder: (_, _) => const CupertinoActivityIndicator(
                           color: Colors.white,
                         ),
-                        errorWidget: (_, _, _) => const Icon(
+                        errorWidget: (_, _, _) => Icon(
                           Icons.broken_image_outlined,
                           color: Colors.white54,
                           size: 64,
@@ -781,7 +813,7 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                                       ? Icons.thumb_up
                                       : Icons.thumb_up_outlined,
                                   color: _post.isLiked
-                                      ? TimelineTokens.likeActive
+                                      ? TimelineTokens.of(context).likeActive
                                       : Colors.white,
                                   size: 22,
                                 ),
@@ -790,7 +822,7 @@ class _MediaPostViewerScreenState extends ConsumerState<MediaPostViewerScreen> {
                                   '${_post.likes}',
                                   style: TextStyle(
                                     color: _post.isLiked
-                                        ? TimelineTokens.likeActive
+                                        ? TimelineTokens.of(context).likeActive
                                         : Colors.white,
                                     fontWeight: FontWeight.w700,
                                   ),

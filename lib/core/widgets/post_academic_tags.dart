@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/akadex_theme.dart';
+import '../theme/timeline_tokens.dart';
 import '../../domain/models/models.dart';
 
 /// Préfixes stockés dans `Post.tags` pour le contexte académique de la pub.
@@ -55,6 +55,7 @@ class PostAcademicTagsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final chips = PostAcademicTags.chipsFor(post);
     if (chips.isEmpty) return const SizedBox.shrink();
+    final feed = TimelineTokens.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
@@ -70,7 +71,7 @@ class PostAcademicTagsRow extends StatelessWidget {
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AkadexColors.primarySoft,
+                color: feed.softTint,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text.rich(
@@ -78,18 +79,18 @@ class PostAcademicTagsRow extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '${c.label} · ',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AkadexColors.primary,
+                        color: feed.linkBlue,
                       ),
                     ),
                     TextSpan(
                       text: c.value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF050505),
+                        color: feed.ink,
                       ),
                     ),
                   ],

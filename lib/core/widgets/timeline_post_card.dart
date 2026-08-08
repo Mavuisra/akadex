@@ -236,8 +236,10 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
         bottom: TimelineTokens.sectionGap,
       ),
       child: Material(
-        color: TimelineTokens.cardBg,
+        color: TimelineTokens.of(context).cardBg,
         elevation: 0,
+        borderRadius: BorderRadius.circular(TimelineTokens.cardRadius),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -272,60 +274,72 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _post.author,
-                          style: const TextStyle(
-                            fontSize: TimelineTokens.nameSize,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF050505),
-                            height: 1.2,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _post.author,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: TimelineTokens.nameSize,
+                                  fontWeight: FontWeight.w700,
+                                  color: TimelineTokens.of(context).ink,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ),
+                            if (_post.kindDisplay.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                _post.kindDisplay,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: TimelineTokens.of(context).linkBlue,
+                                ),
+                              ),
+                            ],
+                            if (_post.needsModerationBadge) ...[
+                              const SizedBox(width: 6),
+                              ModerationChip(status: _post.moderationStatus),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            Flexible(
+                            Expanded(
                               child: Text(
                                 _metaLine,
-                                style: const TextStyle(
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
                                   fontSize: TimelineTokens.metaSize,
-                                  color: TimelineTokens.meta,
+                                  color: TimelineTokens.of(context).meta,
                                   height: 1.25,
                                 ),
                               ),
                             ),
                             const SizedBox(width: 4),
-                            const Icon(
+                            Icon(
                               Icons.public,
                               size: 12,
-                              color: TimelineTokens.meta,
+                              color: TimelineTokens.of(context).meta,
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  if (_post.kindDisplay.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2, right: 4),
-                      child: Text(
-                        _post.kindDisplay,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: TimelineTokens.linkBlue,
-                        ),
-                      ),
-                    ),
-                  if (_post.needsModerationBadge || me?.id == _post.authorId)
-                    ModerationChip(status: _post.moderationStatus),
                   if (me != null && me.id == _post.authorId)
                     PopupMenuButton<String>(
                       tooltip: 'Options',
                       padding: EdgeInsets.zero,
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.more_horiz,
-                        color: TimelineTokens.meta,
+                        color: TimelineTokens.of(context).meta,
                       ),
                       onSelected: (value) {
                         if (value == 'edit') {
@@ -399,8 +413,8 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                     Container(
                       width: 18,
                       height: 18,
-                      decoration: const BoxDecoration(
-                        color: TimelineTokens.likeActive,
+                      decoration: BoxDecoration(
+                        color: TimelineTokens.of(context).likeActive,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -412,9 +426,9 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                     const SizedBox(width: 6),
                     Text(
                       '${_post.likes}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: TimelineTokens.meta,
+                        color: TimelineTokens.of(context).meta,
                       ),
                     ),
                   ],
@@ -424,16 +438,16 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                       onTap: () => setState(() => _showComposer = true),
                       child: Text(
                         '${_post.comments} commentaire${_post.comments > 1 ? 's' : ''}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          color: TimelineTokens.meta,
+                          color: TimelineTokens.of(context).meta,
                         ),
                       ),
                     ),
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 0.5, color: TimelineTokens.divider),
+            Divider(height: 1, thickness: 0.5, color: TimelineTokens.of(context).divider),
             SizedBox(
               height: TimelineTokens.actionHeight,
               child: Row(
@@ -444,7 +458,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                         : Icons.thumb_up_alt_outlined,
                     label: 'J’aime',
                     active: _post.isLiked,
-                    activeColor: TimelineTokens.likeActive,
+                    activeColor: TimelineTokens.of(context).likeActive,
                     onTap: _like,
                   ),
                   _Action(
@@ -475,7 +489,7 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                 ],
               ),
             ),
-            const Divider(height: 1, thickness: 0.5, color: TimelineTokens.divider),
+            Divider(height: 1, thickness: 0.5, color: TimelineTokens.of(context).divider),
             commentsAsync.when(
               loading: () => const SizedBox.shrink(),
               error: (_, _) => const SizedBox.shrink(),
@@ -500,8 +514,8 @@ class _TimelinePostCardState extends ConsumerState<TimelinePostCard> {
                           ),
                           child: Text(
                             'Voir les ${comments.length} commentaires',
-                            style: const TextStyle(
-                              color: TimelineTokens.meta,
+                            style: TextStyle(
+                              color: TimelineTokens.of(context).meta,
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                             ),
@@ -551,7 +565,7 @@ class _CommentBubble extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: TimelineTokens.commentBubble,
+                color: TimelineTokens.of(context).commentBubble,
                 borderRadius: BorderRadius.circular(TimelineTokens.commentRadius),
               ),
               child: Column(
@@ -559,19 +573,19 @@ class _CommentBubble extends StatelessWidget {
                 children: [
                   Text(
                     comment.author,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: Color(0xFF050505),
+                      color: TimelineTokens.of(context).ink,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     comment.content,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: TimelineTokens.commentSize,
                       height: 1.35,
-                      color: Color(0xFF050505),
+                      color: TimelineTokens.of(context).ink,
                     ),
                   ),
                 ],
@@ -613,7 +627,7 @@ class _FacebookCommentField extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              color: TimelineTokens.commentBubble,
+              color: TimelineTokens.of(context).commentBubble,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -625,10 +639,10 @@ class _FacebookCommentField extends StatelessWidget {
                     maxLines: 4,
                     textInputAction: TextInputAction.send,
                     onSubmitted: (_) => onSend(),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Écrire un commentaire…',
                       hintStyle: TextStyle(
-                        color: TimelineTokens.meta,
+                        color: TimelineTokens.of(context).meta,
                         fontSize: 14,
                       ),
                       border: InputBorder.none,
@@ -638,7 +652,7 @@ class _FacebookCommentField extends StatelessWidget {
                         vertical: 10,
                       ),
                     ),
-                    style: const TextStyle(fontSize: 14),
+                    style: TextStyle(fontSize: 14),
                   ),
                 ),
                 IconButton(
@@ -649,9 +663,9 @@ class _FacebookCommentField extends StatelessWidget {
                           height: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(
+                      : Icon(
                           Icons.send_rounded,
-                          color: TimelineTokens.likeActive,
+                          color: TimelineTokens.of(context).likeActive,
                           size: 22,
                         ),
                 ),
@@ -679,7 +693,7 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: size / 2,
-      backgroundColor: AkadexColors.primarySoft,
+      backgroundColor: TimelineTokens.of(context).softTint,
       backgroundImage: url.isNotEmpty ? CachedNetworkImageProvider(url) : null,
       child: url.isNotEmpty
           ? null
@@ -712,7 +726,7 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? activeColor : TimelineTokens.action;
+    final color = active ? activeColor : TimelineTokens.of(context).action;
     final iconOnly = label.trim().isEmpty;
     return Expanded(
       child: InkWell(
