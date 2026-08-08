@@ -257,9 +257,18 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- PawaPay (Mobile Money) ---
-# Token uniquement côté serveur (.env). Ne jamais le mettre dans Flutter.
-PAWAPAY_API_TOKEN = os.getenv('PAWAPAY_API_TOKEN', '')
-PAWAPAY_BASE_URL = os.getenv('PAWAPAY_BASE_URL', 'https://api.pawapay.io').rstrip('/')
-PAWAPAY_CURRENCY = os.getenv('PAWAPAY_CURRENCY', 'USD')
-PAWAPAY_COUNTRY = os.getenv('PAWAPAY_COUNTRY', 'COD')
+# Token uniquement côté serveur (.env / Render Environment).
+# Strip : évite espaces / guillemets collés depuis le dashboard.
+def _env_strip(key: str, default: str = '') -> str:
+    raw = os.getenv(key, default) or default
+    return raw.strip().strip('"').strip("'")
+
+
+PAWAPAY_API_TOKEN = _env_strip('PAWAPAY_API_TOKEN')
+PAWAPAY_BASE_URL = _env_strip(
+    'PAWAPAY_BASE_URL',
+    'https://api.pawapay.io',
+).rstrip('/')
+PAWAPAY_CURRENCY = _env_strip('PAWAPAY_CURRENCY', 'USD') or 'USD'
+PAWAPAY_COUNTRY = _env_strip('PAWAPAY_COUNTRY', 'COD') or 'COD'
 

@@ -1,5 +1,7 @@
 from decimal import Decimal
+import uuid
 
+from django.conf import settings
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,9 +17,38 @@ class ProvidersView(APIView):
     def get(self, request):
         return Response(
             [
-                {'key': key, 'label': meta['label'], 'correspondent': meta['correspondent']}
+                {
+                    'key': key,
+                    'label': meta['label'],
+                    'correspondent': meta['correspondent'],
+                }
                 for key, meta in PROVIDERS.items()
             ]
+        )
+
+
+class PaymentsHealthView(APIView):
+    """GET /api/payments/health/ — diagnostic sans exposer le token."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        token = (getattr(settings, 'PAWAPAY_API_TOKEN', '') or '').strip()
+        base = getattr(settings, 'PAWAPAY_BASE_URL', '')
+        return Response(
+            {
+                'ok': bool(token),
+                'pawapay_configured': bool(token),
+                'base_url': base,
+                'currency': getattr(settings, 'PAWAPAY_CURRENCY', 'USD'),
+                'country': getattr(settings, 'PAWAPAY_COUNTRY', 'COD'),
+                'hint': (
+                    None
+                    if token
+                    else 'Ajoute PAWAPAY_API_TOKEN dans Render → Environment, puis redeploy.'
+                ),
+            },
+            status=status.HTTP_200_OK if token else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
 
@@ -32,6 +63,20 @@ class InitiateDepositView(APIView):
         data = ser.validated_data
 
         client = PawaPayClient()
+        if not client.token:
+            return Response(
+                {
+                    'detail': (
+                        'PawaPay non configuré sur le serveur. '
+                        'Ajoute PAWAPAY_API_TOKEN dans Render → Environment '
+                        '(voir backend/.env.render), puis redéploie.'
+                    ),
+                    'error_code': 'PAWAPAY_NOT_CONFIGURED',
+                    'status': 'FAILED',
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
         provider_meta = PROVIDERS[data['provider']]
         deposit = CourseDeposit(
             user=request.user if request.user.is_authenticated else None,
@@ -42,11 +87,8 @@ class InitiateDepositView(APIView):
             correspondent=provider_meta['correspondent'],
             course_ids=data.get('course_ids') or [],
             status=CourseDeposit.Status.PENDING,
+            deposit_id=uuid.uuid4(),
         )
-        # deposit_id = PK PawaPay (UUID) — on le génère avant l’appel.
-        import uuid
-
-        deposit.deposit_id = uuid.uuid4()
         deposit.save()
 
         metadata = [
@@ -73,7 +115,9 @@ class InitiateDepositView(APIView):
         except PawaPayError as exc:
             deposit.status = CourseDeposit.Status.FAILED
             deposit.failure_message = str(exc)[:500]
-            deposit.pawapay_response = exc.payload if isinstance(exc.payload, dict) else {}
+            deposit.pawapay_response = (
+                exc.payload if isinstance(exc.payload, dict) else {}
+            )
             deposit.save(
                 update_fields=[
                     'status',
@@ -82,19 +126,31 @@ class InitiateDepositView(APIView):
                     'updated_at',
                 ]
             )
-            code = (
-                status.HTTP_503_SERVICE_UNAVAILABLE
-                if exc.status_code in (401, 403, 503)
-                else status.HTTP_400_BAD_REQUEST
-            )
+            if exc.status_code in (401, 403):
+                detail = (
+                    'Token PawaPay refusé (401/403). Vérifie PAWAPAY_API_TOKEN '
+                    'et PAWAPAY_BASE_URL (prod vs sandbox) sur Render.'
+                )
+                error_code = 'PAWAPAY_AUTH_FAILED'
+                http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+            elif exc.status_code == 503 or not client.token:
+                detail = str(exc)
+                error_code = 'PAWAPAY_UNAVAILABLE'
+                http_status = status.HTTP_503_SERVICE_UNAVAILABLE
+            else:
+                detail = str(exc)
+                error_code = 'PAWAPAY_REJECTED'
+                http_status = status.HTTP_400_BAD_REQUEST
+
             return Response(
                 {
-                    'detail': str(exc),
+                    'detail': detail,
+                    'error_code': error_code,
                     'deposit_id': str(deposit.deposit_id),
                     'status': deposit.status,
                     'pawapay': exc.payload,
                 },
-                status=code,
+                status=http_status,
             )
 
         pawapay_status = (result.get('status') or '').upper()
@@ -145,7 +201,11 @@ class DepositStatusView(APIView):
         except CourseDeposit.DoesNotExist:
             return Response({'detail': 'Dépôt introuvable.'}, status=404)
 
-        if deposit.user_id and deposit.user_id != request.user.id and not request.user.is_staff:
+        if (
+            deposit.user_id
+            and deposit.user_id != request.user.id
+            and not request.user.is_staff
+        ):
             return Response({'detail': 'Accès refusé.'}, status=403)
 
         client = PawaPayClient()
@@ -161,7 +221,6 @@ class DepositStatusView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        # Réponse v1 : souvent une liste [{ status, depositId, ... }]
         item = remote
         if isinstance(remote, list) and remote:
             item = remote[0]
@@ -189,7 +248,14 @@ class DepositStatusView(APIView):
         elif remote_status in ('ACCEPTED', 'SUBMITTED', 'PROCESSING', 'PENDING'):
             deposit.status = CourseDeposit.Status.ACCEPTED
 
-        deposit.save(update_fields=['status', 'pawapay_response', 'failure_message', 'updated_at'])
+        deposit.save(
+            update_fields=[
+                'status',
+                'pawapay_response',
+                'failure_message',
+                'updated_at',
+            ]
+        )
 
         return Response(
             {

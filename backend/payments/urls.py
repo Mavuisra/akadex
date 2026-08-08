@@ -1,8 +1,14 @@
 from django.urls import path
 
-from .views import DepositStatusView, InitiateDepositView, ProvidersView
+from .views import (
+    DepositStatusView,
+    InitiateDepositView,
+    PaymentsHealthView,
+    ProvidersView,
+)
 
 urlpatterns = [
+    path('payments/health/', PaymentsHealthView.as_view(), name='payment-health'),
     path('payments/providers/', ProvidersView.as_view(), name='payment-providers'),
     path('payments/deposits/', InitiateDepositView.as_view(), name='payment-deposit-create'),
     path(

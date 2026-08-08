@@ -74,7 +74,9 @@ class PawaPayClient:
             'PAWAPAY_BASE_URL',
             'https://api.pawapay.io',
         ).rstrip('/')
-        self.token = getattr(settings, 'PAWAPAY_API_TOKEN', '') or ''
+        self.token = (
+            getattr(settings, 'PAWAPAY_API_TOKEN', '') or ''
+        ).strip().strip('"').strip("'")
         self.currency = getattr(settings, 'PAWAPAY_CURRENCY', 'USD')
         self.country = getattr(settings, 'PAWAPAY_COUNTRY', 'COD')
 

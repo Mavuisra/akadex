@@ -101,6 +101,15 @@ class PaymentsRepository {
           'Connecte-toi pour payer avec Mobile Money (PawaPay).',
         );
       }
+      if (e.response?.statusCode == 503) {
+        final data = e.response?.data;
+        if (data is Map && data['detail'] != null) {
+          throw Exception(data['detail'].toString());
+        }
+        throw Exception(
+          'PawaPay indisponible (503). Vérifie PAWAPAY_API_TOKEN sur Render.',
+        );
+      }
       if (e.response?.statusCode == 404) {
         throw Exception(
           'Paiement indisponible sur le serveur. '
