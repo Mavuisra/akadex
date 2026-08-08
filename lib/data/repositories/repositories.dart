@@ -356,6 +356,74 @@ class AcademicRepository {
     return documentFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
+  /// Contribution étudiant avec fichier uploadé (Ma Fac / Bibliothèque).
+  Future<AcademicDocument> createDocumentMultipart({
+    required String title,
+    required String docType,
+    required Object universityId,
+    String description = '',
+    Object? departmentId,
+    String externalUrl = '',
+    String academicYear = '',
+    List<int>? fileBytes,
+    String? fileName,
+    String? filePath,
+  }) async {
+    final hasFile = (fileBytes != null && fileBytes.isNotEmpty) ||
+        (filePath != null && filePath.isNotEmpty);
+
+    if (!hasFile) {
+      return createDocument({
+        'title': title,
+        'description': description,
+        'doc_type': docType,
+        'university': universityId,
+        if (departmentId != null) 'department': departmentId,
+        'external_url': externalUrl,
+        if (academicYear.isNotEmpty) 'academic_year': academicYear,
+      });
+    }
+
+    MultipartFile? filePart;
+    final name = fileName ??
+        (filePath != null && filePath.isNotEmpty
+            ? filePath.split(RegExp(r'[\\/]')).last
+            : 'document.pdf');
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      filePart = MultipartFile.fromBytes(
+        fileBytes,
+        filename: name,
+        contentType: _mediaTypeFor(
+          name,
+          fallback: DioMediaType('application', 'octet-stream'),
+        ),
+      );
+    } else if (filePath != null && filePath.isNotEmpty) {
+      filePart = await MultipartFile.fromFile(
+        filePath,
+        filename: name,
+        contentType: _mediaTypeFor(
+          name,
+          fallback: DioMediaType('application', 'octet-stream'),
+        ),
+      );
+    }
+
+    final form = FormData.fromMap({
+      'title': title,
+      'description': description,
+      'doc_type': docType,
+      'university': universityId,
+      if (departmentId != null) 'department': departmentId,
+      'external_url': externalUrl,
+      if (academicYear.isNotEmpty) 'academic_year': academicYear,
+      if (filePart != null) 'file': filePart,
+    });
+
+    final res = await _dio.post('documents/', data: form);
+    return documentFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
   Future<Course> createCourse(Map<String, dynamic> data) async {
     final res = await _dio.post('courses/', data: data);
     final raw = Map<String, dynamic>.from(res.data as Map);
@@ -591,6 +659,74 @@ class AcademicRepository {
 
   Future<CourseLessonItem> createLesson(Map<String, dynamic> data) async {
     final res = await _dio.post('course-lessons/', data: data);
+    return lessonFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  /// Création de leçon avec fichier (PDF, diapos, TP…) → stockage S3 / local.
+  Future<CourseLessonItem> createLessonMultipart({
+    required Object moduleId,
+    required String title,
+    required String contentType,
+    required int order,
+    String description = '',
+    String videoUrl = '',
+    bool isPublished = true,
+    List<int>? fileBytes,
+    String? fileName,
+    String? filePath,
+  }) async {
+    final hasFile = (fileBytes != null && fileBytes.isNotEmpty) ||
+        (filePath != null && filePath.isNotEmpty);
+
+    if (!hasFile) {
+      return createLesson({
+        'module': moduleId,
+        'title': title,
+        'description': description,
+        'content_type': contentType,
+        'order': order,
+        'video_url': videoUrl,
+        'is_published': isPublished,
+      });
+    }
+
+    MultipartFile? filePart;
+    final name = fileName ??
+        (filePath != null && filePath.isNotEmpty
+            ? filePath.split(RegExp(r'[\\/]')).last
+            : 'lesson.pdf');
+    if (fileBytes != null && fileBytes.isNotEmpty) {
+      filePart = MultipartFile.fromBytes(
+        fileBytes,
+        filename: name,
+        contentType: _mediaTypeFor(
+          name,
+          fallback: DioMediaType('application', 'octet-stream'),
+        ),
+      );
+    } else if (filePath != null && filePath.isNotEmpty) {
+      filePart = await MultipartFile.fromFile(
+        filePath,
+        filename: name,
+        contentType: _mediaTypeFor(
+          name,
+          fallback: DioMediaType('application', 'octet-stream'),
+        ),
+      );
+    }
+
+    final form = FormData.fromMap({
+      'module': moduleId,
+      'title': title,
+      'description': description,
+      'content_type': contentType,
+      'order': order,
+      'video_url': videoUrl,
+      'is_published': isPublished,
+      if (filePart != null) 'file': filePart,
+    });
+
+    final res = await _dio.post('course-lessons/', data: form);
     return lessonFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
@@ -1095,5 +1231,20 @@ DioMediaType _mediaTypeFor(String filename, {required DioMediaType fallback}) {
     return DioMediaType('image', 'jpeg');
   }
   if (lower.endsWith('.pdf')) return DioMediaType('application', 'pdf');
+  if (lower.endsWith('.ppt')) return DioMediaType('application', 'vnd.ms-powerpoint');
+  if (lower.endsWith('.pptx')) {
+    return DioMediaType(
+      'application',
+      'vnd.openxmlformats-officedocument.presentationml.presentation',
+    );
+  }
+  if (lower.endsWith('.doc')) return DioMediaType('application', 'msword');
+  if (lower.endsWith('.docx')) {
+    return DioMediaType(
+      'application',
+      'vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+  }
+  if (lower.endsWith('.zip')) return DioMediaType('application', 'zip');
   return fallback;
 }
