@@ -19,6 +19,9 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+PROD_BASE = 'https://api.pawapay.io'
+SANDBOX_BASE = 'https://api.sandbox.pawapay.io'
+
 # Opérateurs RD Congo (COD) — codes correspondent PawaPay.
 PROVIDERS = {
     'vodacom_mpesa': {
@@ -68,17 +71,21 @@ def format_amount_usd(amount: float | str) -> str:
 
 
 class PawaPayClient:
+    """Client PawaPay avec détection auto sandbox/live si le token ne matche pas l’URL."""
+
+    _resolved_base: str | None = None
+
     def __init__(self) -> None:
-        self.base_url = getattr(
-            settings,
-            'PAWAPAY_BASE_URL',
-            'https://api.pawapay.io',
+        configured = (
+            getattr(settings, 'PAWAPAY_BASE_URL', '') or SANDBOX_BASE
         ).rstrip('/')
+        self.base_url = PawaPayClient._resolved_base or configured
         self.token = (
             getattr(settings, 'PAWAPAY_API_TOKEN', '') or ''
         ).strip().strip('"').strip("'")
         self.currency = getattr(settings, 'PAWAPAY_CURRENCY', 'USD')
         self.country = getattr(settings, 'PAWAPAY_COUNTRY', 'COD')
+        self.is_sandbox = 'sandbox' in self.base_url
 
     def _headers(self) -> dict[str, str]:
         if not self.token:
@@ -92,8 +99,16 @@ class PawaPayClient:
             'Accept': 'application/json',
         }
 
-    def _request(self, method: str, path: str, body: dict | None = None) -> dict:
-        url = f'{self.base_url}{path}'
+    def _request(
+        self,
+        method: str,
+        path: str,
+        body: dict | None = None,
+        *,
+        base_url: str | None = None,
+    ) -> dict:
+        root = (base_url or self.base_url).rstrip('/')
+        url = f'{root}{path}'
         data = None if body is None else json.dumps(body).encode('utf-8')
         req = urllib.request.Request(
             url,
@@ -119,10 +134,61 @@ class PawaPayClient:
             )
             if isinstance(payload.get('rejectionReason'), dict):
                 message = payload['rejectionReason'].get('rejectionMessage') or message
-            logger.warning('PawaPay %s %s → %s %s', method, path, exc.code, message)
+            logger.warning('PawaPay %s %s → %s %s', method, url, exc.code, message)
             raise PawaPayError(str(message), status_code=exc.code, payload=payload) from exc
         except urllib.error.URLError as exc:
             raise PawaPayError(f'Impossible de joindre PawaPay: {exc.reason}') from exc
+
+    def _candidate_bases(self) -> list[str]:
+        configured = (
+            getattr(settings, 'PAWAPAY_BASE_URL', '') or SANDBOX_BASE
+        ).rstrip('/')
+        # Toujours essayer d’abord l’URL configurée, puis l’autre environnement.
+        other = SANDBOX_BASE if 'sandbox' not in configured else PROD_BASE
+        ordered = [configured, other]
+        # Dédupliquer en gardant l’ordre.
+        seen: set[str] = set()
+        out: list[str] = []
+        for b in ordered:
+            if b not in seen:
+                seen.add(b)
+                out.append(b)
+        return out
+
+    def ensure_working_base(self) -> str:
+        """Choisit prod ou sandbox selon le token (évite le 401 permanent)."""
+        if PawaPayClient._resolved_base:
+            self.base_url = PawaPayClient._resolved_base
+            self.is_sandbox = 'sandbox' in self.base_url
+            return self.base_url
+
+        last_error: PawaPayError | None = None
+        for base in self._candidate_bases():
+            try:
+                self._request(
+                    'GET',
+                    '/v2/active-conf?country=COD&operationType=DEPOSIT',
+                    base_url=base,
+                )
+                PawaPayClient._resolved_base = base
+                self.base_url = base
+                self.is_sandbox = 'sandbox' in base
+                logger.info('PawaPay token accepté sur %s', base)
+                return base
+            except PawaPayError as exc:
+                last_error = exc
+                if exc.status_code not in (401, 403):
+                    # Autre erreur réseau : on arrête sur cette base.
+                    raise
+
+        raise PawaPayError(
+            'Token PawaPay refusé sur prod et sandbox (401/403). '
+            'Génère un token depuis le bon dashboard : '
+            'sandbox → dashboard.sandbox.pawapay.io, '
+            'live → dashboard.pawapay.io.',
+            status_code=401,
+            payload=last_error.payload if last_error else None,
+        )
 
     def request_deposit(
         self,
@@ -137,6 +203,8 @@ class PawaPayClient:
         provider = PROVIDERS.get(provider_key)
         if not provider:
             raise PawaPayError('Opérateur Mobile Money inconnu.')
+
+        self.ensure_working_base()
 
         msisdn = normalize_msisdn(phone)
         amount_str = format_amount_usd(amount)
@@ -167,7 +235,14 @@ class PawaPayClient:
         if metadata:
             body['metadata'] = metadata
 
-        return self._request('POST', '/deposits', body)
+        try:
+            return self._request('POST', '/deposits', body)
+        except PawaPayError as exc:
+            # Si l’URL résolue a changé côté PawaPay, on invalide le cache.
+            if exc.status_code in (401, 403):
+                PawaPayClient._resolved_base = None
+            raise
 
     def get_deposit(self, deposit_id: str) -> dict:
+        self.ensure_working_base()
         return self._request('GET', f'/deposits/{deposit_id}')

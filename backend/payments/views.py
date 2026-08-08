@@ -34,32 +34,44 @@ class PaymentsHealthView(APIView):
 
     def get(self, request):
         token = (getattr(settings, 'PAWAPAY_API_TOKEN', '') or '').strip()
-        base = getattr(settings, 'PAWAPAY_BASE_URL', '')
+        configured = getattr(settings, 'PAWAPAY_BASE_URL', '')
         looks_jwt = token.count('.') == 2 and token.startswith('eyJ')
+        resolved = None
+        auth_ok = False
+        if token:
+            try:
+                client = PawaPayClient()
+                resolved = client.ensure_working_base()
+                auth_ok = True
+            except PawaPayError:
+                auth_ok = False
+
         return Response(
             {
-                'ok': bool(token) and looks_jwt,
+                'ok': bool(token) and looks_jwt and auth_ok,
                 'pawapay_configured': bool(token),
                 'token_looks_like_jwt': looks_jwt,
-                'base_url': base,
+                'base_url_configured': configured,
+                'base_url_resolved': resolved,
+                'is_sandbox': bool(resolved and 'sandbox' in resolved),
                 'currency': getattr(settings, 'PAWAPAY_CURRENCY', 'USD'),
                 'country': getattr(settings, 'PAWAPAY_COUNTRY', 'COD'),
                 'hint': (
                     None
-                    if token and looks_jwt
+                    if auth_ok
                     else (
-                        'Ajoute le JWT PawaPay complet (commence par eyJ...) '
-                        'dans PAWAPAY_API_TOKEN.'
-                        if token and not looks_jwt
-                        else 'Ajoute PAWAPAY_API_TOKEN dans Render → Environment.'
+                        'Token refusé. Doc PawaPay : token sandbox → '
+                        'api.sandbox.pawapay.io ; token live → api.pawapay.io. '
+                        'Dashboards séparés : dashboard.sandbox.pawapay.io vs '
+                        'dashboard.pawapay.io.'
                     )
                 ),
                 'note': (
-                    'Si 401/403 : le token sandbox doit utiliser '
-                    'https://api.sandbox.pawapay.io (pas api.pawapay.io).'
+                    'Sandbox = pas de PIN réel sur téléphone. '
+                    'Live = vrai PIN (token production requis).'
                 ),
             },
-            status=status.HTTP_200_OK if token else status.HTTP_503_SERVICE_UNAVAILABLE,
+            status=status.HTTP_200_OK if auth_ok else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
 
