@@ -126,6 +126,15 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# --- Médias : disque local (dev) ou Supabase Storage S3 (prod) ---
+USE_S3_MEDIA = os.getenv('USE_S3_MEDIA', '').lower() in ('1', 'true', 'yes') or bool(
+    os.getenv('AWS_S3_ENDPOINT_URL')
+)
+
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
@@ -135,8 +144,48 @@ STORAGES = {
     },
 }
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+if USE_S3_MEDIA:
+    _supabase_project = os.getenv('SUPABASE_PROJECT_REF', 'eyjhscpbdimuqetkwway')
+    _bucket = os.getenv('AWS_STORAGE_BUCKET_NAME', 'akadex-media')
+    _bucket_public = os.getenv('SUPABASE_BUCKET_PUBLIC', 'False').lower() in (
+        '1',
+        'true',
+        'yes',
+    )
+
+    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', '')
+    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
+    AWS_STORAGE_BUCKET_NAME = _bucket
+    AWS_S3_ENDPOINT_URL = os.getenv(
+        'AWS_S3_ENDPOINT_URL',
+        f'https://{_supabase_project}.storage.supabase.co/storage/v1/s3',
+    )
+    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME', 'eu-west-1')
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'path'
+    AWS_DEFAULT_ACL = None
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
+
+    # Privé (recommandé) : URLs signées ~1 h renvoyées par l’API.
+    # Public : lien permanent /object/public/… (avatars visibles sans auth).
+    AWS_QUERYSTRING_AUTH = not _bucket_public
+    AWS_QUERYSTRING_EXPIRE = int(os.getenv('AWS_QUERYSTRING_EXPIRE', '3600'))
+
+    if _bucket_public:
+        MEDIA_URL = os.getenv(
+            'MEDIA_URL',
+            f'https://{_supabase_project}.supabase.co/storage/v1/object/public/{_bucket}/',
+        )
+    else:
+        MEDIA_URL = os.getenv(
+            'MEDIA_URL',
+            f'https://{_supabase_project}.supabase.co/storage/v1/object/authenticated/{_bucket}/',
+        )
+
+    STORAGES['default'] = {
+        'BACKEND': 'config.storage_backends.SupabaseMediaStorage',
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

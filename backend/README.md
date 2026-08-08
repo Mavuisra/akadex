@@ -58,6 +58,33 @@ URL production : **https://akadex.onrender.com**
 
 > Le plan free s’endort après inactivité (~50 s au réveil).
 
+### Stockage fichiers Supabase (recommandé sur Render)
+
+Le disque Render free est **éphémère** : avatars, PDF et pièces jointes disparaissent au redémarrage.
+Utilise **Supabase Storage** (protocole S3) :
+
+1. Supabase → **Storage** → crée un bucket **privé** `akadex-media` (recommandé)
+2. **Settings → Storage → S3** : active S3, copie Access Key / Secret / Endpoint / Region
+3. Render → **Environment** :
+
+| Clé | Valeur |
+|-----|--------|
+| `USE_S3_MEDIA` | `True` |
+| `SUPABASE_BUCKET_PUBLIC` | `False` |
+| `SUPABASE_PROJECT_REF` | `eyjhscpbdimuqetkwway` |
+| `AWS_STORAGE_BUCKET_NAME` | `akadex-media` |
+| `AWS_S3_ENDPOINT_URL` | `https://eyjhscpbdimuqetkwway.storage.supabase.co/storage/v1/s3` |
+| `AWS_S3_REGION_NAME` | `eu-west-1` |
+| `AWS_QUERYSTRING_EXPIRE` | `3600` |
+| `AWS_ACCESS_KEY_ID` | *(secret — dashboard Supabase)* |
+| `AWS_SECRET_ACCESS_KEY` | *(secret — dashboard Supabase)* |
+
+Avec un bucket **privé**, l’API renvoie des **URLs signées** (valides ~1 h) : l’app Flutter les ouvre normalement, sans exposer les fichiers au public.
+
+4. Redéploie l’API Render.
+
+Voir aussi `backend/.env.example` pour le développement local (`backend/.env`, gitignored).
+
 ---
 
 ## Démarrage rapide (local)
