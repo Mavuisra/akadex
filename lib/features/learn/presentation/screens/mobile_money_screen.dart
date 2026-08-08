@@ -239,6 +239,29 @@ class _MobileMoneyScreenState extends ConsumerState<MobileMoneyScreen> {
                       height: 1.35,
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: feed.softTint,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: feed.divider),
+                    ),
+                    child: Text(
+                      'Mode sandbox PawaPay : aucun SMS / PIN réel n’est envoyé '
+                      'sur un vrai téléphone. Le paiement est simulé et peut '
+                      'passer en « initié / COMPLETED » sans notification. '
+                      'Pour un vrai PIN, il faut un token live + '
+                      'PAWAPAY_BASE_URL=https://api.pawapay.io.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: feed.meta,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   if (_failed && _statusMessage.isNotEmpty) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -450,7 +473,9 @@ class _SuccessBody extends StatelessWidget {
             '$message\n\n'
             '${provider.label} · $amountLabel · $courseCount cours\n'
             '$phone'
-            '${depositId.isNotEmpty ? '\nRéf. $depositId' : ''}',
+            '${depositId.isNotEmpty ? '\nRéf. $depositId' : ''}\n\n'
+            'Sandbox : pas de PIN réel sur le téléphone. '
+            'Le statut peut être COMPLETED automatiquement.',
             textAlign: TextAlign.center,
             style: TextStyle(color: feed.meta, height: 1.4),
           ),
