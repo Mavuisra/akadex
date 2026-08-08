@@ -35,17 +35,28 @@ class PaymentsHealthView(APIView):
     def get(self, request):
         token = (getattr(settings, 'PAWAPAY_API_TOKEN', '') or '').strip()
         base = getattr(settings, 'PAWAPAY_BASE_URL', '')
+        looks_jwt = token.count('.') == 2 and token.startswith('eyJ')
         return Response(
             {
-                'ok': bool(token),
+                'ok': bool(token) and looks_jwt,
                 'pawapay_configured': bool(token),
+                'token_looks_like_jwt': looks_jwt,
                 'base_url': base,
                 'currency': getattr(settings, 'PAWAPAY_CURRENCY', 'USD'),
                 'country': getattr(settings, 'PAWAPAY_COUNTRY', 'COD'),
                 'hint': (
                     None
-                    if token
-                    else 'Ajoute PAWAPAY_API_TOKEN dans Render → Environment, puis redeploy.'
+                    if token and looks_jwt
+                    else (
+                        'Ajoute le JWT PawaPay complet (commence par eyJ...) '
+                        'dans PAWAPAY_API_TOKEN.'
+                        if token and not looks_jwt
+                        else 'Ajoute PAWAPAY_API_TOKEN dans Render → Environment.'
+                    )
+                ),
+                'note': (
+                    'Si 401/403 : le token sandbox doit utiliser '
+                    'https://api.sandbox.pawapay.io (pas api.pawapay.io).'
                 ),
             },
             status=status.HTTP_200_OK if token else status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -128,8 +139,10 @@ class InitiateDepositView(APIView):
             )
             if exc.status_code in (401, 403):
                 detail = (
-                    'Token PawaPay refusé (401/403). Vérifie PAWAPAY_API_TOKEN '
-                    'et PAWAPAY_BASE_URL (prod vs sandbox) sur Render.'
+                    'Token PawaPay refusé (401/403). '
+                    'Ton token est probablement sandbox : mets '
+                    'PAWAPAY_BASE_URL=https://api.sandbox.pawapay.io sur Render '
+                    '(api.pawapay.io = live uniquement).'
                 )
                 error_code = 'PAWAPAY_AUTH_FAILED'
                 http_status = status.HTTP_503_SERVICE_UNAVAILABLE

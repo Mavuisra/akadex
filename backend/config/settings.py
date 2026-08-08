@@ -265,9 +265,10 @@ def _env_strip(key: str, default: str = '') -> str:
 
 
 PAWAPAY_API_TOKEN = _env_strip('PAWAPAY_API_TOKEN')
+# Défaut sandbox : les tokens dashboard démo/sandbox refusent api.pawapay.io (401).
 PAWAPAY_BASE_URL = _env_strip(
     'PAWAPAY_BASE_URL',
-    'https://api.pawapay.io',
+    'https://api.sandbox.pawapay.io',
 ).rstrip('/')
 PAWAPAY_CURRENCY = _env_strip('PAWAPAY_CURRENCY', 'USD') or 'USD'
 PAWAPAY_COUNTRY = _env_strip('PAWAPAY_COUNTRY', 'COD') or 'COD'
