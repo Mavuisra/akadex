@@ -63,7 +63,7 @@ URL production : **https://akadex.onrender.com**
 Le disque Render free est **éphémère** : avatars, PDF et pièces jointes disparaissent au redémarrage.
 Utilise **Supabase Storage** (protocole S3) :
 
-1. Supabase → **Storage** → crée un bucket **privé** `akadex-media` (recommandé)
+1. Supabase → **Storage** → bucket **privé** (ex. `course-videos-pdfs`)
 2. **Settings → Storage → S3** : active S3, copie Access Key / Secret / Endpoint / Region
 3. Render → **Environment** :
 
@@ -72,7 +72,7 @@ Utilise **Supabase Storage** (protocole S3) :
 | `USE_S3_MEDIA` | `True` |
 | `SUPABASE_BUCKET_PUBLIC` | `False` |
 | `SUPABASE_PROJECT_REF` | `eyjhscpbdimuqetkwway` |
-| `AWS_STORAGE_BUCKET_NAME` | `akadex-media` |
+| `AWS_STORAGE_BUCKET_NAME` | `course-videos-pdfs` |
 | `AWS_S3_ENDPOINT_URL` | `https://eyjhscpbdimuqetkwway.storage.supabase.co/storage/v1/s3` |
 | `AWS_S3_REGION_NAME` | `eu-west-1` |
 | `AWS_QUERYSTRING_EXPIRE` | `3600` |

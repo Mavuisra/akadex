@@ -35,7 +35,7 @@ services:
       - key: SUPABASE_PROJECT_REF
         value: "eyjhscpbdimuqetkwway"
       - key: AWS_STORAGE_BUCKET_NAME
-        value: "akadex-media"
+        value: "course-videos-pdfs"
       - key: AWS_S3_ENDPOINT_URL
         value: "https://eyjhscpbdimuqetkwway.storage.supabase.co/storage/v1/s3"
       - key: AWS_S3_REGION_NAME

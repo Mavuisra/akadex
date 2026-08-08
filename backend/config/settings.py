@@ -146,7 +146,7 @@ STORAGES = {
 
 if USE_S3_MEDIA:
     _supabase_project = os.getenv('SUPABASE_PROJECT_REF', 'eyjhscpbdimuqetkwway')
-    _bucket = os.getenv('AWS_STORAGE_BUCKET_NAME', 'akadex-media')
+    _bucket = os.getenv('AWS_STORAGE_BUCKET_NAME', 'course-videos-pdfs')
     _bucket_public = os.getenv('SUPABASE_BUCKET_PUBLIC', 'False').lower() in (
         '1',
         'true',
