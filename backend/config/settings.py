@@ -74,7 +74,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -127,6 +127,14 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+# Liens boutiques (landing /). Play Store : fallback GitHub Releases tant que non publié.
+PLAY_STORE_URL = os.getenv(
+    'PLAY_STORE_URL',
+    'https://github.com/Mavuisra/akadex/releases',
+).strip()
+APP_STORE_URL = os.getenv('APP_STORE_URL', '').strip()
 
 # --- Médias : disque local (dev) ou Supabase Storage S3 (prod) ---
 USE_S3_MEDIA = os.getenv('USE_S3_MEDIA', '').lower() in ('1', 'true', 'yes') or bool(
