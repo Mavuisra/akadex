@@ -4,7 +4,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1a5cff" id="meta-theme-color">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0056d2" id="meta-theme-color">
   <title>Akadex — Campus universitaire dans votre poche</title>
   <meta name="description" content="Akadex : cours, documents, communauté campus et paiement Mobile Money pour les étudiants et enseignants en RDC.">
   <link rel="icon" href="{% static 'landing/logo.png' %}" type="image/png">
@@ -23,36 +25,40 @@
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root,
     html[data-theme="light"] {
-      --ink: #0b1f3a;
-      --ink-soft: #3a4d66;
-      --muted: #5c6f88;
-      --paper: #f4f8fc;
-      --surface: rgba(255, 255, 255, 0.72);
-      --white: #ffffff;
-      --blue: #1a5cff;
-      --blue-deep: #0d3eb8;
-      --sky: #d6e6ff;
-      --line: rgba(11, 31, 58, 0.12);
-      --radius: 6px;
-      --radius-btn: 6px;
-      --radius-logo: 8px;
-      --shadow: 0 12px 32px rgba(13, 62, 184, 0.1);
-      --bg-1: #c7dbff;
-      --bg-2: #e8f1ff;
-      --bg-3: #eef4fb;
-      --bg-4: #e8eff8;
-      --store-dark: #0b1f3a;
-      --store-dark-hover: #152a4a;
-      --theme-btn-bg: rgba(11, 31, 58, 0.06);
-      --theme-btn-border: rgba(11, 31, 58, 0.12);
-      --theme-color: #1a5cff;
-      --download-grad: linear-gradient(135deg, #0d3eb8 0%, #1a5cff 55%, #3d7aef 100%);
-      --hero-glow: rgba(26, 92, 255, 0.22);
-      --pad-x: clamp(0.85rem, 4vw, 1.25rem);
+      --ink: #1f1f1f;
+      --ink-soft: #382d2d;
+      --muted: #636363;
+      --paper: #f3f6fb;
+      --band: #eef2f8;
+      --band-blue: rgba(232, 240, 254, 0.55);
+      --surface: rgba(255, 255, 255, 0.55);
+      --surface-solid: #ffffff;
+      --blue: #0056d2;
+      --blue-hover: #00419e;
+      --line: rgba(0, 0, 0, 0.1);
+      --line-soft: rgba(0, 0, 0, 0.06);
+      --radius: 4px;
+      --radius-md: 6px;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-card: 0 8px 32px rgba(15, 40, 80, 0.08);
+      --nav-bg: rgba(255, 255, 255, 0.62);
+      --footer-bg: rgba(245, 247, 250, 0.72);
+      --theme-btn-bg: rgba(255, 255, 255, 0.45);
+      --theme-btn-border: rgba(0, 0, 0, 0.1);
+      --theme-color: #0056d2;
+      --chip-bg: rgba(232, 240, 254, 0.7);
+      --chip-fg: #0056d2;
+      --glass: rgba(255, 255, 255, 0.42);
+      --glass-strong: rgba(255, 255, 255, 0.58);
+      --glass-border: rgba(255, 255, 255, 0.55);
+      --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+      --blur: 22px;
+      --saturate: 180%;
+      --pad-x: clamp(0.9rem, 4.2vw, 1.5rem);
       --safe-t: env(safe-area-inset-top, 0px);
       --safe-b: env(safe-area-inset-bottom, 0px);
       --safe-l: env(safe-area-inset-left, 0px);
@@ -61,30 +67,32 @@
 
     html[data-theme="dark"] {
       --ink: #e0e0e0;
-      --ink-soft: #a8a8a8;
-      --muted: #888888;
-      --paper: #121212;
-      --surface: #1e1e1e;
-      --white: #e8e8e8;
+      --ink-soft: #c2c2c2;
+      --muted: #8a8a8a;
+      --paper: #0e0e10;
+      --band: #141416;
+      --band-blue: rgba(26, 31, 40, 0.55);
+      --surface: rgba(30, 30, 32, 0.55);
+      --surface-solid: #1e1e1e;
       --blue: #4a7cce;
-      --blue-deep: #6b95d4;
-      --sky: #1a2333;
-      --line: #2e2e2e;
-      --radius: 5px;
-      --radius-btn: 5px;
-      --radius-logo: 6px;
-      --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-      --bg-1: #161616;
-      --bg-2: #141414;
-      --bg-3: #121212;
-      --bg-4: #101010;
-      --store-dark: #252525;
-      --store-dark-hover: #2f2f2f;
-      --theme-btn-bg: #1e1e1e;
-      --theme-btn-border: #333333;
+      --blue-hover: #6b95d4;
+      --line: rgba(255, 255, 255, 0.1);
+      --line-soft: rgba(255, 255, 255, 0.06);
+      --shadow: none;
+      --shadow-card: 0 10px 36px rgba(0, 0, 0, 0.35);
+      --nav-bg: rgba(18, 18, 20, 0.55);
+      --footer-bg: rgba(16, 16, 18, 0.72);
+      --theme-btn-bg: rgba(40, 40, 44, 0.45);
+      --theme-btn-border: rgba(255, 255, 255, 0.12);
       --theme-color: #121212;
-      --download-grad: linear-gradient(135deg, #1a2333 0%, #243044 55%, #2a3a52 100%);
-      --hero-glow: rgba(74, 124, 206, 0.12);
+      --chip-bg: rgba(26, 35, 51, 0.65);
+      --chip-fg: #6b95d4;
+      --glass: rgba(28, 28, 32, 0.42);
+      --glass-strong: rgba(36, 36, 42, 0.58);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      --blur: 28px;
+      --saturate: 160%;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -97,598 +105,889 @@
     }
 
     body {
-      font-family: "DM Sans", system-ui, sans-serif;
+      font-family: "Source Sans 3", system-ui, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(1200px 600px at 85% -10%, var(--bg-1) 0%, transparent 55%),
-        radial-gradient(900px 500px at -10% 20%, var(--bg-2) 0%, transparent 50%),
-        linear-gradient(180deg, var(--bg-3) 0%, var(--paper) 40%, var(--bg-4) 100%);
-      min-height: 100vh;
-      min-height: 100dvh;
+        radial-gradient(900px 480px at 100% -10%, rgba(0, 86, 210, 0.14), transparent 55%),
+        radial-gradient(700px 420px at -10% 30%, rgba(74, 124, 206, 0.1), transparent 50%),
+        var(--paper);
       line-height: 1.5;
       overflow-x: hidden;
-      padding-top: var(--safe-t);
-      padding-bottom: var(--safe-b);
+      min-height: 100dvh;
       padding-left: var(--safe-l);
       padding-right: var(--safe-r);
-      transition: background 0.35s ease, color 0.25s ease;
+      padding-bottom: var(--safe-b);
+      -webkit-font-smoothing: antialiased;
     }
 
     html[data-theme="dark"] body {
-      background: var(--paper);
+      background:
+        radial-gradient(800px 420px at 90% -5%, rgba(74, 124, 206, 0.12), transparent 55%),
+        radial-gradient(600px 380px at 0% 40%, rgba(255, 255, 255, 0.03), transparent 50%),
+        var(--paper);
     }
 
-    img, svg { max-width: 100%; height: auto; display: block; }
-
+    img { max-width: 100%; display: block; height: auto; }
     a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
 
     .wrap {
-      width: min(1120px, calc(100% - (var(--pad-x) * 2)));
+      width: min(1160px, calc(100% - var(--pad-x) * 2));
       margin-inline: auto;
     }
 
-    /* —— Nav —— */
-    .nav {
+    /* —— Glass utility —— */
+    .glass {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine), var(--shadow-card);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+    }
+
+    /* —— Top bar —— */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--glass-border);
+      padding-top: var(--safe-t);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(calc(var(--blur) + 8px));
+      backdrop-filter: saturate(var(--saturate)) blur(calc(var(--blur) + 8px));
+      box-shadow: var(--glass-shine);
+    }
+
+    .topbar-inner {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0.85rem 0 0.65rem;
       gap: 0.75rem;
+      min-height: 56px;
+      padding: 0.45rem 0;
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 0.55rem;
+      gap: 0.5rem;
+      flex-shrink: 0;
       min-width: 0;
     }
 
     .brand img {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-logo);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
       flex-shrink: 0;
     }
 
     .brand span {
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(1.2rem, 4.5vw, 1.45rem);
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      font-size: clamp(1.15rem, 4vw, 1.35rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--blue);
     }
 
-    .nav-links {
+    .nav-main {
       display: flex;
       align-items: center;
-      gap: clamp(0.65rem, 2.5vw, 1.25rem);
-      font-size: clamp(0.82rem, 2.8vw, 0.95rem);
-      font-weight: 500;
-      color: var(--ink-soft);
-      flex-shrink: 0;
+      gap: 1.1rem;
+      margin-left: 0.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
     }
 
-    .nav-links a {
-      padding: 0.35rem 0.15rem;
+    .nav-main a {
       min-height: 44px;
       display: inline-flex;
       align-items: center;
     }
 
-    .nav-links a:hover { color: var(--blue); }
+    .nav-main a:hover { color: var(--blue); }
+
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      flex-shrink: 0;
+    }
 
     .theme-toggle {
       width: 40px;
       height: 40px;
-      border-radius: var(--radius-btn);
+      border-radius: var(--radius);
       border: 1px solid var(--theme-btn-border);
       background: var(--theme-btn-bg);
       color: var(--ink);
-      display: inline-grid;
+      display: grid;
       place-items: center;
       cursor: pointer;
-      flex-shrink: 0;
-      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
+      backdrop-filter: saturate(var(--saturate)) blur(14px);
+      box-shadow: var(--glass-shine);
       -webkit-tap-highlight-color: transparent;
     }
 
-    .theme-toggle:hover { transform: translateY(-1px); }
-
-    .theme-toggle:focus-visible {
-      outline: 2px solid var(--blue);
-      outline-offset: 2px;
-    }
-
-    .theme-toggle svg { width: 20px; height: 20px; }
-
+    .theme-toggle svg { width: 18px; height: 18px; }
     html[data-theme="light"] .theme-toggle .icon-sun { display: none; }
     html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      min-height: 44px;
+      padding: 0.55rem 1.1rem;
+      border-radius: var(--radius);
+      font-weight: 700;
+      font-size: 0.95rem;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--blue-hover); }
+
+    .btn-outline {
+      background: var(--glass);
+      color: var(--blue);
+      border-color: color-mix(in srgb, var(--blue) 45%, transparent);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
+      backdrop-filter: saturate(var(--saturate)) blur(14px);
+      box-shadow: var(--glass-shine);
+    }
+
+    .btn-outline:hover { background: var(--glass-strong); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--blue);
+      font-weight: 700;
+      border: none;
+      padding: 0.4rem 0.5rem;
+    }
+
     /* —— Hero —— */
     .hero {
+      background: var(--band-blue);
+      padding: clamp(1.5rem, 5vw, 3.5rem) 0 clamp(2rem, 6vw, 4rem);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
+      backdrop-filter: saturate(var(--saturate)) blur(12px);
+    }
+
+    .hero-grid {
       display: grid;
       grid-template-columns: 1.05fr 0.95fr;
-      gap: clamp(1.25rem, 3vw, 2.5rem);
+      gap: 2rem;
       align-items: center;
-      padding: 1rem 0 clamp(2rem, 5vw, 3.5rem);
-      min-height: calc(100svh - 5rem);
     }
 
-    .hero-copy h1 {
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(2.15rem, 8vw, 4.1rem);
-      font-weight: 700;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-      margin-bottom: 0.3rem;
+    .eyebrow {
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--blue);
+      margin-bottom: 0.75rem;
     }
 
-    .hero-copy .tagline {
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(1.05rem, 4.2vw, 1.7rem);
-      font-weight: 600;
-      color: var(--blue-deep);
-      margin-bottom: 0.85rem;
+    .hero h1 {
+      font-size: clamp(1.85rem, 4.5vw, 2.85rem);
+      line-height: 1.15;
+      font-weight: 800;
       letter-spacing: -0.02em;
-      text-wrap: balance;
+      margin-bottom: 1rem;
+      max-width: 18ch;
     }
 
-    .hero-copy p.lead {
-      font-size: clamp(0.95rem, 3.4vw, 1.08rem);
+    .hero .lead {
+      font-size: 1.05rem;
       color: var(--ink-soft);
-      max-width: 34rem;
-      margin-bottom: 1.35rem;
-      text-wrap: pretty;
+      max-width: 36rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .hero-note {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .hero-note a { color: var(--blue); font-weight: 600; }
+
+    .hero-visual {
+      display: flex;
+      justify-content: center;
+    }
+
+    .hero-visual img {
+      width: min(100%, 440px);
+      filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.12));
+    }
+
+    html[data-theme="dark"] .hero-visual img {
+      filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)) brightness(0.92);
+    }
+
+    /* —— Trust —— */
+    .trust {
+      padding: 2rem 0;
+      border-bottom: 1px solid var(--line-soft);
+      text-align: center;
+    }
+
+    .trust h2 {
+      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      color: var(--ink);
+    }
+
+    .trust-logos {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem 1.5rem;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.92rem;
+    }
+
+    .trust-logos span {
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      background: var(--glass);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
+      backdrop-filter: saturate(var(--saturate)) blur(14px);
+      box-shadow: var(--glass-shine);
+    }
+
+    /* —— Features —— */
+    .section { padding: clamp(2.5rem, 6vw, 4rem) 0; }
+    .section.alt { background: color-mix(in srgb, var(--band) 72%, transparent); }
+    .section.blueish { background: var(--band-blue); }
+
+    .section-title {
+      font-size: clamp(1.45rem, 3.5vw, 2rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+      max-width: 40rem;
+    }
+
+    .section-title.center {
+      text-align: center;
+      margin-inline: auto;
+      margin-bottom: 2rem;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .feature h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin: 0.75rem 0 0.4rem;
+    }
+
+    .feature p { color: var(--ink-soft); font-size: 0.98rem; }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      color: var(--ink);
+    }
+
+    /* —— Social proof —— */
+    .proof-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .proof-copy h2 {
+      font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+    }
+
+    .proof-visual {
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      aspect-ratio: 4 / 3;
+      position: relative;
+      box-shadow: var(--glass-shine), var(--shadow-card);
+    }
+
+    .proof-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+    }
+
+    html[data-theme="dark"] .proof-visual img {
+      filter: brightness(0.88) contrast(1.05);
+    }
+
+    /* —— Catalog —— */
+    .catalog-panel {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: clamp(1.1rem, 3vw, 2rem);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      box-shadow: var(--glass-shine), var(--shadow-card);
+    }
+
+    .catalog-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: 1.25rem;
+    }
+
+    .catalog-head h2 {
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 800;
+      max-width: 16ch;
+      letter-spacing: -0.02em;
+    }
+
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .course-card {
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(16px);
+      backdrop-filter: saturate(var(--saturate)) blur(16px);
+      box-shadow: var(--glass-shine), var(--shadow);
+    }
+
+    .course-card .thumb {
+      height: 140px;
+      position: relative;
+      overflow: hidden;
+      background: #1a1a1a;
+    }
+
+    .course-card .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .course-card .thumb::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 55%);
+      pointer-events: none;
+    }
+
+    html[data-theme="dark"] .course-card .thumb img {
+      filter: brightness(0.82) contrast(1.05);
+    }
+
+    .course-card .body { padding: 0.9rem 1rem 1.1rem; }
+
+    .course-card .meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .course-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+      line-height: 1.3;
+    }
+
+    .course-card .level {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .course-card .badge {
+      display: inline-block;
+      margin-top: 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--chip-bg);
+      padding: 0.2rem 0.45rem;
+      border-radius: var(--radius);
+    }
+
+    .catalog-actions { text-align: center; }
+
+    /* —— Search / domains —— */
+    .search-block { text-align: center; max-width: 760px; margin-inline: auto; }
+
+    .search-block h2 {
+      font-size: clamp(1.4rem, 3.5vw, 1.9rem);
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: stretch;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      background: var(--glass-strong);
+      overflow: hidden;
+      margin-bottom: 1.15rem;
+      box-shadow: var(--glass-shine), var(--shadow);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(18px);
+      backdrop-filter: saturate(var(--saturate)) blur(18px);
+    }
+
+    .search-box span {
+      display: grid;
+      place-items: center;
+      padding: 0 0.85rem;
+      color: var(--muted);
+    }
+
+    .search-box input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 1rem;
+      padding: 0.85rem 0.25rem;
+      min-width: 0;
+    }
+
+    .search-box button {
+      width: 52px;
+      border: 0;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      background: var(--glass);
+      color: var(--chip-fg);
+      border: 1px solid var(--glass-border);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
+      backdrop-filter: saturate(var(--saturate)) blur(12px);
+      box-shadow: var(--glass-shine);
+    }
+
+    .chip.pop {
+      background: var(--glass-strong);
+      color: var(--ink);
+      border-color: var(--line);
+    }
+
+    /* —— Testimonials —— */
+    .quotes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .quote {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 1.15rem;
+      box-shadow: var(--glass-shine), var(--shadow);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(18px);
+      backdrop-filter: saturate(var(--saturate)) blur(18px);
+    }
+
+    .quote-top {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--chip-bg);
+      color: var(--blue);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    .quote strong { display: block; font-size: 0.95rem; }
+    .quote .role { font-size: 0.8rem; color: var(--muted); }
+    .quote p { color: var(--ink-soft); font-size: 0.95rem; }
+
+    /* —— FAQ —— */
+    .faq-box {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--glass-shine), var(--shadow);
+      overflow: hidden;
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+    }
+
+    details {
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    details:last-of-type { border-bottom: 0; }
+
+    summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 1.1rem 1.15rem;
+      font-weight: 600;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    summary::-webkit-details-marker { display: none; }
+
+    summary::before {
+      content: "›";
+      transform: rotate(90deg);
+      display: inline-block;
+      transition: transform 0.15s ease;
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    details[open] summary::before { transform: rotate(-90deg); }
+
+    details p {
+      padding: 0 1.15rem 1.15rem 2.2rem;
+      color: var(--ink-soft);
+    }
+
+    /* —— Download CTA —— */
+    .download-band {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.25rem;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: clamp(1.15rem, 3vw, 1.5rem);
+      overflow: hidden;
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      box-shadow: var(--glass-shine), var(--shadow-card);
+    }
+
+    .download-band-copy {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.85rem;
+      flex: 1 1 240px;
+      min-width: 0;
+    }
+
+    .download-band h2 {
+      font-size: clamp(1.25rem, 3vw, 1.6rem);
+      font-weight: 800;
+      margin-bottom: 0.15rem;
+    }
+
+    .download-band p { color: var(--ink-soft); }
+
+    .download-band-photo {
+      flex: 0 0 auto;
+      width: clamp(112px, 28vw, 168px);
+      height: clamp(112px, 28vw, 168px);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-strong);
+      box-shadow: var(--glass-shine);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+    }
+
+    .download-band-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+    }
+
+    html[data-theme="dark"] .download-band-photo img {
+      filter: brightness(0.92);
     }
 
     .store-row {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.7rem;
-      margin-bottom: 1rem;
+      gap: 0.65rem;
     }
 
     .store-btn {
       display: inline-flex;
       align-items: center;
-      justify-content: flex-start;
-      gap: 0.7rem;
-      padding: 0.72rem 1.05rem;
-      border-radius: var(--radius-btn);
-      background: var(--store-dark);
-      color: var(--white);
-      min-width: 11rem;
-      min-height: 52px;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-      box-shadow: 0 10px 28px rgba(11, 31, 58, 0.22);
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-    }
-
-    .store-btn:hover {
-      transform: translateY(-2px);
-      background: var(--store-dark-hover);
-    }
-
-    .store-btn.play {
-      background: var(--blue);
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-    }
-
-    .store-btn.play:hover { filter: brightness(1.08); background: var(--blue); }
-
-    html[data-theme="dark"] .store-btn.play {
-      box-shadow: none;
-    }
-
-    .store-btn.disabled,
-    .store-btn.disabled:hover {
-      background: #555555;
-      color: #c0c0c0;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-      pointer-events: none;
-      filter: none;
-    }
-
-    .store-btn svg { flex-shrink: 0; width: 24px; height: 24px; }
-
-    .store-btn .labels {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.15;
-      text-align: left;
-    }
-
-    .store-btn .labels small {
-      font-size: 0.65rem;
-      opacity: 0.85;
-      font-weight: 500;
-    }
-
-    .store-btn .labels strong {
-      font-size: 1rem;
-      font-weight: 700;
-    }
-
-    .hero-note {
-      font-size: clamp(0.8rem, 2.8vw, 0.88rem);
-      color: var(--muted);
-      max-width: 28rem;
-    }
-
-    .hero-visual {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-    }
-
-    .hero-visual::before {
-      content: "";
-      position: absolute;
-      inset: 8% 6%;
-      background: radial-gradient(circle, var(--hero-glow), transparent 70%);
-      filter: blur(8px);
-      z-index: 0;
-      animation: pulse 6s ease-in-out infinite;
-    }
-
-    html[data-theme="dark"] .hero-visual::before {
-      opacity: 0.45;
-      filter: blur(14px);
-    }
-
-    .hero-visual img {
-      position: relative;
-      z-index: 1;
-      width: min(100%, 480px);
-      height: auto;
-      filter: drop-shadow(0 20px 36px rgba(0, 0, 0, 0.22));
-      animation: float 5.5s ease-in-out infinite;
-    }
-
-    html[data-theme="dark"] .hero-visual img {
-      filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.55)) brightness(0.92);
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-12px); }
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.7; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.04); }
-    }
-
-    /* —— Features —— */
-    .features {
-      padding: 0.5rem 0 clamp(2.5rem, 6vw, 4rem);
-    }
-
-    .features-inner { width: 100%; }
-
-    .features h2 {
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(1.35rem, 5vw, 2.1rem);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.45rem;
-      text-wrap: balance;
-    }
-
-    .features .intro {
-      color: var(--ink-soft);
-      max-width: 36rem;
-      margin-bottom: 1.5rem;
-      font-size: clamp(0.92rem, 3.2vw, 1rem);
-      text-wrap: pretty;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.85rem;
-    }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
+      gap: 0.6rem;
+      min-height: 48px;
+      padding: 0.55rem 0.95rem;
       border-radius: var(--radius);
-      padding: 1.2rem 1.1rem;
-      backdrop-filter: none;
-      transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-      min-width: 0;
+      background: #1f1f1f;
+      color: #f5f5f5;
+      min-width: 10.5rem;
     }
 
-    html[data-theme="light"] .card {
-      backdrop-filter: blur(8px);
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow);
-    }
-
-    .card .icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-btn);
-      display: grid;
-      place-items: center;
-      background: var(--sky);
-      color: var(--blue-deep);
-      margin-bottom: 0.85rem;
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    html[data-theme="dark"] .card .icon {
-      color: var(--blue);
-      border: 1px solid var(--line);
-    }
-
-    .card h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.35rem;
-      letter-spacing: -0.01em;
-    }
-
-    .card p {
-      font-size: 0.9rem;
-      color: var(--ink-soft);
-    }
-
-    /* —— Download band —— */
-    .download {
-      margin: 0 0 clamp(2rem, 5vw, 3.5rem);
-      border-radius: var(--radius);
-      background: var(--download-grad);
-      color: var(--white);
-      padding: clamp(1.35rem, 4vw, 2.5rem) clamp(1.1rem, 3.5vw, 2rem);
-      box-shadow: var(--shadow);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1.15rem;
-      border: 1px solid transparent;
-    }
-
-    html[data-theme="dark"] .download {
-      border-color: var(--line);
-      box-shadow: none;
-      color: var(--ink);
-    }
-
-    .download h2 {
-      font-family: Fraunces, Georgia, serif;
-      font-size: clamp(1.3rem, 4.5vw, 2rem);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.35rem;
-      text-wrap: balance;
-    }
-
-    .download p {
-      opacity: 0.9;
-      max-width: 28rem;
-      font-size: clamp(0.9rem, 3.2vw, 1rem);
-    }
-
-    .download .store-row { margin: 0; }
-
-    .download .store-btn {
-      background: var(--white);
-      color: var(--store-dark);
-      box-shadow: none;
-    }
-
-    html[data-theme="dark"] .download .store-btn {
+    html[data-theme="dark"] .store-btn {
       background: #2a2a2a;
-      color: var(--ink);
       border: 1px solid var(--line);
     }
 
-    html[data-theme="dark"] .download .store-btn.play,
-    html[data-theme="dark"] .download a.store-btn:first-child {
-      background: var(--blue);
-      color: #f0f0f0;
-      border-color: transparent;
+    .store-btn.play { background: var(--blue); border: 0; }
+    .store-btn.disabled {
+      opacity: 0.55;
+      pointer-events: none;
+      background: #555;
     }
 
-    .download .store-btn:hover {
-      background: #f0f5ff;
-      transform: translateY(-2px);
-    }
-
-    html[data-theme="dark"] .download .store-btn:hover {
-      background: #333333;
-    }
-
-    .download .store-btn.disabled,
-    .download .store-btn.disabled:hover {
-      background: rgba(255, 255, 255, 0.45);
-      color: rgba(11, 31, 58, 0.65);
-      transform: none;
-    }
-
-    html[data-theme="dark"] .download .store-btn.disabled,
-    html[data-theme="dark"] .download .store-btn.disabled:hover {
-      background: #252525;
-      color: #777777;
-      border: 1px solid var(--line);
-    }
+    .store-btn .labels { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
+    .store-btn small { font-size: 0.65rem; opacity: 0.85; }
+    .store-btn strong { font-size: 0.95rem; font-weight: 700; }
 
     /* —— Footer —— */
-    footer {
-      border-top: 1px solid var(--line);
-      padding: 1.25rem 0 calc(1.5rem + var(--safe-b));
+    footer.site-footer {
+      margin-top: 1rem;
+      background: var(--footer-bg);
+      border-top: 4px solid var(--blue);
+      padding: 2.5rem 0 calc(1.5rem + var(--safe-b));
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(18px);
+      backdrop-filter: saturate(var(--saturate)) blur(18px);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-grid h3 {
+      font-size: 0.95rem;
+      font-weight: 800;
+      margin-bottom: 0.85rem;
+    }
+
+    .footer-grid ul { list-style: none; }
+    .footer-grid li { margin-bottom: 0.45rem; }
+    .footer-grid a {
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+    }
+    .footer-grid a:hover { color: var(--blue); }
+
+    .footer-bottom {
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      gap: 0.65rem;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
-    footer a {
-      min-height: 44px;
-      display: inline-flex;
+      gap: 0.75rem;
       align-items: center;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 1.15rem;
+      color: var(--muted);
+      font-size: 0.88rem;
     }
 
-    footer a:hover { color: var(--blue); }
-
-    /* —— Tablet —— */
-    @media (max-width: 900px) {
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto;
-        padding: 0.35rem 0 2.25rem;
-        text-align: center;
-        gap: 1.1rem;
-      }
-
-      .hero-copy p.lead,
-      .hero-note { margin-inline: auto; }
-
-      .store-row { justify-content: center; }
-
-      .hero-visual { order: -1; }
-
-      .hero-visual img { width: min(72vw, 320px); }
-
-      .grid { grid-template-columns: 1fr 1fr; }
-
-      .features .intro { margin-inline: auto; text-align: center; }
-
-      .features h2 { text-align: center; }
-
-      .download {
-        text-align: center;
-        justify-content: center;
-        flex-direction: column;
-      }
-
-      .download .store-row { justify-content: center; width: 100%; }
-
-      .nav-links .hide-sm { display: none; }
+    /* —— Responsive —— */
+    @media (max-width: 960px) {
+      .nav-main { display: none; }
+      .hero-grid,
+      .proof-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+      .hero-visual { order: 2; }
+      .hero-copy { order: 1; }
+      .hero-visual img { width: min(76vw, 300px); margin-inline: auto; }
+      .hero h1 { max-width: none; text-align: center; margin-inline: auto; }
+      .hero .lead, .hero-note { text-align: center; margin-inline: auto; }
+      .cta-row { justify-content: center; }
+      .features-grid,
+      .course-grid,
+      .quotes,
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+      .section-title { text-align: center; margin-inline: auto; }
+      .proof-copy { text-align: center; }
+      .proof-copy .btn { margin-inline: auto; }
     }
 
-    /* —— Phone —— */
     @media (max-width: 640px) {
-      .grid { grid-template-columns: 1fr; gap: 0.7rem; }
+      :root { --blur: 26px; --saturate: 190%; --pad-x: 0.95rem; }
 
-      .nav { padding-top: 0.65rem; }
+      .features-grid,
+      .course-grid,
+      .quotes,
+      .footer-grid { grid-template-columns: 1fr; }
 
-      .brand img { width: 36px; height: 36px; }
-
-      .hero-visual img { width: min(78vw, 280px); }
-
-      .store-row {
+      .cta-row, .store-row { width: 100%; max-width: 22rem; margin-inline: auto; }
+      .cta-row .btn, .store-btn { width: 100%; justify-content: center; }
+      .catalog-head { flex-direction: column; align-items: stretch; text-align: center; }
+      .catalog-head h2 { max-width: none; }
+      .download-band {
         flex-direction: column;
-        align-items: stretch;
-        width: 100%;
-        max-width: 22rem;
-        margin-inline: auto;
-      }
-
-      .store-btn {
-        width: 100%;
-        min-width: 0;
-        justify-content: center;
-      }
-
-      .card { padding: 1.05rem 1rem; }
-
-      .download .store-row { max-width: 22rem; }
-
-      footer {
-        flex-direction: column;
-        align-items: center;
         text-align: center;
-        gap: 0.25rem;
+        gap: 1rem;
       }
+      .download-band-copy { align-items: center; width: 100%; }
+      .download-band .store-row { width: 100%; justify-content: center; }
+      .download-band-photo {
+        width: 120px;
+        height: 120px;
+        order: -1;
+      }
+      .topbar-inner { gap: 0.4rem; min-height: 52px; }
+      .nav-right .btn { padding: 0.45rem 0.75rem; font-size: 0.88rem; min-height: 40px; }
+      .brand span { font-size: 1.15rem; }
+      .hero { padding: 1.25rem 0 2rem; }
+      .section { padding: 2rem 0; }
+      .course-card .thumb { height: 150px; }
+      .search-box input { font-size: 16px; } /* évite zoom iOS */
+      .chips { gap: 0.4rem; }
+      .chip { font-size: 0.82rem; }
     }
 
-    /* —— iPhone slim (SE / mini / 390) —— */
     @media (max-width: 430px) {
-      :root { --pad-x: 0.9rem; }
+      :root { --pad-x: 0.85rem; --blur: 30px; }
 
-      .hero { gap: 0.85rem; padding-bottom: 1.75rem; }
-
-      .hero-copy h1 { font-size: clamp(2rem, 11vw, 2.55rem); }
-
-      .hero-copy .tagline { font-size: 1.05rem; margin-bottom: 0.65rem; }
-
-      .hero-copy p.lead {
-        font-size: 0.92rem;
-        margin-bottom: 1.05rem;
-        line-height: 1.45;
-      }
-
-      .hero-visual img { width: min(70vw, 240px); }
-
-      .hero-visual::before { inset: 12% 10%; }
-
-      .features { padding-bottom: 2rem; }
-
-      .features h2 { font-size: 1.35rem; }
-
-      .nav-links { gap: 0.55rem; font-size: 0.8rem; }
-
-      .download { padding: 1.2rem 1rem; gap: 0.9rem; }
-
-      .store-btn { padding: 0.65rem 0.9rem; min-height: 48px; }
-
-      .store-btn .labels strong { font-size: 0.95rem; }
+      .hero h1 { font-size: clamp(1.55rem, 8.2vw, 1.95rem); }
+      .hero .lead { font-size: 0.95rem; }
+      .hero-visual img { width: min(70vw, 250px); }
+      .section-title { font-size: 1.35rem; }
+      .download-band-photo { width: 108px; height: 108px; }
+      .theme-toggle { width: 38px; height: 38px; }
     }
 
-    /* —— Très étroit (320–360) —— */
     @media (max-width: 360px) {
       :root { --pad-x: 0.75rem; }
-
-      .brand span { font-size: 1.1rem; }
-
+      .nav-right .btn { display: none; }
       .hero-visual img { width: min(68vw, 210px); }
+      .brand span { font-size: 1.05rem; }
+    }
 
-      .hero-copy h1 { font-size: 1.9rem; }
+    /* Ultra glass iPhone / Safari */
+    @supports (-webkit-touch-callout: none) {
+      :root {
+        --blur: 32px;
+        --saturate: 200%;
+      }
 
-      .store-btn .labels small { font-size: 0.6rem; }
+      html[data-theme="dark"] {
+        --blur: 36px;
+        --saturate: 170%;
+        --glass: rgba(28, 28, 32, 0.38);
+        --glass-strong: rgba(40, 40, 46, 0.52);
+      }
+
+      .topbar {
+        -webkit-backdrop-filter: saturate(220%) blur(40px);
+        backdrop-filter: saturate(220%) blur(40px);
+      }
+
+      .catalog-panel,
+      .faq-box,
+      .download-band,
+      .quote,
+      .course-card,
+      .search-box {
+        -webkit-backdrop-filter: saturate(200%) blur(var(--blur));
+        backdrop-filter: saturate(200%) blur(var(--blur));
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .hero-visual img,
-      .hero-visual::before { animation: none; }
-      .card, .store-btn { transition: none; }
-    }
-
-    @media (hover: none) {
-      .card:hover { transform: none; box-shadow: none; }
-      .store-btn:hover { transform: none; }
+      * { scroll-behavior: auto !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="nav">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
       <a class="brand" href="/">
-        <img src="{% static 'landing/logo.png' %}" width="42" height="42" alt="Akadex">
+        <img src="{% static 'landing/logo.png' %}" width="34" height="34" alt="">
         <span>Akadex</span>
       </a>
-      <nav class="nav-links" aria-label="Navigation">
-        <a class="hide-sm" href="#fonctionnalites">Fonctionnalités</a>
-        <a href="#telecharger">Télécharger</a>
-        <button
-          type="button"
-          class="theme-toggle"
-          id="theme-toggle"
-          aria-label="Basculer le thème"
-          title="Thème"
-        >
+      <nav class="nav-main" aria-label="Principal">
+        <a href="#domaines">Explorer</a>
+        <a href="#fonctionnalites">Fonctionnalités</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav-right">
+        <a class="btn btn-outline" href="#domaines">Explorer</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème" title="Thème">
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -697,140 +996,334 @@
             <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/>
           </svg>
         </button>
-      </nav>
-    </header>
-
-    <section class="hero" aria-labelledby="hero-brand">
-      <div class="hero-copy">
-        <h1 id="hero-brand">Akadex</h1>
-        <p class="tagline">Le campus universitaire dans votre poche</p>
-        <p class="lead">
-          Cours, documents, communauté et paiements Mobile Money —
-          une plateforme conçue pour les étudiants et enseignants en République démocratique du Congo.
-        </p>
-        <div class="store-row" id="telecharger">
-          {% if play_store_url %}
-          <a class="store-btn play" href="{{ play_store_url }}" rel="noopener noreferrer" target="_blank">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M3.6 2.7c-.3.2-.5.6-.5 1v16.6c0 .4.2.8.5 1l9.7-9.3L3.6 2.7zm11.2 6.4-2.2 2.1 2.2 2.1 5.1-2.9c.6-.3.6-1.2 0-1.5l-5.1-2.8zM4.9 20.8l8.5-4.8-2.2-2.1-6.3 6.9zm8.5-13.6L4.9 2.4l6.3 6.9 2.2-2.1z"/>
-            </svg>
-            <span class="labels">
-              <small>Disponible sur</small>
-              <strong>Google Play</strong>
-            </span>
-          </a>
-          {% endif %}
-
-          {% if app_store_url %}
-          <a class="store-btn" href="{{ app_store_url }}" rel="noopener noreferrer" target="_blank">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/>
-            </svg>
-            <span class="labels">
-              <small>Télécharger sur</small>
-              <strong>App Store</strong>
-            </span>
-          </a>
-          {% else %}
-          <span class="store-btn disabled" aria-disabled="true" title="Bientôt disponible">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/>
-            </svg>
-            <span class="labels">
-              <small>Bientôt disponible</small>
-              <strong>App Store</strong>
-            </span>
-          </span>
-          {% endif %}
-        </div>
-        <p class="hero-note">Android : téléchargez la dernière version. iOS arrive bientôt.</p>
       </div>
+    </div>
+  </header>
 
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Akadex Campus</p>
+        <h1>Atteignez vos objectifs universitaires avec Akadex</h1>
+        <p class="lead">
+          Cours, documents, communauté et Mobile Money — le campus dans votre poche,
+          conçu pour les étudiants et enseignants en République démocratique du Congo.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#domaines">Découvrir les domaines</a>
+          <a class="btn btn-outline" href="#fonctionnalites">En savoir plus</a>
+        </div>
+        <p class="hero-note">Android disponible · iOS bientôt — téléchargement en bas de page</p>
+      </div>
       <div class="hero-visual">
+        <img src="{% static 'landing/presentation.png' %}" width="440" height="440" alt="Application mobile Akadex" fetchpriority="high">
+      </div>
+    </div>
+  </section>
+
+  <section class="trust">
+    <div class="wrap">
+      <h2>Apprendre auprès d’universités et filières congolaises</h2>
+      <div class="trust-logos" aria-label="Universités">
+        <span>UNIKIN</span>
+        <span>UNILU</span>
+        <span>UCC</span>
+        <span>ISTA</span>
+        <span>UPC</span>
+        <span>ISC</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="fonctionnalites">
+    <div class="wrap">
+      <h2 class="section-title">Investissez dans votre parcours</h2>
+      <div class="features-grid">
+        <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+          </svg>
+          <h3>Explorer de nouvelles compétences</h3>
+          <p>Accédez à des cours vidéo, PDF et parcours structurés par domaine — où que vous soyez.</p>
+        </article>
+        <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h8M8 16h5"/>
+          </svg>
+          <h3>Obtenir des supports utiles</h3>
+          <p>Résumés, examens et documents partagés par la communauté, validés pour le campus.</p>
+        </article>
+        <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <path d="M12 3l2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7L12 3z"/>
+          </svg>
+          <h3>Apprendre des meilleurs</h3>
+          <p>Échangez avec enseignants, alumni et étudiants — conseils, stages, TFC et carrière.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="wrap proof-grid">
+      <div class="proof-copy">
+        <h2>
+          Rejoignez les étudiants qui avancent grâce à Akadex :
+          meilleurs supports, plus de clarté en cours et un campus toujours à portée de main.
+        </h2>
+        <a class="btn btn-outline" href="#domaines">Voir les domaines</a>
+      </div>
+      <div class="proof-visual">
         <img
-          src="{% static 'landing/presentation.png' %}"
-          width="480"
-          height="480"
-          alt="Aperçu de l’application mobile Akadex"
-          fetchpriority="high"
+          src="{% static 'landing/together.png' %}"
+          width="1200"
+          height="800"
+          alt="Étudiants qui avancent avec Akadex"
+          loading="lazy"
         >
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="features" id="fonctionnalites">
-      <div class="features-inner">
-        <h2>Tout le campus, une seule app</h2>
-        <p class="intro">Apprenez, partagez et payez sans quitter votre téléphone — pensé pour les universités congolaises.</p>
-        <div class="grid">
-          <article class="card">
-            <div class="icon" aria-hidden="true">▶</div>
-            <h3>Cours & leçons</h3>
-            <p>Vidéos, PDF et parcours structurés par domaine, accessibles hors campus.</p>
+  <section class="section" id="domaines">
+    <div class="wrap">
+      <div class="catalog-panel">
+        <div class="catalog-head">
+          <h2>Des compétences universitaires qui fonctionnent</h2>
+        </div>
+        <div class="course-grid">
+          <article class="course-card">
+            <div class="thumb">
+              <img
+                src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
+                alt="Droit — balance de la justice"
+                width="800"
+                height="500"
+                loading="lazy"
+              >
+            </div>
+            <div class="body">
+              <p class="meta">Faculté · Campus</p>
+              <h3>Introduction au droit OHADA</h3>
+              <p class="level">Débutant · Cours</p>
+              <span class="badge">Populaire</span>
+            </div>
           </article>
-          <article class="card">
-            <div class="icon" aria-hidden="true">◈</div>
-            <h3>Communauté</h3>
-            <p>Fil campus, discussions, alumni et échanges entre étudiants et enseignants.</p>
+          <article class="course-card">
+            <div class="thumb">
+              <img
+                src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
+                alt="Informatique — code sur écran"
+                width="800"
+                height="500"
+                loading="lazy"
+              >
+            </div>
+            <div class="body">
+              <p class="meta">Sciences · Numérique</p>
+              <h3>Python pour débutants</h3>
+              <p class="level">Débutant · Parcours</p>
+            </div>
           </article>
-          <article class="card">
-            <div class="icon" aria-hidden="true">▤</div>
-            <h3>Documents</h3>
-            <p>Supports de cours, résumés et examens partagés en toute sécurité.</p>
-          </article>
-          <article class="card">
-            <div class="icon" aria-hidden="true">₵</div>
-            <h3>Mobile Money</h3>
-            <p>Paiement des cours via Vodacom, Airtel ou Orange — simple et local.</p>
+          <article class="course-card">
+            <div class="thumb">
+              <img
+                src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
+                alt="Économie — comptabilité et calculs"
+                width="800"
+                height="500"
+                loading="lazy"
+              >
+            </div>
+            <div class="body">
+              <p class="meta">Gestion · Finance</p>
+              <h3>Comptabilité générale</h3>
+              <p class="level">Intermédiaire · Cours</p>
+              <span class="badge">Recommandé</span>
+            </div>
           </article>
         </div>
+        <div class="catalog-actions">
+          <a class="btn btn-outline" href="#explorer">Afficher plus de domaines</a>
+        </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="download wrap" aria-labelledby="dl-title">
-      <div>
-        <h2 id="dl-title">Installez Akadex</h2>
-        <p>Disponible sur Android dès maintenant. L’App Store suivra très bientôt.</p>
-      </div>
-      <div class="store-row">
-        {% if play_store_url %}
-        <a class="store-btn" href="{{ play_store_url }}" rel="noopener noreferrer" target="_blank">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M3.6 2.7c-.3.2-.5.6-.5 1v16.6c0 .4.2.8.5 1l9.7-9.3L3.6 2.7zm11.2 6.4-2.2 2.1 2.2 2.1 5.1-2.9c.6-.3.6-1.2 0-1.5l-5.1-2.8zM4.9 20.8l8.5-4.8-2.2-2.1-6.3 6.9zm8.5-13.6L4.9 2.4l6.3 6.9 2.2-2.1z"/>
-          </svg>
-          <span class="labels">
-            <small>Disponible sur</small>
-            <strong>Google Play</strong>
-          </span>
-        </a>
-        {% endif %}
-        {% if app_store_url %}
-        <a class="store-btn" href="{{ app_store_url }}" rel="noopener noreferrer" target="_blank">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/>
-          </svg>
-          <span class="labels">
-            <small>Télécharger sur</small>
-            <strong>App Store</strong>
-          </span>
-        </a>
-        {% else %}
-        <span class="store-btn disabled" aria-disabled="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/>
-          </svg>
-          <span class="labels">
-            <small>Bientôt disponible</small>
-            <strong>App Store</strong>
-          </span>
+  <section class="section" id="explorer">
+    <div class="wrap search-block">
+      <h2>Rechercher des programmes d’apprentissage</h2>
+      <form class="search-box" action="#telecharger" method="get" role="search">
+        <span aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3" stroke-linecap="round"/></svg>
         </span>
-        {% endif %}
+        <input type="search" name="q" placeholder="p. ex. : Droit, Python, Comptabilité" aria-label="Rechercher un domaine">
+        <button type="submit" aria-label="Rechercher">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3" stroke-linecap="round"/></svg>
+        </button>
+      </form>
+      <div class="chips" aria-label="Domaines">
+        <span class="chip pop">POPULAIRE</span>
+        <a class="chip" href="#telecharger">Droit</a>
+        <a class="chip" href="#telecharger">Informatique</a>
+        <a class="chip" href="#telecharger">Économie</a>
+        <a class="chip" href="#telecharger">Médecine</a>
+        <a class="chip" href="#telecharger">Gestion</a>
+        <a class="chip" href="#telecharger">Langues</a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <footer>
-      <span>© {% now "Y" %} Akadex</span>
-    </footer>
-  </div>
+  <section class="section alt">
+    <div class="wrap">
+      <h2 class="section-title center">Ce que les étudiants réalisent grâce à Akadex</h2>
+      <div class="quotes">
+        <article class="quote">
+          <div class="quote-top">
+            <div class="avatar">A</div>
+            <div>
+              <strong>Aïcha M.</strong>
+              <span class="role">Étudiante · UNIKIN</span>
+            </div>
+          </div>
+          <p>« Les PDF et les discussions m’ont aidée à préparer mes partiels sans courir partout sur le campus. »</p>
+        </article>
+        <article class="quote">
+          <div class="quote-top">
+            <div class="avatar">S</div>
+            <div>
+              <strong>Samuel O.</strong>
+              <span class="role">Étudiant · Informatique</span>
+            </div>
+          </div>
+          <p>« J’ai suivi un parcours vidéo puis payé un cours en Mobile Money — simple et local. »</p>
+        </article>
+        <article class="quote">
+          <div class="quote-top">
+            <div class="avatar">I</div>
+            <div>
+              <strong>Inès K.</strong>
+              <span class="role">Alumni</span>
+            </div>
+          </div>
+          <p>« Je partage mes conseils TFC et stages. La communauté reste active même après le diplôme. »</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="wrap">
+      <h2 class="section-title">Foire Aux Questions</h2>
+      <div class="faq-box">
+        <details open>
+          <summary>Akadex est-il gratuit ?</summary>
+          <p>L’application est gratuite à télécharger. Certains cours ou contenus premium peuvent être payants via Mobile Money.</p>
+        </details>
+        <details>
+          <summary>Sur quels appareils puis-je l’utiliser ?</summary>
+          <p>Android est disponible dès maintenant. La version iOS (App Store) arrive bientôt.</p>
+        </details>
+        <details>
+          <summary>Comment payer un cours ?</summary>
+          <p>Depuis l’app, choisissez Mobile Money (Vodacom, Airtel ou Orange) et validez le paiement sur votre téléphone.</p>
+        </details>
+        <details>
+          <summary>Qui peut publier des documents ?</summary>
+          <p>Les étudiants et enseignants peuvent partager des supports. Les contenus passent par une modération avant publication.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="section blueish" id="telecharger">
+    <div class="wrap">
+      <div class="download-band">
+        <div class="download-band-copy">
+          <div>
+            <h2>Installez Akadex</h2>
+            <p>Disponible sur Android. L’App Store suivra très bientôt.</p>
+          </div>
+          <div class="store-row">
+            {% if play_store_url %}
+            <a class="store-btn play" href="{{ play_store_url }}" rel="noopener noreferrer" target="_blank">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3.6 2.7c-.3.2-.5.6-.5 1v16.6c0 .4.2.8.5 1l9.7-9.3L3.6 2.7zm11.2 6.4-2.2 2.1 2.2 2.1 5.1-2.9c.6-.3.6-1.2 0-1.5l-5.1-2.8zM4.9 20.8l8.5-4.8-2.2-2.1-6.3 6.9zm8.5-13.6L4.9 2.4l6.3 6.9 2.2-2.1z"/></svg>
+              <span class="labels"><small>Disponible sur</small><strong>Google Play</strong></span>
+            </a>
+            {% endif %}
+            {% if app_store_url %}
+            <a class="store-btn" href="{{ app_store_url }}" rel="noopener noreferrer" target="_blank">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/></svg>
+              <span class="labels"><small>Télécharger sur</small><strong>App Store</strong></span>
+            </a>
+            {% else %}
+            <span class="store-btn disabled" aria-disabled="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.3c0-2.2 1.8-3.3 1.9-3.4-1-1.5-2.6-1.7-3.2-1.7-1.3-.1-2.6.8-3.3.8-.7 0-1.8-.8-3-.7-1.5.1-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .8 1.1 1.7 2.3 2.9 2.2 1.2-.1 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.3-.9-2.3-3.6zM14.5 5.5c.6-.8 1.1-1.8.9-2.9-.9.1-2 .6-2.6 1.4-.6.7-1.1 1.8-.9 2.8 1 .1 2-.5 2.6-1.3z"/></svg>
+              <span class="labels"><small>Bientôt disponible</small><strong>App Store</strong></span>
+            </span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="download-band-photo" aria-hidden="true">
+          <img
+            src="{% static 'landing/install.png' %}"
+            width="168"
+            height="168"
+            alt=""
+            loading="lazy"
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <div class="footer-grid">
+        <div>
+          <h3>Domaines</h3>
+          <ul>
+            <li><a href="#telecharger">Droit</a></li>
+            <li><a href="#telecharger">Informatique</a></li>
+            <li><a href="#telecharger">Économie</a></li>
+            <li><a href="#telecharger">Médecine</a></li>
+            <li><a href="#telecharger">Gestion</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Produit</h3>
+          <ul>
+            <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+            <li><a href="#domaines">Cours</a></li>
+            <li><a href="#telecharger">Télécharger</a></li>
+            <li><a href="#faq">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Communauté</h3>
+          <ul>
+            <li><a href="#telecharger">Campus</a></li>
+            <li><a href="#telecharger">Alumni</a></li>
+            <li><a href="#telecharger">Enseignants</a></li>
+            <li><a href="#telecharger">Documents</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Paiement</h3>
+          <ul>
+            <li><a href="#faq">Mobile Money</a></li>
+            <li><a href="#faq">Vodacom M-Pesa</a></li>
+            <li><a href="#faq">Airtel Money</a></li>
+            <li><a href="#faq">Orange Money</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© {% now "Y" %} Akadex</span>
+      </div>
+    </div>
+  </footer>
+
   <script>
     (function () {
       var root = document.documentElement;
@@ -840,9 +1333,7 @@
       function applyTheme(theme) {
         root.setAttribute('data-theme', theme);
         try { localStorage.setItem('akadex-theme', theme); } catch (e) {}
-        if (meta) {
-          meta.setAttribute('content', theme === 'dark' ? '#121212' : '#1a5cff');
-        }
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#121212' : '#0056d2');
         if (btn) {
           btn.setAttribute(
             'aria-label',
@@ -853,8 +1344,7 @@
 
       if (btn) {
         btn.addEventListener('click', function () {
-          var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-          applyTheme(next);
+          applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         });
       }
 
