@@ -258,11 +258,13 @@ class _CommunityPublishScreenState
         _pdfThumbBytes = rendered.bytes;
         _pdfPageCount = rendered.pageCount;
         _mediaProgress = 1;
-        _mediaBusyLabel =
-            rendered.hasImage ? 'Aperçu prêt' : 'PDF joint';
+        _mediaBusyLabel = rendered.hasImage ? 'Aperçu prêt' : 'PDF joint';
       });
       if (!rendered.hasImage) {
-        _toast('PDF joint — aperçu indisponible, tu peux publier.');
+        _toast(
+          rendered.error ??
+              'PDF joint — aperçu indisponible, tu peux quand même publier.',
+        );
       }
     } catch (e) {
       _toast('Erreur PDF : ${apiErrorMessage(e)}');
@@ -929,85 +931,14 @@ class _CommunityPublishScreenState
                           children: [
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: SizedBox(
+                              child: PdfPreviewCard(
+                                thumbnailBytes: _pdfThumbBytes,
+                                fileName: _pdfName ?? 'Document PDF',
+                                pageCount: _pdfPageCount,
                                 height: 180,
-                                width: double.infinity,
-                                child: _pdfThumbBytes != null &&
-                                        _pdfThumbBytes!.isNotEmpty
-                                    ? ColoredBox(
-                                        color: const Color(0xFFF0F2F5),
-                                        child: Image.memory(
-                                          _pdfThumbBytes!,
-                                          height: 180,
-                                          width: double.infinity,
-                                          fit: BoxFit.contain,
-                                          gaplessPlayback: true,
-                                        ),
-                                      )
-                                    : ColoredBox(
-                                        color: const Color(0xFFF0F2F5),
-                                        child: Center(
-                                          child: _mediaBusy
-                                              ? const Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    SizedBox(
-                                                      width: 28,
-                                                      height: 28,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                        strokeWidth: 2.5,
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 10),
-                                                    Text(
-                                                      'Aperçu PDF…',
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        fontSize: 13,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                )
-                                              : Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    Icon(
-                                                      Icons
-                                                          .picture_as_pdf_rounded,
-                                                      size: 48,
-                                                      color:
-                                                          Colors.red.shade400,
-                                                    ),
-                                                    const SizedBox(height: 8),
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                        horizontal: 16,
-                                                      ),
-                                                      child: Text(
-                                                        _pdfName ??
-                                                            'Document PDF',
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: const TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          fontSize: 13,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                        ),
-                                      ),
+                                busy: _mediaBusy &&
+                                    (_pdfThumbBytes == null ||
+                                        _pdfThumbBytes!.isEmpty),
                               ),
                             ),
                             Positioned(
@@ -1025,8 +956,7 @@ class _CommunityPublishScreenState
                                 ),
                               ),
                             ),
-                            if (_pdfThumbBytes != null &&
-                                _pdfThumbBytes!.isNotEmpty)
+                            if (_pdfPageCount > 0)
                               Positioned(
                                 left: 10,
                                 bottom: 10,

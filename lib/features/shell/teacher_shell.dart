@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/akadex_theme.dart';
+import '../../core/theme/timeline_tokens.dart';
+
 /// Navigation enseignant — style Facebook (barre blanche, bleu actif).
 class TeacherShell extends StatelessWidget {
   const TeacherShell({super.key, required this.navigationShell});
@@ -11,7 +14,6 @@ class TeacherShell extends StatelessWidget {
 
   static const _fbBlue = Color(0xFF0866FF);
   static const _fbMuted = Color(0xFF65676B);
-  static const _fbBorder = Color(0xFFCED0D4);
 
   void _onTap(int index) {
     HapticFeedback.selectionClick();
@@ -23,23 +25,21 @@ class TeacherShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final feed = TimelineTokens.of(context);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
+      backgroundColor: feed.feedBg,
       body: navigationShell,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: _fbBorder, width: 0.6),
-          ),
-        ),
+        color: feed.cardBg,
         child: CupertinoTabBar(
           currentIndex: navigationShell.currentIndex,
           onTap: _onTap,
-          activeColor: _fbBlue,
-          inactiveColor: _fbMuted,
+          activeColor: isDark ? AkadexColors.primaryOnDark : _fbBlue,
+          inactiveColor: isDark ? feed.meta : _fbMuted,
           backgroundColor: Colors.transparent,
-          border: Border.all(color: Colors.transparent),
+          border: TimelineTokens.tabBorder,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(CupertinoIcons.square_list),

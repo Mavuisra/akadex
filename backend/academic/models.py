@@ -353,11 +353,13 @@ class Document(models.Model):
     moderation_status = models.CharField(
         max_length=16,
         choices=[
-            ('pending', "En cours d'examen"),
+            ('pending_peers', 'En attente validation fac'),
+            ('pending_admin', 'En attente validation admin'),
+            ('pending', 'En attente'),  # legacy — migré vers pending_peers
             ('approved', 'Validée'),
             ('rejected', 'Refusée'),
         ],
-        default='pending',
+        default='pending_peers',
         db_index=True,
     )
     rejection_reason = models.CharField(max_length=500, blank=True)
@@ -385,8 +387,8 @@ class Document(models.Model):
             ) or False
         if self.is_approved:
             self.moderation_status = 'approved'
-        elif self.moderation_status != 'rejected':
-            self.moderation_status = 'pending'
+        elif self.moderation_status == 'pending':
+            self.moderation_status = 'pending_peers'
         super().save(*args, **kwargs)
         if self.is_approved and not was_approved:
             from academic.rewards import award_approval_points
@@ -403,6 +405,33 @@ class Document(models.Model):
                 return f'{size:.1f} {unit}' if unit != 'o' else f'{int(size)} {unit}'
             size /= 1024
         return f'{size:.1f} To'
+
+
+class DocumentPeerValidation(models.Model):
+    """Note / avis d’un étudiant de la même faculté (1–5 étoiles)."""
+
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='peer_validations',
+    )
+    validator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='document_peer_validations',
+    )
+    score = models.PositiveSmallIntegerField(
+        default=5,
+        help_text='Note de 1 à 5 étoiles.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+        unique_together = ('document', 'validator')
+
+    def __str__(self):
+        return f'{self.validator_id} → doc {self.document_id}'
 
 
 class RewardCategory(models.TextChoices):

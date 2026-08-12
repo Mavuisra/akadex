@@ -161,7 +161,7 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                         '${formatCount(user.followersCount)} followers · '
                         '${formatCount(user.followingCount)} suivi(e)s · '
                         '${formatCount(user.postsCount > 0 ? user.postsCount : user.contributions)} publications',
-                        style: const TextStyle(
+                                              style: const TextStyle(
                           fontSize: 14,
                           color: Color(0xFF65676B),
                           fontWeight: FontWeight.w500,
@@ -189,13 +189,13 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                 setState(() => _bioExpanded = !_bioExpanded),
                             child: Text(
                               _bioExpanded ? 'Voir moins' : 'Voir plus',
-                              style: TextStyle(
+                                                style: TextStyle(
                                 color: TimelineTokens.of(context).likeActive,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                      ],
+                                                  fontWeight: FontWeight.w700,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                       const SizedBox(height: 10),
                       if (user.university.isNotEmpty)
                         _InfoLine(
@@ -231,9 +231,9 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                 icon: Icons.chat_bubble_outline_rounded,
                                 label: 'Message',
                                 onTap: () => context.push('/messages'),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
                         )
                       else
                         Row(
@@ -285,10 +285,10 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                                   showCheckmark: false,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                            ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
                       const Divider(height: 1, color: Color(0xFFCED0D4)),
                     ],
                   ),
@@ -303,11 +303,11 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                              const Text(
                           'Informations',
-                          style: TextStyle(
+                                style: TextStyle(
                             fontSize: 17,
-                            fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -328,10 +328,10 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                             icon: Icons.work_outline,
                             title: 'Domaine',
                             value: user.professionalDomain,
-                          ),
-                      ],
-                    ),
-                  ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                 ),
               if (_tab == 'Publications') ...[
                 if (postsAsync.isLoading)
@@ -416,10 +416,10 @@ class _AlumniProfileScreenState extends ConsumerState<AlumniProfileScreen> {
                     ),
               ],
               const SliverToBoxAdapter(child: SizedBox(height: 100)),
-            ],
-          );
-        },
-      ),
+                                  ],
+                                );
+                              },
+                            ),
     );
   }
 }
@@ -684,7 +684,7 @@ class _InfoLine extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
-        children: [
+          children: [
           Icon(icon, size: 18, color: TimelineTokens.of(context).meta),
           const SizedBox(width: 8),
           Expanded(
@@ -694,9 +694,9 @@ class _InfoLine extends StatelessWidget {
                 fontSize: 14,
                 color: Color(0xFF050505),
               ),
+              ),
             ),
-          ),
-        ],
+          ],
       ),
     );
   }
@@ -725,7 +725,7 @@ class _AboutRow extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            children: [
                 Text(
                   title,
                   style: TextStyle(

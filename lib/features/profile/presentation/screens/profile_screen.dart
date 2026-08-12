@@ -99,19 +99,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   icon: Icons.people_outline_rounded,
                   label: 'Ami(e)s',
                   ink: feed.ink,
-                  onTap: () => context.go('/community'),
+                  onTap: () => context.push('/friends'),
                 ),
                 _MenuItem(
                   icon: Icons.grid_view_rounded,
                   label: 'Tableau de bord',
                   ink: feed.ink,
-                  onTap: () => context.go('/home'),
+                  onTap: () => context.push('/dashboard'),
                 ),
                 _MenuItem(
                   icon: Icons.bookmark_border_rounded,
                   label: 'Enregistrements',
                   ink: feed.ink,
-                  onTap: () => context.push('/my-contributions'),
+                  onTap: () => context.push('/saved'),
                 ),
                 _MenuItem(
                   icon: Icons.auto_awesome,
@@ -119,6 +119,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ink: feed.ink,
                   onTap: () => context.push('/ai'),
                 ),
+                if (user.usesStudentShell)
+                  _MenuItem(
+                    icon: Icons.fact_check_outlined,
+                    label: 'Noter des docs',
+                    ink: feed.ink,
+                    onTap: () => context.push('/peer-review'),
+                  ),
                 if (user.usesStudentShell)
                   _MenuItem(
                     icon: Icons.card_giftcard_rounded,

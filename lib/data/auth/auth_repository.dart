@@ -170,6 +170,14 @@ class AuthRepository {
     return unwrapList(res.data).map(notificationFromJson).toList();
   }
 
+  Future<void> markNotificationRead(String id) async {
+    await _dio.post('auth/notifications/$id/mark_read/');
+  }
+
+  Future<void> markAllNotificationsRead() async {
+    await _dio.post('auth/notifications/mark_all_read/');
+  }
+
   Future<void> logout() async {
     await _prefs.remove('access_token');
     await _prefs.remove('refresh_token');

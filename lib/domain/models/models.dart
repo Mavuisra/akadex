@@ -110,6 +110,13 @@ class AcademicDocument extends Equatable {
     this.rejectionReason = '',
     this.pointsAwarded = 0,
     this.externalUrl = '',
+    this.fileUrl = '',
+    this.peerValidationCount = 0,
+    this.peerValidationsRequired = 10,
+    this.userHasPeerValidated = false,
+    this.canPeerValidate = false,
+    this.userRating = 0,
+    this.potentialPoints = 0,
   });
 
   final String id;
@@ -133,6 +140,34 @@ class AcademicDocument extends Equatable {
   final String rejectionReason;
   final int pointsAwarded;
   final String externalUrl;
+  final String fileUrl;
+  final int peerValidationCount;
+  final int peerValidationsRequired;
+  final bool userHasPeerValidated;
+  final bool canPeerValidate;
+  final int userRating;
+  final int potentialPoints;
+
+  bool get awaitsPeerReview =>
+      moderationStatus == 'pending_peers' || moderationStatus == 'pending';
+
+  bool get awaitsAdminReview => moderationStatus == 'pending_admin';
+
+  /// Aperçu toujours possible ; téléchargement seulement après 10 validations
+  /// ou une fois le document approuvé.
+  bool get canDownload =>
+      isApproved || peerValidationCount >= peerValidationsRequired;
+
+  String get previewUrl {
+    if (fileUrl.trim().isNotEmpty) return fileUrl.trim();
+    return externalUrl.trim();
+  }
+
+  bool get hasPreviewFile => previewUrl.isNotEmpty;
+
+  double get peerValidationProgress => peerValidationsRequired <= 0
+      ? 0
+      : (peerValidationCount / peerValidationsRequired).clamp(0.0, 1.0);
 
   @override
   List<Object?> get props => [id];
@@ -574,6 +609,29 @@ class AppNotification extends Equatable {
   final int points;
   final bool isRead;
   final DateTime createdAt;
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class FollowedAlumni extends Equatable {
+  const FollowedAlumni({
+    required this.id,
+    required this.alumniId,
+    required this.name,
+    required this.avatarUrl,
+    required this.bio,
+    required this.department,
+    required this.followedAt,
+  });
+
+  final String id;
+  final String alumniId;
+  final String name;
+  final String avatarUrl;
+  final String bio;
+  final String department;
+  final DateTime followedAt;
 
   @override
   List<Object?> get props => [id];

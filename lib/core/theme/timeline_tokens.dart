@@ -128,6 +128,13 @@ abstract final class TimelineTokens {
   static const double chipRadius = 16;
   static const double commentRadius = 18;
 
+  /// Tabs / chips : aucune bordure visible (light + dark, sélectionné ou non).
+  static const BorderSide tabBorderSide = BorderSide(
+    color: Colors.transparent,
+    width: 0,
+  );
+  static const Border tabBorder = Border.fromBorderSide(tabBorderSide);
+
   static AkadexFeedColors of(BuildContext context) {
     final ext = Theme.of(context).extension<AkadexFeedColors>();
     if (ext != null) return ext;

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/moderation_chip.dart';
+import '../../../../core/widgets/ma_fac_document_row.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
@@ -53,12 +54,6 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
         ? ref.watch(
             documentsProvider(
               DocumentQuery(
-                universityId: me?.universityId.isNotEmpty == true
-                    ? me!.universityId
-                    : null,
-                departmentId: me?.departmentId.isNotEmpty == true
-                    ? me!.departmentId
-                    : null,
                 facultyId:
                     me?.facultyId.isNotEmpty == true ? me!.facultyId : null,
                 ordering: '-created_at',
@@ -326,6 +321,11 @@ class _FbHeader extends StatelessWidget {
             ),
           ),
           IconButton(
+            tooltip: 'À noter',
+            onPressed: () => context.push('/peer-review'),
+            icon: const Icon(Icons.star_outline_rounded, size: 26),
+          ),
+          IconButton(
             tooltip: 'Proposer un cours',
             onPressed: () => context.push('/contribute/course'),
             icon: const Icon(Icons.playlist_add_rounded, size: 26),
@@ -381,12 +381,7 @@ class _FbTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: TimelineTokens.filterHeight,
-      decoration: BoxDecoration(
-        color: TimelineTokens.of(context).cardBg,
-        border: Border(
-          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
-        ),
-      ),
+      color: TimelineTokens.of(context).cardBg,
       alignment: Alignment.centerLeft,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -407,9 +402,7 @@ class _FbTabBar extends StatelessWidget {
               fontSize: 13,
             ),
             backgroundColor: TimelineTokens.of(context).feedBg,
-            side: BorderSide(
-              color: active ? TimelineTokens.of(context).linkBlue : Colors.transparent,
-            ),
+            side: TimelineTokens.tabBorderSide,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
             ),
@@ -696,11 +689,7 @@ class _ParcoursFeed extends StatelessWidget {
                           fontSize: 13,
                         ),
                         backgroundColor: TimelineTokens.of(context).feedBg,
-                        side: BorderSide(
-                          color: active
-                              ? TimelineTokens.of(context).linkBlue
-                              : TimelineTokens.of(context).divider,
-                        ),
+                        side: TimelineTokens.tabBorderSide,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             TimelineTokens.chipRadius,
@@ -749,11 +738,7 @@ class _ParcoursFeed extends StatelessWidget {
                           fontSize: 13,
                         ),
                         backgroundColor: TimelineTokens.of(context).feedBg,
-                        side: BorderSide(
-                          color: active
-                              ? TimelineTokens.of(context).linkBlue
-                              : TimelineTokens.of(context).divider,
-                        ),
+                        side: TimelineTokens.tabBorderSide,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(
                             TimelineTokens.chipRadius,
@@ -1149,46 +1134,13 @@ class _TravauxTab extends StatelessWidget {
             ),
             child: Column(
               children: [
-                for (var i = 0; i < recent.length; i++) ...[
-                  if (i > 0)
-                    Divider(height: 1, color: TimelineTokens.of(context).divider),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: TimelineTokens.of(context).feedBg,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: Image.asset(_logoDoc, fit: BoxFit.contain),
-                    ),
-                    title: Text(
-                      recent[i].title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: TimelineTokens.of(context).ink,
-                      ),
-                    ),
-                    subtitle: Text(
-                      '${recent[i].type.label}'
-                      '${recent[i].downloads > 0 ? ' · ${recent[i].downloads} téléch.' : ''}',
-                      style: TextStyle(
-                        color: TimelineTokens.of(context).meta,
-                        fontSize: 13,
-                      ),
-                    ),
-                    trailing: Icon(
-                      Icons.chevron_right_rounded,
-                      color: TimelineTokens.of(context).meta,
-                    ),
-                    onTap: () =>
+                for (var i = 0; i < recent.length; i++)
+                  MaFacDocumentRow(
+                    doc: recent[i],
+                    showDivider: i < recent.length - 1,
+                    onOpen: () =>
                         context.push('/library/document/${recent[i].id}'),
                   ),
-                ],
               ],
             ),
           ),

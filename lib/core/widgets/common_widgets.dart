@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import '../constants/app_constants.dart';
 import '../theme/akadex_theme.dart';
+import '../theme/timeline_tokens.dart';
 
 /// Marge intérieure pour titres / textes quand le feed est plein largeur.
 const EdgeInsets kFeedInset = EdgeInsets.symmetric(horizontal: 16);
@@ -246,6 +247,7 @@ class FilterChipBar extends StatelessWidget {
         itemBuilder: (context, i) {
           final item = items[i];
           final isSelected = item == selected;
+          final feed = TimelineTokens.of(context);
           return GestureDetector(
             onTap: () {
               HapticFeedback.selectionClick();
@@ -257,13 +259,9 @@ class FilterChipBar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 gradient: isSelected ? AkadexColors.brandGradient : null,
-                color: isSelected ? null : Colors.white,
+                color: isSelected ? null : feed.feedBg,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: isSelected
-                      ? Colors.transparent
-                      : AkadexColors.border,
-                ),
+                border: TimelineTokens.tabBorder,
                 boxShadow: [
                   BoxShadow(
                     color: isSelected
@@ -277,7 +275,7 @@ class FilterChipBar extends StatelessWidget {
               child: Text(
                 item,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : AkadexColors.ink,
+                  color: isSelected ? Colors.white : feed.ink,
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                 ),
@@ -299,6 +297,8 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+
     return Row(
       children: [
         Container(
@@ -306,16 +306,18 @@ class SectionTitle extends StatelessWidget {
           height: 20,
           margin: const EdgeInsets.only(right: 10),
           decoration: BoxDecoration(
-            gradient: AkadexColors.brandGradient,
+            color: feed.linkBlue,
             borderRadius: BorderRadius.circular(4),
           ),
         ),
         Expanded(
           child: Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: feed.ink,
+            ),
           ),
         ),
         if (action != null)
@@ -324,8 +326,8 @@ class SectionTitle extends StatelessWidget {
             onPressed: onAction,
             child: Text(
               action!,
-              style: const TextStyle(
-                color: AkadexColors.primary,
+              style: TextStyle(
+                color: feed.linkBlue,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -343,25 +345,20 @@ class DocTypeTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AkadexColors.primarySoft,
-            AkadexColors.accentSoft.withValues(alpha: 0.55),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: AkadexColors.primary.withValues(alpha: 0.12),
-        ),
+        color: feed.feedBg,
+        borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
+        border: TimelineTokens.tabBorder,
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: AkadexColors.primaryDark,
-          fontWeight: FontWeight.w800,
+        style: TextStyle(
+          color: feed.linkBlue,
+          fontWeight: FontWeight.w700,
           fontSize: 12,
         ),
       ),

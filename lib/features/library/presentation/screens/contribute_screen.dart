@@ -9,6 +9,7 @@ import '../../../../core/widgets/file_drop_validator.dart';
 import '../../../../core/widgets/file_drop_zone.dart';
 import '../../../../core/widgets/living_ui.dart';
 import '../../../../core/widgets/moderation_chip.dart';
+import '../../../../core/widgets/peer_validation_progress.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
@@ -154,12 +155,15 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
             filePath: _file?.path,
           );
       ref.invalidate(myDocumentsProvider);
+      ref.invalidate(documentsProvider);
+      ref.invalidate(peerReviewQueueProvider);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Contribution envoyée. Statut : en cours d’examen. '
-            'Tu seras notifié(e) après validation.',
+            'Contribution envoyée. '
+            '10 étudiants de ta fac doivent le noter (1 à 5 ★), '
+            'puis un admin Akadex confirmera avant les points.',
           ),
         ),
       );
@@ -303,11 +307,7 @@ class _ContributeScreenState extends ConsumerState<ContributeScreen> {
                                           ? Colors.white
                                           : feed.ink,
                                     ),
-                                    side: BorderSide(
-                                      color: _type == t.$1
-                                          ? primary
-                                          : feed.divider,
-                                    ),
+                                    side: TimelineTokens.tabBorderSide,
                                     backgroundColor: feed.softTint,
                                   ),
                               ],
@@ -515,6 +515,7 @@ class MyContributionsScreen extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final d = docs[i];
                 return SoftCard(
+                  onTap: () => context.push('/library/document/${d.id}'),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -541,6 +542,25 @@ class MyContributionsScreen extends ConsumerWidget {
                           fontSize: 13,
                         ),
                       ),
+                      if (d.awaitsPeerReview || d.awaitsAdminReview) ...[
+                        const SizedBox(height: 12),
+                        PeerValidationProgress(
+                          count: d.peerValidationCount,
+                          required: d.peerValidationsRequired,
+                          compact: true,
+                        ),
+                        if (d.potentialPoints > 0) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'Récompense : +${d.potentialPoints} pts',
+                            style: TextStyle(
+                              color: feed.linkBlue,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ],
                       if (d.moderationStatus == 'approved' &&
                           d.pointsAwarded > 0) ...[
                         const SizedBox(height: 10),

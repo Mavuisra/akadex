@@ -9,6 +9,10 @@ abstract final class RoleAccess {
     '/community',
     '/alumni',
     '/rewards',
+    '/dashboard',
+    '/friends',
+    '/saved',
+    '/peer-review',
   ];
 
   static bool usesTeacherShell(String? role) {
@@ -25,10 +29,8 @@ abstract final class RoleAccess {
   }
 
   static bool isPublicLocation(String location) {
-    return location == '/onboarding' ||
-        location == '/login' ||
-        location == '/register' ||
-        location.startsWith('/onboarding');
+    return location == '/login' ||
+        location == '/register';
   }
 
   /// Liste bibliothèque = étudiant only ; détail cours/doc/leçon = partagé.

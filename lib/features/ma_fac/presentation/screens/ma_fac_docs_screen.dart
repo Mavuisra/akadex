@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
+import '../../../../core/widgets/ma_fac_document_row.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
@@ -23,14 +24,9 @@ class MaFacDocsScreen extends ConsumerWidget {
     final cat = MaFacCategories.byId(categoryId);
     final me = ref.watch(authStateProvider).valueOrNull;
     final feed = TimelineTokens.of(context);
-    final primary = Theme.of(context).colorScheme.primary;
     final docsAsync = ref.watch(
       documentsProvider(
         DocumentQuery(
-          universityId:
-              me?.universityId.isNotEmpty == true ? me!.universityId : null,
-          departmentId:
-              me?.departmentId.isNotEmpty == true ? me!.departmentId : null,
           facultyId: me?.facultyId.isNotEmpty == true ? me!.facultyId : null,
           ordering: '-created_at',
         ),
@@ -84,55 +80,30 @@ class MaFacDocsScreen extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
             itemCount: filtered.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (_, i) {
               final doc = filtered[i];
               return SoftCard(
-                onTap: () => context.push('/library/document/${doc.id}'),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: feed.softTint,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        Icons.picture_as_pdf_outlined,
-                        color: primary,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            doc.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: feed.ink,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${doc.type.label} · ${doc.downloads} téléchargements',
-                            style: TextStyle(
-                              color: feed.meta,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                child: MaFacDocumentRow(
+                  doc: doc,
+                  onOpen: () => context.push('/library/document/${doc.id}'),
+                  onValidated: (_) => ref.invalidate(
+                    documentsProvider(
+                      DocumentQuery(
+                        universityId: me?.universityId.isNotEmpty == true
+                            ? me!.universityId
+                            : null,
+                        departmentId: me?.departmentId.isNotEmpty == true
+                            ? me!.departmentId
+                            : null,
+                        facultyId: me?.facultyId.isNotEmpty == true
+                            ? me!.facultyId
+                            : null,
+                        ordering: '-created_at',
                       ),
                     ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      color: feed.meta,
-                    ),
-                  ],
+                  ),
                 ),
               );
             },

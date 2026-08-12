@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
 /// Génère une miniature PNG de la 1ʳᵉ page d’un PDF.
@@ -34,6 +34,28 @@ bool _isFlutterTestBinding() {
   return binding.runtimeType.toString().contains('TestWidgets');
 }
 
+bool _supportsPdfxRenderer() {
+  if (kIsWeb) return true;
+  return defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS ||
+      defaultTargetPlatform == TargetPlatform.macOS;
+}
+
+bool _isValidPng(Uint8List bytes) {
+  return bytes.length >= 8 &&
+      bytes[0] == 0x89 &&
+      bytes[1] == 0x50 &&
+      bytes[2] == 0x4E &&
+      bytes[3] == 0x47;
+}
+
+Uint8List? _validatedPng(Uint8List? bytes) {
+  if (bytes == null || bytes.isEmpty || !_isValidPng(bytes)) {
+    return null;
+  }
+  return bytes;
+}
+
 Future<PdfThumbnailResult> renderPdfThumbnail({
   Uint8List? data,
   String? filePath,
@@ -42,12 +64,11 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
   PdfDocument? doc;
   try {
     if (_isFlutterTestBinding()) {
-      if (data == null || data.isEmpty) {
-        if (filePath == null || filePath.isEmpty) {
-          return const PdfThumbnailResult(
-            error: 'Aucune donnée PDF à rendre',
-          );
-        }
+      if ((data == null || data.isEmpty) &&
+          (filePath == null || filePath.isEmpty)) {
+        return const PdfThumbnailResult(
+          error: 'Aucune donnée PDF à rendre',
+        );
       }
       return PdfThumbnailResult(
         bytes: _fallbackPdfThumbnailBytes,
@@ -55,33 +76,18 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
       );
     }
 
-    final supportsNativePdfRender =
-        defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS;
+    if (!_supportsPdfxRenderer()) {
+      return const PdfThumbnailResult(
+        pageCount: 1,
+        error: 'Aperçu PDF indisponible sur cette plateforme',
+      );
+    }
 
     if (data != null && data.isNotEmpty) {
-      // Les runners CI / desktop n’ont pas toujours le moteur PDF natif
-      // attaché à la plate-forme. On retourne un fallback sûr plutôt que de
-      // laisser le plugin exploser avec MissingPluginException.
-      if (kIsWeb || !supportsNativePdfRender) {
-        return PdfThumbnailResult(
-          bytes: _fallbackPdfThumbnailBytes,
-          pageCount: 1,
-          error: 'Aperçu PDF indisponible sur cette plateforme',
-        );
-      }
-
       doc = await PdfDocument.openData(data);
     } else if (filePath != null &&
         filePath.isNotEmpty &&
         !kIsWeb) {
-      if (!supportsNativePdfRender) {
-        return PdfThumbnailResult(
-          bytes: _fallbackPdfThumbnailBytes,
-          pageCount: 1,
-          error: 'Aperçu PDF indisponible sur cette plateforme',
-        );
-      }
       doc = await PdfDocument.openFile(filePath);
     } else {
       return const PdfThumbnailResult(
@@ -96,9 +102,11 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
     }
 
     final page = await doc.getPage(1);
+    final renderWidth = (page.width * scale).clamp(120.0, 1400.0);
+    final renderHeight = (page.height * scale).clamp(120.0, 1800.0);
     final img = await page.render(
-      width: page.width * scale,
-      height: page.height * scale,
+      width: renderWidth,
+      height: renderHeight,
       format: PdfPageImageFormat.png,
       backgroundColor: '#FFFFFF',
     );
@@ -106,11 +114,11 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
     await doc.close();
     doc = null;
 
-    final bytes = img?.bytes;
-    if (bytes == null || bytes.isEmpty) {
+    final bytes = _validatedPng(img?.bytes);
+    if (bytes == null) {
       return PdfThumbnailResult(
         pageCount: pages,
-        error: 'Rendu PDF vide',
+        error: 'Impossible de générer l’aperçu de ce PDF',
       );
     }
     return PdfThumbnailResult(bytes: bytes, pageCount: pages);
@@ -121,9 +129,143 @@ Future<PdfThumbnailResult> renderPdfThumbnail({
     } catch (_) {}
 
     return PdfThumbnailResult(
-      bytes: _fallbackPdfThumbnailBytes,
       pageCount: 1,
-      error: e.toString(),
+      error: 'Aperçu indisponible pour ce PDF',
+    );
+  }
+}
+
+/// Aperçu publication : miniature PNG ou carte PDF propre (jamais d’erreur brute).
+class PdfPreviewCard extends StatelessWidget {
+  const PdfPreviewCard({
+    super.key,
+    this.thumbnailBytes,
+    required this.fileName,
+    this.pageCount = 0,
+    this.height = 180,
+    this.busy = false,
+  });
+
+  final Uint8List? thumbnailBytes;
+  final String fileName;
+  final int pageCount;
+  final double height;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final validThumb = _validatedPng(thumbnailBytes);
+
+    if (busy) {
+      return _PdfPlaceholder(
+        height: height,
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Aperçu PDF…',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (validThumb != null) {
+      return SizedBox(
+        height: height,
+        width: double.infinity,
+        child: ColoredBox(
+          color: const Color(0xFFF0F2F5),
+          child: Image.memory(
+            validThumb,
+            height: height,
+            width: double.infinity,
+            fit: BoxFit.contain,
+            gaplessPlayback: true,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) => _PdfPlaceholder(
+              height: height,
+              fileName: fileName,
+              pageCount: pageCount,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return _PdfPlaceholder(
+      height: height,
+      fileName: fileName,
+      pageCount: pageCount,
+    );
+  }
+}
+
+class _PdfPlaceholder extends StatelessWidget {
+  const _PdfPlaceholder({
+    required this.height,
+    this.fileName,
+    this.pageCount = 0,
+    this.child,
+  });
+
+  final double height;
+  final String? fileName;
+  final int pageCount;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: ColoredBox(
+        color: const Color(0xFFF0F2F5),
+        child: Center(
+          child: child ??
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.picture_as_pdf_rounded,
+                    size: 48,
+                    color: Colors.red.shade400,
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      fileName ?? 'Document PDF',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (pageCount > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '$pageCount page${pageCount > 1 ? 's' : ''}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+        ),
+      ),
     );
   }
 }

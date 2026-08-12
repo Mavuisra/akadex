@@ -11,6 +11,7 @@ from .models import (
     Department,
     Document,
     DocumentComment,
+    DocumentPeerValidation,
     Faculty,
     Favorite,
     LearningDomain,
@@ -243,13 +244,24 @@ class DocumentAdmin(admin.ModelAdmin):
 
     @admin.action(description='Approuver les documents (crédite les points)')
     def approve_documents(self, request, queryset):
+        from .peer_validation import peer_validation_count
+        from .rewards import FACULTY_PEER_VALIDATIONS_REQUIRED
+
         for doc in queryset.select_related('author'):
-            if not doc.is_approved:
+            if doc.is_approved:
+                continue
+            count = peer_validation_count(doc)
+            if doc.moderation_status == 'pending_admin' or count >= FACULTY_PEER_VALIDATIONS_REQUIRED:
                 doc.is_approved = True
                 doc.moderation_status = 'approved'
                 doc.save()
             else:
-                award_approval_points(doc)
+                self.message_user(
+                    request,
+                    f'« {doc.title} » : seulement {count}/'
+                    f'{FACULTY_PEER_VALIDATIONS_REQUIRED} validations fac.',
+                    level='warning',
+                )
 
     @admin.action(description='Refuser les documents')
     def reject_documents(self, request, queryset):
@@ -300,3 +312,10 @@ class RewardPrizeAdmin(admin.ModelAdmin):
 class RewardRedemptionAdmin(admin.ModelAdmin):
     list_display = ('user', 'prize', 'points_spent', 'created_at')
     list_filter = ('prize__category',)
+
+
+@admin.register(DocumentPeerValidation)
+class DocumentPeerValidationAdmin(admin.ModelAdmin):
+    list_display = ('document', 'validator', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('document__title', 'validator__email')

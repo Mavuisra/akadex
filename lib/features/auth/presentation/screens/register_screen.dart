@@ -93,13 +93,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             : 'Parcours académique et pro',
       };
 
-  List<String> get _stepLabels => const [
-        'Profil',
-        'Identité',
-        'Compte',
-        'Parcours',
-      ];
-
   String? _validateStep(int step) {
     switch (step) {
       case 0:
@@ -163,7 +156,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _error = null;
       });
     } else {
-      context.go('/onboarding');
+      context.go('/login');
     }
   }
 
@@ -276,34 +269,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       backgroundColor: Colors.transparent,
       body: PageAtmosphere(
         child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 16, 0),
-                child: Row(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 440),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    IconButton(
-                      onPressed: _goBack,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
-                    Expanded(
-                      child: _StepProgress(
-                        current: _step,
-                        labels: _stepLabels,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
                           if (_step == 0) ...[
                             const Center(child: AkadexLogo(size: 80)),
                             const SizedBox(height: 12),
@@ -447,10 +420,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 
@@ -930,125 +900,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _StepProgress extends StatelessWidget {
-  const _StepProgress({
-    required this.current,
-    required this.labels,
-  });
-
-  final int current;
-  final List<String> labels;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            for (var i = 0; i < labels.length; i++) ...[
-              if (i > 0)
-                Expanded(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    height: 3,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: i <= current
-                          ? AkadexColors.primary
-                          : AkadexColors.border,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-              _StepDot(
-                index: i,
-                completed: i < current,
-                isCurrent: i == current,
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (var i = 0; i < labels.length; i++)
-              Expanded(
-                child: Text(
-                  labels[i],
-                  textAlign: i == 0
-                      ? TextAlign.left
-                      : i == labels.length - 1
-                          ? TextAlign.right
-                          : TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight:
-                        i == current ? FontWeight.w800 : FontWeight.w600,
-                    color: i <= current
-                        ? AkadexColors.primary
-                        : AkadexColors.inkSoft,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _StepDot extends StatelessWidget {
-  const _StepDot({
-    required this.index,
-    required this.completed,
-    required this.isCurrent,
-  });
-
-  final int index;
-  final bool completed;
-  final bool isCurrent;
-
-  @override
-  Widget build(BuildContext context) {
-    final active = completed || isCurrent;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      width: isCurrent ? 28 : 22,
-      height: isCurrent ? 28 : 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active ? AkadexColors.primary : Colors.white,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: active ? AkadexColors.primary : AkadexColors.border,
-          width: 1.5,
-        ),
-        boxShadow: isCurrent
-            ? [
-                BoxShadow(
-                  color: AkadexColors.primary.withValues(alpha: 0.28),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: completed
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-          : Text(
-              '${index + 1}',
-              style: TextStyle(
-                color: active ? Colors.white : AkadexColors.inkSoft,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
     );
   }
 }

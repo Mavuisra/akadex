@@ -300,7 +300,7 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                       icon: Icons.notifications_outlined,
                       label: 'Notifications',
                       trailing: const _NotificationsBadge(),
-                      onTap: () {},
+                      onTap: () => context.push('/notifications'),
                     ),
                     if (user.usesStudentShell) ...[
                       _MenuTile(
@@ -686,7 +686,8 @@ class _NotificationsBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifs = ref.watch(notificationsProvider).valueOrNull ?? const [];
-    if (notifs.isEmpty) return const Icon(Icons.chevron_right_rounded);
+    final unread = notifs.where((n) => !n.isRead).length;
+    if (unread == 0) return const Icon(Icons.chevron_right_rounded);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -697,7 +698,7 @@ class _NotificationsBadge extends ConsumerWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
-            '${notifs.length}',
+            unread > 99 ? '99+' : '$unread',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12,

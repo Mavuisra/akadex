@@ -110,7 +110,7 @@ class _LmdAssistantScreenState extends State<LmdAssistantScreen> {
                     style: TextStyle(fontSize: 12, color: feed.ink),
                   ),
                   backgroundColor: feed.softTint,
-                  side: BorderSide(color: feed.divider),
+                  side: TimelineTokens.tabBorderSide,
                   onPressed: () => _send(q),
                 );
               },

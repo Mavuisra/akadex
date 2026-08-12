@@ -11,9 +11,9 @@ import '../../features/alumni/presentation/screens/alumni_profile_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_publish_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
-import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
+import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/community/presentation/screens/community_publish_screen.dart';
 import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
@@ -25,6 +25,7 @@ import '../../features/learn/presentation/screens/learn_screen.dart';
 import '../../features/learn/presentation/screens/learn_search_screen.dart';
 import '../../features/learn/presentation/screens/mobile_money_screen.dart';
 import '../../features/library/presentation/screens/contribute_screen.dart';
+import '../../features/library/presentation/screens/peer_review_screen.dart';
 import '../../core/widgets/post_viewer_screens.dart';
 import '../../features/library/presentation/screens/course_detail_screen.dart';
 import '../../features/library/presentation/screens/document_detail_screen.dart';
@@ -47,6 +48,9 @@ import '../../features/profile/presentation/screens/edit_profile_screen.dart';
 import '../../features/profile/presentation/screens/my_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/rewards_screen.dart';
+import '../../features/profile/presentation/screens/friends_screen.dart';
+import '../../features/profile/presentation/screens/saved_screen.dart';
+import '../../features/profile/presentation/screens/student_dashboard_screen.dart';
 import '../../features/search/presentation/screens/search_screen.dart';
 import '../../features/shell/student_shell.dart';
 import '../../features/shell/teacher_shell.dart';
@@ -112,19 +116,19 @@ CupertinoPage<void> _cupertino(GoRouterState state, Widget child) {
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthRefresh(ref);
 
-  // GoRouter créé UNE seule fois. Les deux shells ont des clés distinctes ;
-  // RoleAccess redirige vers le bon shell selon le rôle.
+  // GoRouter créé une seule fois. Les deux shells ont des clés distinctes ;
+  // RoleAccess redirige vers le bon shell selon le rôle connecté.
   final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/onboarding',
+    initialLocation: '/login',
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final user = ref.read(authStateProvider).valueOrNull;
-      final role = user?.role;
+      final authUser = ref.read(authStateProvider).valueOrNull;
+      final role = authUser?.role;
 
       if (RoleAccess.isPublicLocation(loc)) {
-        if (user != null && (loc == '/login' || loc == '/register')) {
+        if (authUser != null && (loc == '/login' || loc == '/register')) {
           return RoleAccess.homeForRole(role);
         }
         return null;
@@ -142,11 +146,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(
-        path: '/onboarding',
-        pageBuilder: (context, state) =>
-            _fadeSlide(state, const OnboardingScreen()),
-      ),
-      GoRoute(
         path: '/login',
         pageBuilder: (context, state) =>
             _cupertino(state, const LoginScreen()),
@@ -156,189 +155,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) =>
             _cupertino(state, const RegisterScreen()),
       ),
-      StatefulShellRoute.indexedStack(
-        key: _teacherShellKey,
-        builder: (context, state, navigationShell) {
-          return TeacherShell(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            navigatorKey: _tNav0,
-            routes: [
-              GoRoute(
-                path: '/teacher',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfessorHubScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _tNav1,
-            routes: [
-              GoRoute(
-                path: '/teacher-publish',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfessorPublishScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _tNav2,
-            routes: [
-              GoRoute(
-                path: '/teacher-dashboard',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfessorDashboardScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _tNav3,
-            routes: [
-              GoRoute(
-                path: '/teacher-profile',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfileScreen()),
-              ),
-            ],
-          ),
-        ],
-      ),
-      StatefulShellRoute.indexedStack(
-        key: _studentShellKey,
-        builder: (context, state, navigationShell) {
-          return StudentShell(navigationShell: navigationShell);
-        },
-        branches: [
-          StatefulShellBranch(
-            navigatorKey: _sNav0,
-            routes: [
-              GoRoute(
-                path: '/home',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const HomeScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _sNav1,
-            routes: [
-              GoRoute(
-                path: '/learn',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const LearnScreen()),
-                routes: [
-                  GoRoute(
-                    path: 'search',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      const LearnSearchScreen(),
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'domain/:id',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      DomainCoursesScreen(
-                        domainId: state.pathParameters['id']!,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _sNav2,
-            routes: [
-              GoRoute(
-                path: '/library',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const MaFacScreen()),
-                routes: [
-                  GoRoute(
-                    path: 'docs/:categoryId',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      MaFacDocsScreen(
-                        categoryId: state.pathParameters['categoryId']!,
-                      ),
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'courses',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      const MaFacCoursesScreen(),
-                    ),
-                  ),
-                  GoRoute(
-                    path: 'explore',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) {
-                      final q = state.uri.queryParameters;
-                      return _cupertino(
-                        state,
-                        MaFacExploreScreen(
-                          departmentId: q['departmentId'] ?? '',
-                          departmentName: q['departmentName'] ?? '',
-                          promotionId: q['promotionId'] ?? '',
-                          promotionName: q['promotionName'] ?? '',
-                          facultyName: q['facultyName'] ?? '',
-                        ),
-                      );
-                    },
-                  ),
-                  GoRoute(
-                    path: 'ue/:id',
-                    parentNavigatorKey: _rootNavigatorKey,
-                    pageBuilder: (context, state) => _cupertino(
-                      state,
-                      MaFacCourseDetailScreen(
-                        courseId: state.pathParameters['id']!,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _sNav3,
-            routes: [
-              GoRoute(
-                path: '/community',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const CommunityScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _sNav4,
-            routes: [
-              GoRoute(
-                path: '/alumni',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const AlumniScreen()),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            navigatorKey: _sNav5,
-            routes: [
-              GoRoute(
-                path: '/profile',
-                pageBuilder: (context, state) =>
-                    _fadeSlide(state, const ProfileScreen()),
-              ),
-            ],
-          ),
-        ],
-      ),
+      _teacherShellRoute,
+      _studentShellRoute,
       GoRoute(
         path: '/library/course/:id',
         parentNavigatorKey: _rootNavigatorKey,
@@ -431,10 +249,40 @@ final routerProvider = Provider<GoRouter>((ref) {
             _cupertino(state, const CalendarScreen()),
       ),
       GoRoute(
+        path: '/notifications',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const NotificationsScreen()),
+      ),
+      GoRoute(
         path: '/rewards',
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const RewardsScreen()),
+      ),
+      GoRoute(
+        path: '/dashboard',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const StudentDashboardScreen()),
+      ),
+      GoRoute(
+        path: '/friends',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const FriendsScreen()),
+      ),
+      GoRoute(
+        path: '/saved',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const SavedScreen()),
+      ),
+      GoRoute(
+        path: '/peer-review',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const PeerReviewScreen()),
       ),
       GoRoute(
         path: '/contribute',
@@ -581,19 +429,194 @@ final routerProvider = Provider<GoRouter>((ref) {
           StartConversationScreen(userId: state.pathParameters['userId']!),
         ),
       ),
-      GoRoute(
-        path: '/professor',
-        parentNavigatorKey: _rootNavigatorKey,
-        redirect: (context, state) => '/teacher',
-      ),
-      GoRoute(
-        path: '/professor/publish',
-        parentNavigatorKey: _rootNavigatorKey,
-        redirect: (context, state) => '/teacher-publish',
-      ),
     ],
   );
 
   ref.onDispose(router.dispose);
   return router;
 });
+
+final _teacherShellRoute = StatefulShellRoute.indexedStack(
+  key: _teacherShellKey,
+  builder: (context, state, navigationShell) {
+    return TeacherShell(navigationShell: navigationShell);
+  },
+  branches: [
+    StatefulShellBranch(
+      navigatorKey: _tNav0,
+      routes: [
+        GoRoute(
+          path: '/teacher',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const ProfessorHubScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _tNav1,
+      routes: [
+        GoRoute(
+          path: '/teacher-publish',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const ProfessorPublishScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _tNav2,
+      routes: [
+        GoRoute(
+          path: '/teacher-dashboard',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const ProfessorDashboardScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _tNav3,
+      routes: [
+        GoRoute(
+          path: '/teacher-profile',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const ProfileScreen()),
+        ),
+      ],
+    ),
+  ],
+);
+
+final _studentShellRoute = StatefulShellRoute.indexedStack(
+  key: _studentShellKey,
+  builder: (context, state, navigationShell) {
+    return StudentShell(navigationShell: navigationShell);
+  },
+  branches: [
+    StatefulShellBranch(
+      navigatorKey: _sNav0,
+      routes: [
+        GoRoute(
+          path: '/home',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const HomeScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _sNav1,
+      routes: [
+        GoRoute(
+          path: '/learn',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const LearnScreen()),
+          routes: [
+            GoRoute(
+              path: 'search',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) => _cupertino(
+                state,
+                const LearnSearchScreen(),
+              ),
+            ),
+            GoRoute(
+              path: 'domain/:id',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) => _cupertino(
+                state,
+                DomainCoursesScreen(
+                  domainId: state.pathParameters['id']!,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _sNav2,
+      routes: [
+        GoRoute(
+          path: '/library',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const MaFacScreen()),
+          routes: [
+            GoRoute(
+              path: 'docs/:categoryId',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) => _cupertino(
+                state,
+                MaFacDocsScreen(
+                  categoryId: state.pathParameters['categoryId']!,
+                ),
+              ),
+            ),
+            GoRoute(
+              path: 'courses',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) => _cupertino(
+                state,
+                const MaFacCoursesScreen(),
+              ),
+            ),
+            GoRoute(
+              path: 'explore',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) {
+                final q = state.uri.queryParameters;
+                return _cupertino(
+                  state,
+                  MaFacExploreScreen(
+                    departmentId: q['departmentId'] ?? '',
+                    departmentName: q['departmentName'] ?? '',
+                    promotionId: q['promotionId'] ?? '',
+                    promotionName: q['promotionName'] ?? '',
+                    facultyName: q['facultyName'] ?? '',
+                  ),
+                );
+              },
+            ),
+            GoRoute(
+              path: 'ue/:id',
+              parentNavigatorKey: _rootNavigatorKey,
+              pageBuilder: (context, state) => _cupertino(
+                state,
+                MaFacCourseDetailScreen(
+                  courseId: state.pathParameters['id']!,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _sNav3,
+      routes: [
+        GoRoute(
+          path: '/community',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const CommunityScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _sNav4,
+      routes: [
+        GoRoute(
+          path: '/alumni',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const AlumniScreen()),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      navigatorKey: _sNav5,
+      routes: [
+        GoRoute(
+          path: '/profile',
+          pageBuilder: (context, state) =>
+              _fadeSlide(state, const ProfileScreen()),
+        ),
+      ],
+    ),
+  ],
+);

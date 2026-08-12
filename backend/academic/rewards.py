@@ -3,23 +3,30 @@
 from django.contrib.auth import get_user_model
 from django.db.models import F
 
-# Points accordés quand un document est validé (qualité).
-DOCUMENT_APPROVAL_POINTS = {
-    'support_cours': 40,
-    'resume': 25,
-    'fiche_revision': 30,
-    'examen': 35,
-    'corrige': 35,
-    'tp': 30,
-    'interrogation': 20,
-    'tutoriel': 25,
-    'livre': 50,
-    'projet': 30,
-    'memoire': 45,
-    'default': 20,
-}
-
+# --- Validation fac + admin ---
+FACULTY_PEER_VALIDATIONS_REQUIRED = 10
 WHEEL_UNLOCK_POINTS = 100
+WHEEL_SPIN_COST = 100
+
+# 10 pts : gros travaux / forte valeur pédagogique
+HIGH_TIER_DOC_TYPES = frozenset({
+    'tfc',
+    'memoire',
+    'projet_tutore',
+    'resume',
+})
+
+# 5 pts : examens, TD, TP, interrogations
+LOW_TIER_DOC_TYPES = frozenset({
+    'examen',
+    'tp',
+    'corrige',
+    'interrogation',
+})
+
+HIGH_TIER_POINTS = 10
+LOW_TIER_POINTS = 5
+DEFAULT_POINTS = 5
 
 DOC_TYPE_LABELS = {
     'support_cours': 'PDF de cours',
@@ -33,18 +40,22 @@ DOC_TYPE_LABELS = {
     'livre': 'livre',
     'projet': 'projet',
     'memoire': 'mémoire',
+    'tfc': 'TFC',
+    'projet_tutore': 'projet tuteuré',
+    'rapport': 'rapport de stage',
 }
 
 
 def points_for_document(doc_type: str) -> int:
-    return DOCUMENT_APPROVAL_POINTS.get(
-        doc_type,
-        DOCUMENT_APPROVAL_POINTS['default'],
-    )
+    if doc_type in HIGH_TIER_DOC_TYPES:
+        return HIGH_TIER_POINTS
+    if doc_type in LOW_TIER_DOC_TYPES:
+        return LOW_TIER_POINTS
+    return DEFAULT_POINTS
 
 
 def award_approval_points(document) -> int:
-    """Attribue les points de validation une seule fois par document."""
+    """Attribue les points après validation admin (une seule fois)."""
     if not document.is_approved or document.points_awarded > 0:
         return 0
     if document.author_id is None:
@@ -68,9 +79,8 @@ def award_approval_points(document) -> int:
         title='Contribution validée',
         message=(
             f'Félicitations ! Votre contribution ({label}) « {document.title} » '
-            f'a été validée. Vous avez obtenu {pts} points. '
-            'Continuez à partager des ressources de qualité pour aider '
-            'la communauté universitaire.'
+            f'a été validée par l\'équipe Akadex après validation de votre faculté. '
+            f'Vous avez obtenu {pts} points.'
         ),
         points=pts,
     )

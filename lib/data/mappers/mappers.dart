@@ -1,6 +1,22 @@
+import '../../core/constants/app_constants.dart';
 import '../../core/theme/status_backgrounds.dart';
 import '../../domain/models/document_type.dart';
 import '../../domain/models/models.dart';
+
+/// Transforme `/media/...` ou chemin relatif en URL absolue.
+String absoluteMediaUrl(dynamic raw) {
+  final value = (raw ?? '').toString().trim();
+  if (value.isEmpty) return '';
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return value;
+  }
+  final api = AppConstants.apiBaseUrl;
+  final origin = api.endsWith('/api/')
+      ? api.substring(0, api.length - 5)
+      : (api.endsWith('/api') ? api.substring(0, api.length - 4) : api);
+  if (value.startsWith('/')) return '$origin$value';
+  return '$origin/$value';
+}
 
 int asInt(dynamic value, [int fallback = 0]) {
   if (value == null) return fallback;
@@ -157,7 +173,14 @@ AcademicDocument documentFromJson(Map<String, dynamic> json) {
         .toString(),
     rejectionReason: (json['rejection_reason'] ?? '').toString(),
     pointsAwarded: asInt(json['points_awarded']),
-    externalUrl: (json['external_url'] ?? '').toString(),
+    externalUrl: absoluteMediaUrl(json['external_url']),
+    fileUrl: absoluteMediaUrl(json['file'] ?? json['file_url']),
+    peerValidationCount: asInt(json['peer_validation_count']),
+    peerValidationsRequired: asInt(json['peer_validations_required'], 10),
+    userHasPeerValidated: json['user_has_peer_validated'] == true,
+    canPeerValidate: json['can_peer_validate'] == true,
+    userRating: asInt(json['user_rating']),
+    potentialPoints: asInt(json['potential_points']),
   );
 }
 
@@ -487,7 +510,9 @@ AppNotification notificationFromJson(Map<String, dynamic> json) {
 }
 
 String moderationStatusLabel(String status) => switch (status) {
-      'pending' => 'En attente de validation',
+      'pending_peers' => 'Notes fac',
+      'pending_admin' => 'En attente admin',
+      'pending' => 'Notes fac',
       'changes_requested' => 'Modification demandée',
       'approved' => 'Validé',
       'rejected' => 'Rejeté',
@@ -517,4 +542,17 @@ String timeAgo(DateTime date) {
   if (diff.inHours < 24) return 'il y a ${diff.inHours} h';
   if (diff.inDays < 7) return 'il y a ${diff.inDays} j';
   return '${date.day}/${date.month}/${date.year}';
+}
+
+FollowedAlumni followedAlumniFromJson(Map<String, dynamic> json) {
+  return FollowedAlumni(
+    id: json['id'].toString(),
+    alumniId: (json['alumni'] ?? '').toString(),
+    name: (json['alumni_name'] ?? '').toString(),
+    avatarUrl: (json['alumni_avatar'] ?? '').toString(),
+    bio: (json['alumni_bio'] ?? '').toString(),
+    department: (json['alumni_department'] ?? '').toString(),
+    followedAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        DateTime.now(),
+  );
 }

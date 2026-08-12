@@ -61,19 +61,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleColor =
+        isDark ? AkadexColors.inkOnDark : AkadexColors.ink;
+    final subtitleColor =
+        isDark ? AkadexColors.metaOnDark : AkadexColors.inkMuted;
+    final linkColor =
+        isDark ? AkadexColors.primaryOnDark : AkadexColors.primary;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PageAtmosphere(
         child: SafeArea(
           child: Column(
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: () => context.go('/onboarding'),
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-              ),
               Expanded(
                 child: Center(
                   child: SingleChildScrollView(
@@ -87,13 +89,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           children: [
                             const Center(child: AkadexLogo(size: 96)),
                             const SizedBox(height: 20),
-                            const Text(
+                            Text(
                               'Connexion',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
-                                color: AkadexColors.ink,
+                                color: titleColor,
                                 letterSpacing: -0.3,
                               ),
                             ),
@@ -102,8 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               'Ton campus numérique t’attend',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: AkadexColors.inkMuted
-                                    .withValues(alpha: 0.95),
+                                color: subtitleColor,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -114,10 +115,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 controller: _email,
                                 keyboardType: TextInputType.emailAddress,
                                 textInputAction: TextInputAction.next,
-                                decoration: const InputDecoration(
+                                style: TextStyle(color: titleColor),
+                                decoration: InputDecoration(
                                   hintText: 'Email',
-                                  prefixIcon:
-                                      Icon(Icons.mail_outline_rounded),
+                                  hintStyle: TextStyle(color: subtitleColor),
+                                  prefixIcon: Icon(
+                                    Icons.mail_outline_rounded,
+                                    color: subtitleColor,
+                                  ),
                                   border: InputBorder.none,
                                   filled: true,
                                   fillColor: Colors.transparent,
@@ -133,10 +138,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 obscureText: _obscure,
                                 textInputAction: TextInputAction.done,
                                 onSubmitted: (_) => _loading ? null : _submit(),
+                                style: TextStyle(color: titleColor),
                                 decoration: InputDecoration(
                                   hintText: 'Mot de passe',
-                                  prefixIcon:
-                                      const Icon(Icons.lock_outline_rounded),
+                                  hintStyle: TextStyle(color: subtitleColor),
+                                  prefixIcon: Icon(
+                                    Icons.lock_outline_rounded,
+                                    color: subtitleColor,
+                                  ),
                                   border: InputBorder.none,
                                   filled: true,
                                   fillColor: Colors.transparent,
@@ -148,6 +157,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       _obscure
                                           ? Icons.visibility_outlined
                                           : Icons.visibility_off_outlined,
+                                      color: subtitleColor,
                                     ),
                                   ),
                                 ),
@@ -161,11 +171,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFDECEC),
+                                  color: isDark
+                                      ? const Color(0xFF3A2020)
+                                      : const Color(0xFFFDECEC),
                                   borderRadius: BorderRadius.circular(14),
                                   border: Border.all(
                                     color: AkadexColors.danger
-                                        .withValues(alpha: 0.25),
+                                        .withValues(alpha: isDark ? 0.45 : 0.25),
                                   ),
                                 ),
                                 child: Row(
@@ -195,6 +207,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Center(
                               child: TextButton(
                                 onPressed: () {},
+                                style: TextButton.styleFrom(
+                                  foregroundColor: linkColor,
+                                ),
                                 child: const Text('Mot de passe oublié ?'),
                               ),
                             ),
@@ -219,17 +234,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             Center(
                               child: GestureDetector(
                                 onTap: () => context.go('/register'),
-                                child: const Text.rich(
+                                child: Text.rich(
                                   TextSpan(
-                                    style: TextStyle(
-                                      color: AkadexColors.inkMuted,
-                                    ),
+                                    style: TextStyle(color: subtitleColor),
                                     children: [
-                                      TextSpan(text: 'Pas de compte ? '),
+                                      const TextSpan(text: 'Pas de compte ? '),
                                       TextSpan(
                                         text: "S'inscrire",
                                         style: TextStyle(
-                                          color: AkadexColors.primary,
+                                          color: linkColor,
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),

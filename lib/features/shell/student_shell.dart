@@ -34,12 +34,6 @@ class StudentShell extends StatelessWidget {
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             color: feed.cardBg.withValues(alpha: isDark ? 0.96 : 0.94),
-            border: Border(
-              top: BorderSide(
-                color: isDark ? feed.divider : AkadexColors.border,
-                width: 0.6,
-              ),
-            ),
             boxShadow: [
               BoxShadow(
                 color: (isDark
@@ -59,7 +53,7 @@ class StudentShell extends StatelessWidget {
                 : AkadexColors.primary,
             inactiveColor: isDark ? feed.meta : AkadexColors.inkSoft,
             backgroundColor: Colors.transparent,
-            border: Border.all(color: Colors.transparent),
+            border: TimelineTokens.tabBorder,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.house),

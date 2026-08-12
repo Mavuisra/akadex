@@ -1,11 +1,11 @@
-import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../../theme/akadex_theme.dart';
 import '../../theme/timeline_tokens.dart';
+import '../../utils/pdf_thumbnail.dart';
 
 /// Aperçu PDF style LinkedIn : pages en défilement horizontal.
 ///
@@ -83,28 +83,62 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
       } else {
         throw StateError('Aucun PDF à prévisualiser');
       }
-      final doc = await PdfDocument.openData(data);
-      final total = doc.pagesCount;
-      final limit = total.clamp(1, 6);
-      final rendered = <Uint8List>[];
-      for (var i = 1; i <= limit; i++) {
-        final page = await doc.getPage(i);
-        final img = await page.render(
-          width: page.width * 1.2,
-          height: page.height * 1.2,
-          format: PdfPageImageFormat.png,
-          backgroundColor: '#FFFFFF',
-        );
-        await page.close();
-        if (img?.bytes != null) rendered.add(img!.bytes);
+
+      if (kIsWeb ||
+          defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS) {
+        final doc = await PdfDocument.openData(data);
+        final total = doc.pagesCount;
+        final limit = total.clamp(1, 6);
+        final rendered = <Uint8List>[];
+        for (var i = 1; i <= limit; i++) {
+          final page = await doc.getPage(i);
+          final renderWidth = (page.width * 1.2).clamp(120.0, 1400.0);
+          final renderHeight = (page.height * 1.2).clamp(120.0, 1800.0);
+          final img = await page.render(
+            width: renderWidth,
+            height: renderHeight,
+            format: PdfPageImageFormat.png,
+            backgroundColor: '#FFFFFF',
+          );
+          await page.close();
+          final bytes = img?.bytes;
+          if (bytes != null &&
+              bytes.length >= 8 &&
+              bytes[0] == 0x89 &&
+              bytes[1] == 0x50) {
+            rendered.add(bytes);
+          }
+        }
+        await doc.close();
+        if (!mounted) return;
+        final resolved = widget.pageCount > 0 ? widget.pageCount : total;
+        setState(() {
+          _pages = resolved;
+          _previews.addAll(rendered);
+          _loading = false;
+          if (rendered.isEmpty) {
+            _error = 'Aperçu indisponible';
+          }
+        });
+        widget.onPagesResolved?.call(resolved);
+        return;
       }
-      await doc.close();
+
+      final thumb = await renderPdfThumbnail(data: data);
       if (!mounted) return;
-      final resolved = widget.pageCount > 0 ? widget.pageCount : total;
+      final resolved =
+          widget.pageCount > 0 ? widget.pageCount : thumb.pageCount;
       setState(() {
         _pages = resolved;
-        _previews.addAll(rendered);
+        if (thumb.bytes != null && thumb.bytes!.isNotEmpty) {
+          _previews.add(thumb.bytes!);
+        }
         _loading = false;
+        if (_previews.isEmpty) {
+          _error = thumb.error ?? 'Aperçu indisponible';
+        }
       });
       widget.onPagesResolved?.call(resolved);
     } catch (_) {
@@ -169,6 +203,11 @@ class _PdfPageCarouselState extends State<PdfPageCarousel> {
                                   child: Image.memory(
                                     _previews[i],
                                     fit: BoxFit.contain,
+                                    errorBuilder: (_, _, _) => _FallbackPreview(
+                                      pageCount: _pages,
+                                      error: 'Aperçu indisponible',
+                                      onOpen: widget.onOpen,
+                                    ),
                                   ),
                                 ),
                               ),

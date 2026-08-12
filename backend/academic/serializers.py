@@ -534,6 +534,12 @@ class DocumentSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     is_favorited = serializers.SerializerMethodField()
+    peer_validation_count = serializers.SerializerMethodField()
+    peer_validations_required = serializers.SerializerMethodField()
+    user_has_peer_validated = serializers.SerializerMethodField()
+    can_peer_validate = serializers.SerializerMethodField()
+    user_rating = serializers.SerializerMethodField()
+    potential_points = serializers.SerializerMethodField()
 
     class Meta:
         model = Document
@@ -567,6 +573,12 @@ class DocumentSerializer(serializers.ModelSerializer):
             'rejection_reason',
             'is_featured',
             'is_favorited',
+            'peer_validation_count',
+            'peer_validations_required',
+            'user_has_peer_validated',
+            'can_peer_validate',
+            'user_rating',
+            'potential_points',
             'points_awarded',
             'created_at',
             'updated_at',
@@ -596,6 +608,45 @@ class DocumentSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return obj.favorited_by.filter(user=request.user).exists()
+
+    def get_peer_validation_count(self, obj):
+        if hasattr(obj, '_peer_count'):
+            return int(obj._peer_count)
+        return obj.peer_validations.count()
+
+    def get_peer_validations_required(self, obj):
+        from .rewards import FACULTY_PEER_VALIDATIONS_REQUIRED
+
+        return FACULTY_PEER_VALIDATIONS_REQUIRED
+
+    def get_user_has_peer_validated(self, obj):
+        from .peer_validation import user_has_peer_validated
+
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return user_has_peer_validated(request.user, obj)
+
+    def get_can_peer_validate(self, obj):
+        from .peer_validation import can_peer_validate
+
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return can_peer_validate(request.user, obj)
+
+    def get_user_rating(self, obj):
+        from .peer_validation import user_rating
+
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        return user_rating(request.user, obj)
+
+    def get_potential_points(self, obj):
+        from .peer_validation import potential_points_for
+
+        return potential_points_for(obj)
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

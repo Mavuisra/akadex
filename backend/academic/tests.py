@@ -225,3 +225,130 @@ class AkadexApiTests(APITestCase):
         self.assertTrue(course.domains.filter(slug='informatique').exists())
         self.assertEqual(res.data['moderation_status'], 'approved')
         self.assertTrue(res.data['is_approved'])
+
+    def test_peer_validation_then_admin_awards_points(self):
+        from academic.rewards import (
+            FACULTY_PEER_VALIDATIONS_REQUIRED,
+            HIGH_TIER_POINTS,
+            LOW_TIER_POINTS,
+        )
+
+        author = User.objects.create_user(
+            email='author@test.cd',
+            username='author',
+            password='akadex2026',
+            university=self.uni,
+            faculty=self.faculty,
+            department=self.dept,
+        )
+        doc = Document.objects.create(
+            title='Examen INF101',
+            university=self.uni,
+            department=self.dept,
+            author=author,
+            doc_type='examen',
+            moderation_status='pending_peers',
+            is_approved=False,
+        )
+
+        validators = []
+        for i in range(FACULTY_PEER_VALIDATIONS_REQUIRED):
+            u = User.objects.create_user(
+                email=f'peer{i}@test.cd',
+                username=f'peer{i}',
+                password='akadex2026',
+                university=self.uni,
+                faculty=self.faculty,
+                department=self.dept,
+            )
+            validators.append(u)
+
+        for u in validators:
+            self.client.force_authenticate(user=u)
+            res = self.client.post(
+                reverse('document-peer-validate', args=[doc.pk]),
+                {'score': 4},
+                format='json',
+            )
+            self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+
+        doc.refresh_from_db()
+        self.assertEqual(doc.moderation_status, 'pending_admin')
+        self.assertEqual(doc.peer_validations.count(), FACULTY_PEER_VALIDATIONS_REQUIRED)
+
+        admin = User.objects.create_superuser(
+            email='admin.peer@test.cd',
+            username='adminpeer',
+            password='akadex2026',
+        )
+        self.client.force_authenticate(user=admin)
+        res = self.client.post(reverse('document-approve', args=[doc.pk]))
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.data)
+
+        doc.refresh_from_db()
+        author.refresh_from_db()
+        self.assertTrue(doc.is_approved)
+        self.assertEqual(doc.points_awarded, LOW_TIER_POINTS)
+        self.assertEqual(author.reputation, LOW_TIER_POINTS)
+
+        memo = Document.objects.create(
+            title='Mémoire L3',
+            university=self.uni,
+            department=self.dept,
+            author=author,
+            doc_type='memoire',
+            moderation_status='pending_peers',
+            is_approved=False,
+        )
+        for u in validators:
+            self.client.force_authenticate(user=u)
+            self.client.post(reverse('document-peer-validate', args=[memo.pk]))
+        self.client.force_authenticate(user=admin)
+        self.client.post(reverse('document-approve', args=[memo.pk]))
+        memo.refresh_from_db()
+        author.refresh_from_db()
+        self.assertEqual(memo.points_awarded, HIGH_TIER_POINTS)
+        self.assertEqual(
+            author.reputation,
+            LOW_TIER_POINTS + HIGH_TIER_POINTS,
+        )
+
+    def test_pending_documents_visible_to_other_students(self):
+        """Les docs en attente d'autres étudiants doivent apparaître dans la liste."""
+        other = User.objects.create_user(
+            email='autre@test.cd',
+            username='autre',
+            password='akadex2026',
+            first_name='Paul',
+            last_name='Kabongo',
+            university=self.uni,
+            faculty=self.faculty,
+            department=self.dept,
+        )
+        peer = User.objects.create_user(
+            email='pair@test.cd',
+            username='pair',
+            password='akadex2026',
+            first_name='Marie',
+            last_name='Lubala',
+            university=self.uni,
+            faculty=self.faculty,
+            department=self.dept,
+        )
+        pending = Document.objects.create(
+            title='TP réseaux — autre étudiant',
+            university=self.uni,
+            department=self.dept,
+            author=other,
+            doc_type='tp',
+            moderation_status='pending_peers',
+            is_approved=False,
+        )
+
+        self.client.force_authenticate(user=peer)
+        res = self.client.get(reverse('document-list'))
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        results = res.data['results'] if isinstance(res.data, dict) else res.data
+        titles = [d['title'] for d in results]
+        self.assertIn(pending.title, titles)
+        self.assertIn(self.doc.title, titles)

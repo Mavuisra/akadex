@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/file_drop_validator.dart';
 import '../../../../core/widgets/file_drop_zone.dart';
 import '../../../../data/api/api_client.dart';
@@ -585,11 +586,7 @@ class _ProfessorCreateCourseScreenState
                               ? Colors.white
                               : _fbInk,
                         ),
-                        side: BorderSide(
-                          color: _domainSlugs.contains(d.id)
-                              ? _fbBlue
-                              : _fbBorder,
-                        ),
+                        side: TimelineTokens.tabBorderSide,
                         backgroundColor: Colors.white,
                         onSelected: (selected) {
                           setState(() {

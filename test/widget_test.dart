@@ -1,4 +1,4 @@
-import 'package:akadex/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:akadex/features/auth/presentation/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,18 +10,17 @@ import 'package:akadex/data/api/api_client.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Onboarding affiche Akadex et Suivant', (tester) async {
+  testWidgets('Login affiche Connexion et Se connecter', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
     final router = GoRouter(
-      initialLocation: '/',
+      initialLocation: '/login',
       routes: [
         GoRoute(
-          path: '/',
-          builder: (_, _) => const OnboardingScreen(),
+          path: '/login',
+          builder: (_, _) => const LoginScreen(),
         ),
-        GoRoute(path: '/login', builder: (_, _) => const SizedBox()),
         GoRoute(path: '/register', builder: (_, _) => const SizedBox()),
       ],
     );
@@ -36,7 +35,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Akadex'), findsWidgets);
-    expect(find.text('Suivant'), findsOneWidget);
+    expect(find.text('Connexion'), findsOneWidget);
+    expect(find.text('Se connecter'), findsOneWidget);
   });
 }

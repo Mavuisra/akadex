@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/timeline_tokens.dart';
+import '../../../../core/widgets/notification_icon_button.dart';
 import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../core/widgets/timeline_post_card.dart';
 import '../../../../data/api/api_client.dart';
@@ -29,6 +30,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _yearLabel;
   String? _lastPersonalizedUserId;
   bool _forYouMode = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(notificationsProvider);
+    });
+  }
 
   static const _kinds = <(String, String)>[
     ('all', 'Pour toi'),
@@ -510,11 +519,7 @@ class _TimelineHeader extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            tooltip: 'Notifications',
-            onPressed: () => context.push('/calendar'),
-            icon: const Icon(Icons.notifications_none_rounded, size: 26),
-          ),
+          const NotificationIconButton(),
           IconButton(
             tooltip: 'Messages',
             onPressed: () => context.push('/messages'),
@@ -563,9 +568,7 @@ class _KindFilterBar extends StatelessWidget {
               fontSize: 13,
             ),
             backgroundColor: TimelineTokens.of(context).feedBg,
-            side: BorderSide(
-              color: active ? TimelineTokens.of(context).linkBlue : Colors.transparent,
-            ),
+            side: TimelineTokens.tabBorderSide,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(TimelineTokens.chipRadius),
             ),
@@ -625,12 +628,7 @@ class _AcademicFilterBar extends StatelessWidget {
 
     return Container(
       height: TimelineTokens.filterHeight,
-      decoration: BoxDecoration(
-        color: TimelineTokens.of(context).cardBg,
-        border: Border(
-          bottom: BorderSide(color: TimelineTokens.of(context).divider, width: 0.5),
-        ),
-      ),
+      color: TimelineTokens.of(context).cardBg,
       child: Row(
         children: [
           Expanded(
@@ -653,11 +651,7 @@ class _AcademicFilterBar extends StatelessWidget {
                         ? TimelineTokens.of(context).linkBlue
                         : TimelineTokens.of(context).ink,
                   ),
-                  side: BorderSide(
-                    color: c.$3
-                        ? TimelineTokens.of(context).linkBlue
-                        : TimelineTokens.of(context).divider,
-                  ),
+                  side: TimelineTokens.tabBorderSide,
                   shape: RoundedRectangleBorder(
                     borderRadius:
                         BorderRadius.circular(TimelineTokens.chipRadius),

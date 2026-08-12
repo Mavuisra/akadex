@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from academic.rewards import WHEEL_UNLOCK_POINTS
+from .rewards import WHEEL_SPIN_COST, WHEEL_UNLOCK_POINTS
 
 from .models import (
     Announcement,
@@ -574,15 +574,32 @@ class DocumentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Document.objects.select_related(
             'author',
+            'author__faculty',
             'university',
             'department',
+            'department__faculty',
             'course',
+        ).annotate(
+            _peer_count=Count('peer_validations', distinct=True),
         )
         user = self.request.user
         if user.is_authenticated and user.is_staff:
             return qs
+
         if user.is_authenticated:
-            return qs.filter(Q(is_approved=True) | Q(author=user)).distinct()
+            # Pending visible pour toute la communauté (badge) ; rejetés = auteur seulement.
+            pending_statuses = (
+                'pending_peers',
+                'pending_admin',
+                'pending',
+                'changes_requested',
+            )
+            return qs.filter(
+                Q(is_approved=True)
+                | Q(moderation_status__in=pending_statuses)
+                | Q(author=user)
+            ).distinct()
+
         return qs.filter(is_approved=True)
 
     def get_permissions(self):
@@ -591,12 +608,18 @@ class DocumentViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def perform_create(self, serializer):
-        doc = serializer.save(
-            author=self.request.user,
-            is_approved=False,
-            moderation_status='pending',
-        )
         user = self.request.user
+        extra = {}
+        if not serializer.validated_data.get('university') and user.university_id:
+            extra['university_id'] = user.university_id
+        if not serializer.validated_data.get('department') and user.department_id:
+            extra['department_id'] = user.department_id
+        doc = serializer.save(
+            author=user,
+            is_approved=False,
+            moderation_status='pending_peers',
+            **extra,
+        )
         user.contributions_count = F('contributions_count') + 1
         user.save(update_fields=['contributions_count'])
         user.refresh_from_db()
@@ -605,11 +628,91 @@ class DocumentViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def approve(self, request, pk=None):
         doc = self.get_object()
+        if doc.moderation_status not in ('pending_admin', 'pending_peers', 'pending'):
+            if not doc.is_approved:
+                return Response(
+                    {
+                        'detail': (
+                            'Seuls les documents en attente de validation admin '
+                            'peuvent être approuvés. '
+                            f'Statut actuel : {doc.moderation_status}.'
+                        ),
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        if doc.moderation_status in ('pending_peers', 'pending'):
+            from academic.rewards import FACULTY_PEER_VALIDATIONS_REQUIRED
+            from academic.peer_validation import peer_validation_count
+
+            count = peer_validation_count(doc)
+            if count < FACULTY_PEER_VALIDATIONS_REQUIRED:
+                return Response(
+                    {
+                        'detail': (
+                            f'Il manque {FACULTY_PEER_VALIDATIONS_REQUIRED - count} '
+                            'validation(s) étudiante(s) de la faculté.'
+                        ),
+                        'peer_validation_count': count,
+                        'peer_validations_required': FACULTY_PEER_VALIDATIONS_REQUIRED,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         doc.is_approved = True
         doc.moderation_status = 'approved'
         doc.rejection_reason = ''
         doc.save()
         return Response(DocumentSerializer(doc, context={'request': request}).data)
+
+    @action(detail=True, methods=['post'])
+    def peer_validate(self, request, pk=None):
+        from academic.peer_validation import PeerValidationError, peer_rate_document
+
+        doc = self.get_object()
+        raw = request.data.get('score', request.data.get('rating', 5))
+        try:
+            score = int(raw)
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'La note doit être un entier entre 1 et 5.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            peer_rate_document(request.user, doc, score)
+        except PeerValidationError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        doc.refresh_from_db()
+        serializer = DocumentSerializer(doc, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='rate')
+    def rate(self, request, pk=None):
+        """Alias explicite : noter un document (1–5 étoiles)."""
+        return self.peer_validate(request, pk=pk)
+
+    @action(detail=False, methods=['get'])
+    def peer_review_queue(self, request):
+        from academic.peer_validation import peer_review_queue_for
+
+        if not request.user.is_authenticated:
+            return Response(
+                {'detail': 'Authentification requise.'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        if not request.user.faculty_id:
+            return Response(
+                {'detail': 'Complète ta faculté dans ton profil pour noter des documents.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        qs = peer_review_queue_for(request.user)
+        page = self.paginate_queryset(qs)
+        ser = DocumentSerializer(
+            page if page is not None else qs,
+            many=True,
+            context={'request': request},
+        )
+        if page is not None:
+            return self.get_paginated_response(ser.data)
+        return Response(ser.data)
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def reject(self, request, pk=None):
@@ -649,7 +752,33 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'])
     def download(self, request, pk=None):
+        from academic.peer_validation import peer_validation_count
+        from academic.rewards import FACULTY_PEER_VALIDATIONS_REQUIRED
+
         doc = self.get_object()
+        user = request.user
+        is_author = user.is_authenticated and doc.author_id == user.pk
+        is_staff = user.is_authenticated and user.is_staff
+        unlocked = (
+            doc.is_approved
+            or peer_validation_count(doc) >= FACULTY_PEER_VALIDATIONS_REQUIRED
+        )
+        if not (unlocked or is_author or is_staff):
+            count = peer_validation_count(doc)
+            return Response(
+                {
+                    'detail': (
+                        'Ce document n’est téléchargeable qu’après '
+                        f'{FACULTY_PEER_VALIDATIONS_REQUIRED} validations de la faculté '
+                        f'({count}/{FACULTY_PEER_VALIDATIONS_REQUIRED}).'
+                    ),
+                    'peer_validation_count': count,
+                    'peer_validations_required': FACULTY_PEER_VALIDATIONS_REQUIRED,
+                    'can_download': False,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         Document.objects.filter(pk=doc.pk).update(downloads=F('downloads') + 1)
         doc.refresh_from_db()
         return Response(
@@ -657,6 +786,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 'file': request.build_absolute_uri(doc.file.url) if doc.file else None,
                 'external_url': doc.external_url or None,
                 'downloads': doc.downloads,
+                'can_download': True,
             }
         )
 
@@ -749,13 +879,23 @@ class RewardPrizeViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def status(self, request):
+        from .rewards import (
+            FACULTY_PEER_VALIDATIONS_REQUIRED,
+            HIGH_TIER_POINTS,
+            LOW_TIER_POINTS,
+        )
+
         user = request.user
         unlock = WHEEL_UNLOCK_POINTS
         return Response(
             {
                 'points': user.reputation,
                 'unlock_points': unlock,
+                'spin_cost': WHEEL_SPIN_COST,
                 'can_spin': user.reputation >= unlock,
+                'peer_validations_required': FACULTY_PEER_VALIDATIONS_REQUIRED,
+                'high_tier_points': HIGH_TIER_POINTS,
+                'low_tier_points': LOW_TIER_POINTS,
                 'history': RewardRedemptionSerializer(
                     RewardRedemption.objects.filter(user=user).select_related('prize')[:20],
                     many=True,
@@ -791,8 +931,7 @@ class RewardPrizeViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Coût : celui du prix le moins cher éligible (ou 100)
-        cost = min(p.points_cost for p in prizes)
+        cost = WHEEL_SPIN_COST
         if user.reputation < cost:
             return Response(
                 {'detail': 'Points insuffisants pour un tour.'},
@@ -801,7 +940,6 @@ class RewardPrizeViewSet(viewsets.ReadOnlyModelViewSet):
 
         weights = [max(1, p.weight) for p in prizes]
         prize = random.choices(prizes, weights=weights, k=1)[0]
-        cost = prize.points_cost
         if user.reputation < cost:
             return Response(
                 {'detail': 'Points insuffisants pour cette récompense.'},

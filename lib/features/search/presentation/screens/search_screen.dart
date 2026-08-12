@@ -82,9 +82,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           fontSize: 13,
         ),
         backgroundColor: cardBg,
-        side: BorderSide(
-          color: selected ? primary : divider,
-        ),
+        side: TimelineTokens.tabBorderSide,
       ),
     );
   }
