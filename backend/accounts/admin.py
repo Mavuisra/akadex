@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import AppNotification, User
+from .models import AppNotification, PushDeviceToken, User
 
 
 @admin.register(User)
@@ -82,3 +82,15 @@ class AppNotificationAdmin(admin.ModelAdmin):
     list_display = ('user', 'kind', 'title', 'points', 'is_read', 'created_at')
     list_filter = ('kind', 'is_read')
     search_fields = ('title', 'message', 'user__email')
+
+
+@admin.register(PushDeviceToken)
+class PushDeviceTokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'platform', 'token_short', 'updated_at')
+    list_filter = ('platform',)
+    search_fields = ('user__email', 'token')
+    readonly_fields = ('created_at', 'updated_at')
+
+    @admin.display(description='Token')
+    def token_short(self, obj):
+        return f'{obj.token[:24]}…' if len(obj.token) > 24 else obj.token

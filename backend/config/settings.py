@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_spectacular',
     # Local
-    'accounts',
+    'accounts.apps.AccountsConfig',
     'academic',
     'community',
     'messaging',
@@ -280,4 +280,10 @@ PAWAPAY_BASE_URL = _env_strip(
 ).rstrip('/')
 PAWAPAY_CURRENCY = _env_strip('PAWAPAY_CURRENCY', 'USD') or 'USD'
 PAWAPAY_COUNTRY = _env_strip('PAWAPAY_COUNTRY', 'COD') or 'COD'
+
+# --- Firebase Cloud Messaging (push notifications) ---
+# Coller le JSON du compte de service Firebase (Project settings → Service accounts).
+# Sur Render : une seule ligne dans FIREBASE_CREDENTIALS_JSON (échapper les guillemets si besoin).
+FIREBASE_CREDENTIALS_JSON = os.getenv('FIREBASE_CREDENTIALS_JSON', '')
+FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH', '')
 

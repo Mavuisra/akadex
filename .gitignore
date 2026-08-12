@@ -58,4 +58,6 @@ backend/.env
 backend/.env.render
 backend/.env.*
 !backend/.env.example
+backend/secrets/
+*-firebase-adminsdk-*.json
 *.egg-info/

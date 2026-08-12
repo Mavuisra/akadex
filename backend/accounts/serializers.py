@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from .models import AppNotification
+from .models import AppNotification, PushDeviceToken
 
 User = get_user_model()
 
@@ -271,3 +271,18 @@ class AppNotificationSerializer(serializers.ModelSerializer):
             'created_at',
         ]
         read_only_fields = fields
+
+
+class PushTokenSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=512)
+    platform = serializers.ChoiceField(
+        choices=PushDeviceToken.Platform.choices,
+        default=PushDeviceToken.Platform.UNKNOWN,
+        required=False,
+    )
+
+    def validate_token(self, value):
+        token = value.strip()
+        if len(token) < 20:
+            raise serializers.ValidationError('Token FCM invalide.')
+        return token

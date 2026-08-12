@@ -5,9 +5,11 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import AppNotification
+from .models import AppNotification, PushDeviceToken
+from .fcm import send_push_to_user
 from .serializers import (
     AppNotificationSerializer,
+    PushTokenSerializer,
     RegisterSerializer,
     UserSerializer,
 )
@@ -108,3 +110,82 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         notif.is_read = True
         notif.save(update_fields=['is_read'])
         return Response(AppNotificationSerializer(notif).data)
+
+
+class PushTokenView(APIView):
+    """Enregistre ou supprime le token FCM de l'appareil connecté."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = PushTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        token = serializer.validated_data['token']
+        platform = serializer.validated_data.get(
+            'platform',
+            PushDeviceToken.Platform.UNKNOWN,
+        )
+        PushDeviceToken.objects.update_or_create(
+            token=token,
+            defaults={'user': request.user, 'platform': platform},
+        )
+        return Response({'ok': True, 'token': token[:16] + '…'})
+
+    def delete(self, request):
+        token = (request.data.get('token') or '').strip()
+        qs = PushDeviceToken.objects.filter(user=request.user)
+        if token:
+            qs = qs.filter(token=token)
+        deleted, _ = qs.delete()
+        return Response({'ok': True, 'deleted': deleted})
+
+
+class PushTestView(APIView):
+    """Envoie une notification test à l'utilisateur connecté."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        title = (request.data.get('title') or 'Test Akadex').strip()[:120]
+        body = (
+            request.data.get('body')
+            or 'Les notifications push fonctionnent 🎉'
+        ).strip()[:500]
+
+        token_count = PushDeviceToken.objects.filter(user=request.user).count()
+        if token_count == 0:
+            return Response(
+                {
+                    'detail': (
+                        'Aucun appareil enregistré. Ouvre l’app mobile connectée '
+                        'pour enregistrer le token FCM.'
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        result = send_push_to_user(
+            request.user,
+            title=title,
+            body=body,
+            data={'type': 'test'},
+        )
+        if result.get('error') == 'not_configured':
+            return Response(
+                {
+                    'detail': (
+                        'Firebase non configuré côté serveur. '
+                        'Ajoute FIREBASE_CREDENTIALS_JSON dans .env / Render.'
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        return Response(
+            {
+                'ok': True,
+                'devices': token_count,
+                'success': result.get('success', 0),
+                'failure': result.get('failure', 0),
+            }
+        )

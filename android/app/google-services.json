@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "390672327827",
+    "project_id": "akadex-1",
+    "storage_bucket": "akadex-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:390672327827:android:e25d1a880428fd4c3a9966",
+        "android_client_info": {
+          "package_name": "com.akadex.akadex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBlJGGEEUpM91emFL7aJAL9q_D_USluwtM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

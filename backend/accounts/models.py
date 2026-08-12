@@ -120,3 +120,32 @@ class AppNotification(models.Model):
 
     def __str__(self):
         return f'{self.user_id}: {self.title}'
+
+
+class PushDeviceToken(models.Model):
+    """Token FCM enregistré par appareil pour les push notifications."""
+
+    class Platform(models.TextChoices):
+        ANDROID = 'android', 'Android'
+        IOS = 'ios', 'iOS'
+        UNKNOWN = 'unknown', 'Inconnu'
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='push_tokens',
+    )
+    token = models.CharField(max_length=512, unique=True)
+    platform = models.CharField(
+        max_length=16,
+        choices=Platform.choices,
+        default=Platform.UNKNOWN,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f'{self.user_id} ({self.platform})'
