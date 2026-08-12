@@ -9,7 +9,6 @@ import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
-import '../../../../domain/models/document_type.dart';
 import '../../data/ma_fac_categories.dart';
 import 'ma_fac_screen.dart';
 

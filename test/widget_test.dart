@@ -34,6 +34,7 @@ void main() {
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
 
     expect(find.text('Connexion'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);

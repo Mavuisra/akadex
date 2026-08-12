@@ -11,7 +11,6 @@ import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
-import '../../../../domain/models/document_type.dart';
 import '../../../../domain/models/models.dart';
 import '../../../learn/data/learn_domains.dart';
 import '../../data/career_outlets.dart';
