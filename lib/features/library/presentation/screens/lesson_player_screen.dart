@@ -42,6 +42,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
   bool _ready = false;
   String? _error;
   bool _isYoutube = false;
+  int _lastSyncedPos = -1;
 
   String get _prefsKey => 'lesson_pos_${_current.id}';
 
@@ -92,6 +93,16 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
             : null;
         _ready = true;
       });
+      // PDF / texte / quiz : ouverture de contenu.
+      if (!_current.id.startsWith('preview-')) {
+        try {
+          await ref.read(academicRepositoryProvider).saveLessonProgress(
+                _current.id,
+                positionSeconds: 0,
+                completed: false,
+              );
+        } catch (_) {}
+      }
       return;
     }
 
@@ -113,6 +124,16 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
         _ready = true;
         _error = null;
       });
+      // YouTube : ouverture de leçon (pas de position fiable).
+      if (!_current.id.startsWith('preview-')) {
+        try {
+          await ref.read(academicRepositoryProvider).saveLessonProgress(
+                _current.id,
+                positionSeconds: 0,
+                completed: false,
+              );
+        } catch (_) {}
+      }
       return;
     }
 
@@ -152,6 +173,14 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
         _ready = true;
         _error = null;
       });
+      // Première ouverture → progression 0 → événement content_opened côté API.
+      if (!_current.id.startsWith('preview-')) {
+        await ref.read(academicRepositoryProvider).saveLessonProgress(
+              _current.id,
+              positionSeconds: resume,
+              completed: false,
+            );
+      }
     } catch (_) {
       setState(() => _error = 'Impossible de charger la vidéo.');
     }
@@ -161,20 +190,35 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> {
     final v = _video;
     if (v == null || !v.value.isInitialized) return;
     final pos = v.value.position.inSeconds;
+    final dur = v.value.duration.inSeconds;
     if (pos > 0 && pos % 5 == 0) {
       SharedPreferences.getInstance().then((p) => p.setInt(_prefsKey, pos));
+    }
+    // Sync API : au plus toutes les ~30 s de lecture (suivi enseignant).
+    if (pos > 0 && (pos - _lastSyncedPos >= 30 || _lastSyncedPos < 0)) {
+      _lastSyncedPos = pos;
+      final nearEnd = dur > 0 && pos >= (dur * 0.9).floor();
+      _persistProgress(completed: nearEnd);
     }
   }
 
   Future<void> _persistProgress({bool completed = false}) async {
-    final pos = _video?.value.position.inSeconds ?? 0;
+    // Jamais de tracking sur aperçus locaux fictifs.
+    if (_current.id.startsWith('preview-')) return;
+    final v = _video;
+    var pos = v?.value.position.inSeconds ?? 0;
+    final dur = v?.value.duration.inSeconds ?? 0;
+    var done = completed;
+    if (!done && dur > 0 && pos >= (dur * 0.9).floor()) {
+      done = true;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_prefsKey, pos);
     try {
       await ref.read(academicRepositoryProvider).saveLessonProgress(
             _current.id,
             positionSeconds: pos,
-            completed: completed,
+            completed: done,
           );
     } catch (_) {}
   }

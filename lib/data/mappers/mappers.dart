@@ -4,16 +4,25 @@ import '../../domain/models/document_type.dart';
 import '../../domain/models/models.dart';
 
 /// Transforme `/media/...` ou chemin relatif en URL absolue.
+/// Réécrit aussi 127.0.0.1 → hôte API (ex. 10.0.2.2 sur émulateur Android).
 String absoluteMediaUrl(dynamic raw) {
-  final value = (raw ?? '').toString().trim();
+  var value = (raw ?? '').toString().trim();
   if (value.isEmpty) return '';
-  if (value.startsWith('http://') || value.startsWith('https://')) {
-    return value;
-  }
+
   final api = AppConstants.apiBaseUrl;
   final origin = api.endsWith('/api/')
       ? api.substring(0, api.length - 5)
       : (api.endsWith('/api') ? api.substring(0, api.length - 4) : api);
+
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    final uri = Uri.tryParse(value);
+    if (uri != null &&
+        (uri.host == '127.0.0.1' || uri.host == 'localhost') &&
+        origin.contains('10.0.2.2')) {
+      return uri.replace(host: '10.0.2.2').toString();
+    }
+    return value;
+  }
   if (value.startsWith('/')) return '$origin$value';
   return '$origin/$value';
 }
@@ -298,6 +307,12 @@ CommunityPost postFromJson(Map<String, dynamic> json) {
 }
 
 CourseLessonItem lessonFromJson(Map<String, dynamic> json) {
+  final explicit = (json['video_url'] ?? '').toString().trim();
+  final file = (json['file'] ?? json['file_url'] ?? '').toString().trim();
+  final external = (json['external_url'] ?? '').toString().trim();
+  final rawVideo = explicit.isNotEmpty
+      ? explicit
+      : (file.isNotEmpty ? file : external);
   return CourseLessonItem(
     id: json['id'].toString(),
     moduleId: (json['module'] ?? '').toString(),
@@ -305,10 +320,10 @@ CourseLessonItem lessonFromJson(Map<String, dynamic> json) {
     contentType: (json['content_type'] ?? 'video').toString(),
     order: asInt(json['order']),
     description: (json['description'] ?? '').toString(),
-    videoUrl: (json['video_url'] ?? '').toString(),
-    externalUrl: (json['external_url'] ?? '').toString(),
+    videoUrl: absoluteMediaUrl(rawVideo),
+    externalUrl: absoluteMediaUrl(external),
     durationSeconds: asInt(json['duration_seconds']),
-    subtitlesUrl: (json['subtitles_url'] ?? '').toString(),
+    subtitlesUrl: absoluteMediaUrl(json['subtitles_url']),
   );
 }
 

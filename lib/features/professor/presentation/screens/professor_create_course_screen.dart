@@ -9,6 +9,7 @@ import '../../../../core/widgets/file_drop_validator.dart';
 import '../../../../core/widgets/file_drop_zone.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
+import '../../../../data/mappers/mappers.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../learn/data/learn_domains.dart';
 
@@ -80,8 +81,6 @@ class _ProfessorCreateCourseScreenState
   final _credits = TextEditingController();
   final _hours = TextEditingController();
 
-  static const _cycles = <String>['L1', 'L2', 'L3', 'Master 1', 'Master 2'];
-  static const _semesters = <String>['S1', 'S2'];
   static const _lessonTypes = <(String, String, IconData)>[
     ('video', 'Vidéo', Icons.play_circle_outline_rounded),
     ('pdf', 'PDF', Icons.picture_as_pdf_outlined),
@@ -91,9 +90,19 @@ class _ProfessorCreateCourseScreenState
     ('exercise', 'Exercice', Icons.fitness_center_outlined),
   ];
 
-  String? _cycle;
-  String? _semester;
+  static const _difficulties = <String>[
+    'Débutant',
+    'Intermédiaire',
+    'Avancé',
+  ];
+
+  String? _difficulty;
   final Set<String> _domainSlugs = {};
+  final Map<String, String> _domainLabels = {};
+  String? _promotionId;
+  String? _promotionName;
+  final _tagInput = TextEditingController();
+  List<PromotionItem> _promotions = const [];
   final List<_DraftModule> _modules = [];
   bool _loading = false;
   String? _error;
@@ -102,18 +111,20 @@ class _ProfessorCreateCourseScreenState
   void initState() {
     super.initState();
     _modules.add(_DraftModule());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final user = ref.read(authStateProvider).valueOrNull;
-      final promo = (user?.promotion ?? user?.level ?? '').trim();
-      if (promo.isEmpty) return;
-      for (final c in _cycles) {
-        if (promo.toLowerCase().contains(c.toLowerCase()) ||
-            promo == c.replaceAll(' ', '')) {
-          setState(() => _cycle = c);
-          break;
-        }
-      }
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPromotions());
+  }
+
+  Future<void> _loadPromotions() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    final deptId = user?.departmentId ?? '';
+    if (deptId.isEmpty) return;
+    try {
+      final list = await ref
+          .read(academicRepositoryProvider)
+          .fetchPromotions(departmentId: deptId);
+      if (!mounted) return;
+      setState(() => _promotions = list);
+    } catch (_) {}
   }
 
   @override
@@ -124,10 +135,51 @@ class _ProfessorCreateCourseScreenState
     _coverUrl.dispose();
     _credits.dispose();
     _hours.dispose();
+    _tagInput.dispose();
     for (final m in _modules) {
       m.dispose();
     }
     super.dispose();
+  }
+
+  String _slugify(String raw) {
+    final lower = raw.trim().toLowerCase();
+    final buf = StringBuffer();
+    var dash = false;
+    for (final cu in lower.runes) {
+      final ch = String.fromCharCode(cu);
+      final ok = RegExp(r'[a-z0-9]').hasMatch(ch);
+      if (ok) {
+        buf.write(ch);
+        dash = false;
+      } else if (!dash && buf.isNotEmpty) {
+        buf.write('-');
+        dash = true;
+      }
+    }
+    return buf.toString().replaceAll(RegExp(r'-+$'), '');
+  }
+
+  void _commitTagInput() {
+    final raw = _tagInput.text.trim();
+    if (raw.isEmpty) return;
+    final isPromo = RegExp(
+      r'^(l[123]|m[12]|master|licence|promo)',
+      caseSensitive: false,
+    ).hasMatch(raw);
+    setState(() {
+      if (isPromo) {
+        _promotionId = null;
+        _promotionName = raw;
+      } else {
+        final slug = _slugify(raw);
+        if (slug.isNotEmpty) {
+          _domainSlugs.add(slug);
+          _domainLabels[slug] = raw;
+        }
+      }
+      _tagInput.clear();
+    });
   }
 
   void _addModule() {
@@ -168,14 +220,6 @@ class _ProfessorCreateCourseScreenState
     }
     if (_title.text.trim().length < 3) {
       setState(() => _error = 'Ajoute un titre au cours.');
-      return;
-    }
-    if (_cycle == null || _cycle!.isEmpty) {
-      setState(() => _error = 'Choisis le niveau (L1, L2…).');
-      return;
-    }
-    if (_semester == null || _semester!.isEmpty) {
-      setState(() => _error = 'Choisis le semestre.');
       return;
     }
 
@@ -230,10 +274,15 @@ class _ProfessorCreateCourseScreenState
           'cover_url': _coverUrl.text.trim(),
         if (hours > 0) 'estimated_hours': hours,
         if (credits > 0) 'credits': credits,
-        'semester': _cycle,
-        'level_label': _semester,
+        if (_difficulty != null && _difficulty!.isNotEmpty)
+          'level_label': _difficulty,
         'teacher_name': user.name,
         if (_domainSlugs.isNotEmpty) 'domain_slugs': _domainSlugs.toList(),
+        if (_promotionId != null && _promotionId!.isNotEmpty)
+          'promotion_id': int.tryParse(_promotionId!) ?? _promotionId,
+        if ((_promotionId == null || _promotionId!.isEmpty) &&
+            (_promotionName?.isNotEmpty ?? false))
+          'promotion_name': _promotionName,
       });
 
       for (var i = 0; i < _modules.length; i++) {
@@ -267,7 +316,7 @@ class _ProfessorCreateCourseScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '« ${course.title} » publié avec ${_modules.length} module(s).',
+            '« ${course.title} » publié — visible dans Apprendre.',
           ),
         ),
       );
@@ -307,10 +356,7 @@ class _ProfessorCreateCourseScreenState
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
-    final canPublish = !_loading &&
-        _title.text.trim().length >= 3 &&
-        _cycle != null &&
-        _semester != null;
+    final canPublish = !_loading && _title.text.trim().length >= 3;
 
     return Scaffold(
       backgroundColor: _fbBg,
@@ -478,39 +524,21 @@ class _ProfessorCreateCourseScreenState
             title: 'Infos du cours',
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _cycle,
-                        decoration: _fieldDec('Niveau *'),
-                        items: [
-                          for (final c in _cycles)
-                            DropdownMenuItem(value: c, child: Text(c)),
-                        ],
-                        onChanged: (v) => setState(() => _cycle = v),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _semester,
-                        decoration: _fieldDec('Semestre *'),
-                        items: [
-                          for (final s in _semesters)
-                            DropdownMenuItem(value: s, child: Text(s)),
-                        ],
-                        onChanged: (v) => setState(() => _semester = v),
-                      ),
-                    ),
+                DropdownButtonFormField<String>(
+                  initialValue: _difficulty,
+                  decoration: _fieldDec('Niveau de difficulté'),
+                  items: [
+                    for (final d in _difficulties)
+                      DropdownMenuItem(value: d, child: Text(d)),
                   ],
+                  onChanged: (v) => setState(() => _difficulty = v),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _code,
                   textCapitalization: TextCapitalization.characters,
                   decoration: _fieldDec(
-                    'Code UE (optionnel)',
+                    'Code (optionnel)',
                     icon: Icons.qr_code_2_rounded,
                   ),
                 ),
@@ -559,13 +587,51 @@ class _ProfessorCreateCourseScreenState
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Domaine',
+                    'Domaines & promotion (optionnel)',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                       color: _fbMuted,
                     ),
                   ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Sélectionnez ou tapez puis Entrée pour ajouter.',
+                  style: TextStyle(fontSize: 12, color: _fbMuted),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final slug in _domainSlugs)
+                      InputChip(
+                        label: Text(_domainLabels[slug] ?? slug),
+                        onDeleted: () => setState(() {
+                          _domainSlugs.remove(slug);
+                          _domainLabels.remove(slug);
+                        }),
+                      ),
+                    if (_promotionName != null && _promotionName!.isNotEmpty)
+                      InputChip(
+                        label: Text('Promo · $_promotionName'),
+                        onDeleted: () => setState(() {
+                          _promotionId = null;
+                          _promotionName = null;
+                        }),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _tagInput,
+                  textInputAction: TextInputAction.done,
+                  decoration: _fieldDec(
+                    'Ex. Informatique, L3, Cybersécurité…',
+                    icon: Icons.sell_outlined,
+                  ),
+                  onSubmitted: (_) => _commitTagInput(),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -592,8 +658,37 @@ class _ProfessorCreateCourseScreenState
                           setState(() {
                             if (selected) {
                               _domainSlugs.add(d.id);
+                              _domainLabels[d.id] = d.name;
                             } else {
                               _domainSlugs.remove(d.id);
+                              _domainLabels.remove(d.id);
+                            }
+                          });
+                        },
+                      ),
+                    for (final p in _promotions.take(8))
+                      FilterChip(
+                        label: Text(p.name),
+                        selected: _promotionId == p.id,
+                        showCheckmark: true,
+                        selectedColor: const Color(0xFF42B72A),
+                        checkmarkColor: Colors.white,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color:
+                              _promotionId == p.id ? Colors.white : _fbInk,
+                        ),
+                        side: TimelineTokens.tabBorderSide,
+                        backgroundColor: Colors.white,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _promotionId = p.id;
+                              _promotionName = p.name;
+                            } else if (_promotionId == p.id) {
+                              _promotionId = null;
+                              _promotionName = null;
                             }
                           });
                         },

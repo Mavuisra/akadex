@@ -6,11 +6,14 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from accounts.auth import EmailTokenObtainPairView
-from config.views import home
+from config.views import home, storage_health, teacher_app
 
 urlpatterns = [
     path('', home, name='home'),
+    path('enseignant/', teacher_app, name='teacher-app'),
+    path('enseignant/<path:path>', teacher_app, name='teacher-app-path'),
     path('admin/', admin.site.urls),
+    path('api/health/storage/', storage_health, name='storage-health'),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path(
         'api/docs/',

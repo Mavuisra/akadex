@@ -5,12 +5,15 @@ Django settings for Akadex API.
 from datetime import timedelta
 from pathlib import Path
 import os
+import warnings
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Toujours charger depuis le dossier backend/ (indépendant du CWD).
+load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / 'backend' / '.env', override=False)
 
 SECRET_KEY = os.getenv(
     'SECRET_KEY',
@@ -136,13 +139,36 @@ PLAY_STORE_URL = os.getenv(
 ).strip()
 APP_STORE_URL = os.getenv('APP_STORE_URL', '').strip()
 
-# --- Médias : disque local (dev) ou Supabase Storage S3 (prod) ---
-USE_S3_MEDIA = os.getenv('USE_S3_MEDIA', '').lower() in ('1', 'true', 'yes') or bool(
-    os.getenv('AWS_S3_ENDPOINT_URL')
+# --- Médias : Supabase Storage (S3) — config Render dans render.yaml ---
+# Tous les FileField / ImageField (lessons, documents, covers, avatars, posts, chat…)
+# passent par STORAGES['default'] dès que les clés AWS_* sont présentes.
+_access = os.getenv('AWS_ACCESS_KEY_ID', '').strip()
+_secret = os.getenv('AWS_SECRET_ACCESS_KEY', '').strip()
+_has_s3_creds = bool(_access and _secret)
+_want_s3 = os.getenv('USE_S3_MEDIA', '').lower() in ('1', 'true', 'yes') or bool(
+    os.getenv('AWS_S3_ENDPOINT_URL', '').strip()
 )
+# Activer uniquement si les secrets sont là (évite un faux S3 sans clés).
+USE_S3_MEDIA = _want_s3 and _has_s3_creds
+
+if _want_s3 and not _has_s3_creds:
+    warnings.warn(
+        'USE_S3_MEDIA / endpoint Supabase détecté mais AWS_ACCESS_KEY_ID / '
+        'AWS_SECRET_ACCESS_KEY absents → stockage local temporaire. '
+        'Sur Render, renseigne les secrets (sync: false dans render.yaml).',
+        stacklevel=1,
+    )
 
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
+
+# Uploads vidéo / PDF depuis le dashboard enseignant
+DATA_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.getenv('DATA_UPLOAD_MAX_MEMORY_SIZE', str(512 * 1024 * 1024))
+)  # 512 Mo
+FILE_UPLOAD_MAX_MEMORY_SIZE = int(
+    os.getenv('FILE_UPLOAD_MAX_MEMORY_SIZE', str(10 * 1024 * 1024))
+)  # 10 Mo en RAM, puis disque
 
 STORAGES = {
     'default': {

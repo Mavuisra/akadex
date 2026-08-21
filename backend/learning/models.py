@@ -152,3 +152,68 @@ class CourseComment(models.Model):
 
     class Meta:
         ordering = ['created_at']
+
+
+class StudentLearningEvent(models.Model):
+    """Événements d’apprentissage (Apprendre) → suivi enseignant."""
+
+    class EventType(models.TextChoices):
+        COURSE_OPENED = 'course_opened', 'Cours ouvert'
+        CONTENT_OPENED = 'content_opened', 'Contenu ouvert'
+        VIDEO_STARTED = 'video_started', 'Vidéo démarrée'
+        VIDEO_PROGRESS = 'video_progress', 'Progression vidéo'
+        VIDEO_COMPLETED = 'video_completed', 'Vidéo terminée'
+        LESSON_COMPLETED = 'lesson_completed', 'Leçon terminée'
+        DOCUMENT_OPENED = 'document_opened', 'Document ouvert'
+        COURSE_COMMENTED = 'course_commented', 'Commentaire'
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='learning_events',
+    )
+    course = models.ForeignKey(
+        'academic.Course',
+        on_delete=models.CASCADE,
+        related_name='learning_events',
+    )
+    module = models.ForeignKey(
+        CourseModule,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='learning_events',
+    )
+    lesson = models.ForeignKey(
+        CourseLesson,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='learning_events',
+    )
+    # Propriétaire du cours (pour filtrer rapidement le dashboard enseignant).
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='owned_learning_events',
+    )
+    event_type = models.CharField(
+        max_length=40,
+        choices=EventType.choices,
+        db_index=True,
+    )
+    event_data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['teacher', '-created_at']),
+            models.Index(fields=['course', '-created_at']),
+            models.Index(fields=['student', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.event_type} · student={self.student_id} · course={self.course_id}'

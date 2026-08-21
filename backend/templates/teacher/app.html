@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1A47B8">
+  <title>Akadex Enseignant — Tableau de bord</title>
+  <meta name="description" content="Espace professionnel enseignant Akadex : cours, étudiants, analytics.">
+  <link rel="icon" href="{% static 'landing/logo.png' %}" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'teacher/css/app.css' %}">
+</head>
+<body>
+  <div id="app">
+    <div class="boot">
+      <div class="boot-spinner"></div>
+      <p>Chargement Akadex Enseignant…</p>
+    </div>
+  </div>
+  <script>
+    window.AKADEX_TEACHER = {
+      apiBase: '/api/',
+      logoUrl: "{% static 'landing/logo.png' %}",
+      landingUrl: '/',
+    };
+  </script>
+  <script type="module" src="{% static 'teacher/js/app.js' %}"></script>
+</body>
+</html>

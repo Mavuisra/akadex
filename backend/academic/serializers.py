@@ -23,6 +23,17 @@ def _first_teacher(course):
     return course.teachers.all().first()
 
 
+def resolve_course_cover_url(course, request=None) -> str:
+    """URL effective : fichier uploadé prioritaire, sinon cover_url externe."""
+    from config.media_urls import absolute_media_url, file_field_url
+
+    if getattr(course, 'cover', None):
+        url = file_field_url(course.cover, request)
+        if url:
+            return url
+    return absolute_media_url((course.cover_url or '').strip(), request)
+
+
 def teacher_title_of(course):
     t = _first_teacher(course)
     if t is None:
@@ -67,10 +78,9 @@ def teacher_payload(course):
         }
     photo = (getattr(t, 'photo_url', '') or '').strip()
     if not photo and t.avatar:
-        try:
-            photo = t.avatar.url
-        except Exception:
-            photo = ''
+        from config.media_urls import file_field_url
+
+        photo = file_field_url(t.avatar)
     uni = ''
     if t.university_id:
         uni = t.university.name
@@ -240,6 +250,7 @@ class CourseListSerializer(serializers.ModelSerializer):
             'teacher_full_name',
             'document_count',
             'views',
+            'unique_visitors',
             'is_approved',
             'moderation_status',
             'moderation_note',
@@ -247,6 +258,13 @@ class CourseListSerializer(serializers.ModelSerializer):
             'submitted_by',
             'submitted_by_name',
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['cover_url'] = resolve_course_cover_url(
+            instance, self.context.get('request')
+        )
+        return data
 
     def get_document_count(self, obj):
         annotated = getattr(obj, 'approved_document_count', None)
@@ -340,6 +358,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'semester',
             'promotion',
             'cover_url',
+            'cover',
             'level_label',
             'estimated_hours',
             'teacher_name',
@@ -354,6 +373,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'teacher_university',
             'document_count',
             'views',
+            'unique_visitors',
             'domains',
             'domain_ids',
             'is_approved',
@@ -377,7 +397,15 @@ class CourseSerializer(serializers.ModelSerializer):
             'validated_at',
             'validation_logs',
             'views',
+            'unique_visitors',
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['cover_url'] = resolve_course_cover_url(
+            instance, self.context.get('request')
+        )
+        return data
 
     def get_document_count(self, obj):
         annotated = getattr(obj, 'approved_document_count', None)
@@ -444,9 +472,20 @@ class CourseContributeSerializer(serializers.ModelSerializer):
     """Soumission d’un cours (étudiant en attente, enseignant publié)."""
 
     domain_slugs = serializers.ListField(
-        child=serializers.SlugField(max_length=64),
+        child=serializers.CharField(max_length=120),
         required=False,
         allow_empty=True,
+        write_only=True,
+    )
+    promotion_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    promotion_name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=255,
         write_only=True,
     )
 
@@ -460,13 +499,17 @@ class CourseContributeSerializer(serializers.ModelSerializer):
             'objectives',
             'skills',
             'prerequisites',
+            'bibliography',
             'estimated_hours',
             'teacher_name',
             'semester',
             'credits',
             'level_label',
             'cover_url',
+            'cover',
             'domain_slugs',
+            'promotion_id',
+            'promotion_name',
         ]
         extra_kwargs = {
             'code': {'required': False, 'allow_blank': True},
@@ -474,13 +517,22 @@ class CourseContributeSerializer(serializers.ModelSerializer):
             'objectives': {'required': False, 'allow_blank': True},
             'skills': {'required': False, 'allow_blank': True},
             'prerequisites': {'required': False, 'allow_blank': True},
+            'bibliography': {'required': False, 'allow_blank': True},
             'estimated_hours': {'required': False},
             'teacher_name': {'required': False, 'allow_blank': True},
             'semester': {'required': False, 'allow_blank': True},
             'credits': {'required': False},
             'level_label': {'required': False, 'allow_blank': True},
             'cover_url': {'required': False, 'allow_blank': True},
+            'cover': {'required': False, 'allow_null': True},
         }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['cover_url'] = resolve_course_cover_url(
+            instance, self.context.get('request')
+        )
+        return data
 
     def validate_title(self, value):
         title = (value or '').strip()
@@ -490,14 +542,51 @@ class CourseContributeSerializer(serializers.ModelSerializer):
             )
         return title
 
+    def _ensure_domains(self, labels):
+        from django.utils.text import slugify
+
+        domains = []
+        seen = set()
+        for raw in labels or []:
+            label = str(raw or '').strip()
+            if not label:
+                continue
+            slug = slugify(label)[:64]
+            if not slug or slug in seen:
+                continue
+            seen.add(slug)
+            obj, _ = LearningDomain.objects.get_or_create(
+                slug=slug,
+                defaults={
+                    'name': label[:120],
+                    'keywords': label.lower()[:500],
+                    'is_active': True,
+                    'order': 100,
+                },
+            )
+            if not obj.is_active:
+                obj.is_active = True
+                obj.save(update_fields=['is_active'])
+            domains.append(obj)
+        return domains
+
     def create(self, validated_data):
         domain_slugs = validated_data.pop('domain_slugs', None) or []
+        validated_data.pop('promotion_id', None)
+        validated_data.pop('promotion_name', None)
         course = super().create(validated_data)
-        if domain_slugs:
-            domains = LearningDomain.objects.filter(
-                slug__in=domain_slugs,
-                is_active=True,
-            )
+        domains = self._ensure_domains(domain_slugs)
+        if domains:
+            course.domains.set(domains)
+        return course
+
+    def update(self, instance, validated_data):
+        domain_slugs = validated_data.pop('domain_slugs', None)
+        validated_data.pop('promotion_id', None)
+        validated_data.pop('promotion_name', None)
+        course = super().update(instance, validated_data)
+        if domain_slugs is not None:
+            domains = self._ensure_domains(domain_slugs)
             course.domains.set(domains)
         return course
 

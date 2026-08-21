@@ -99,6 +99,11 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return AppNotification.objects.filter(user=self.request.user)
 
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        n = self.get_queryset().filter(is_read=False).count()
+        return Response({'count': n})
+
     @action(detail=False, methods=['post'])
     def mark_all_read(self, request):
         updated = self.get_queryset().filter(is_read=False).update(is_read=True)

@@ -57,13 +57,9 @@ class PostCommentSerializer(serializers.ModelSerializer):
         return obj.author.get_full_name() or obj.author.email
 
     def get_author_avatar(self, obj):
-        request = self.context.get('request')
-        if not obj.author.avatar:
-            return ''
-        url = obj.author.avatar.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        from config.media_urls import file_field_url
+
+        return file_field_url(obj.author.avatar, self.context.get('request'))
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -141,20 +137,17 @@ class PostSerializer(serializers.ModelSerializer):
         }
 
     def _abs(self, url):
-        if not url:
-            return ''
-        request = self.context.get('request')
-        if request is not None and url.startswith('/'):
-            return request.build_absolute_uri(url)
-        return url
+        from config.media_urls import absolute_media_url
+
+        return absolute_media_url(url, self.context.get('request'))
 
     def get_author_name(self, obj):
         return obj.author.get_full_name() or obj.author.email
 
     def get_author_avatar(self, obj):
-        if not obj.author.avatar:
-            return ''
-        return self._abs(obj.author.avatar.url)
+        from config.media_urls import file_field_url
+
+        return file_field_url(obj.author.avatar, self.context.get('request'))
 
     def get_author_university(self, obj):
         uni = getattr(obj.author, 'university', None)
@@ -251,13 +244,9 @@ class AlumniFollowSerializer(serializers.ModelSerializer):
         return obj.alumni.get_full_name() or obj.alumni.email
 
     def get_alumni_avatar(self, obj):
-        request = self.context.get('request')
-        if not obj.alumni.avatar:
-            return ''
-        url = obj.alumni.avatar.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        from config.media_urls import file_field_url
+
+        return file_field_url(obj.alumni.avatar, self.context.get('request'))
 
 
 class SavedPostSerializer(serializers.ModelSerializer):

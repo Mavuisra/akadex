@@ -82,7 +82,8 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
               children: [
                 Text(apiErrorMessage(coursesAsync.error!)),
                 TextButton(
-                  onPressed: () => ref.invalidate(coursesProvider),
+                  onPressed: () =>
+                      ref.read(coursesProvider.notifier).refresh(),
                   child: const Text('Réessayer'),
                 ),
               ],
@@ -116,9 +117,8 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
     final activePromoId = _selectedPromoId ??
         (me?.promotionId.isNotEmpty == true ? me!.promotionId : null);
 
-    // Ma Fac = contributions / programmes réels uniquement (jamais les AKX vitrine).
-    final realCourses =
-        allCourses.where((c) => !c.code.startsWith('AKX-')).toList();
+    // Ma Fac = UE / contributions promo uniquement (jamais Apprendre : AKX + ENS).
+    final realCourses = allCourses.where(MaFacScope.isMaFacCourse).toList();
     final facCourses = realCourses.where((c) {
       if (me != null && MaFacScope.courseMatchesUser(c, me)) return true;
       final hay =
@@ -148,15 +148,11 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
     if (activePromoId != null) {
       final promo = promos.where((p) => p.id == activePromoId).firstOrNull;
       if (promo != null) {
-        final lvl = promo.level.toLowerCase();
-        final pname = promo.name.toLowerCase();
-        final byPromo = scopedCourses.where((c) {
-          final h =
-              '${c.semester} ${c.targetPromotion} ${c.levelLabel}'.toLowerCase();
-          return (lvl.isNotEmpty && h.contains(lvl)) ||
-              (pname.isNotEmpty && h.contains(pname.split(' ').first));
-        }).toList();
-        if (byPromo.isNotEmpty) scopedCourses = byPromo;
+        scopedCourses = MaFacScope.applyPromotionFilter(
+          scopedCourses,
+          level: promo.level,
+          name: promo.name,
+        );
       }
     }
 

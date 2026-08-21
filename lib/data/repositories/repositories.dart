@@ -33,27 +33,26 @@ final documentProvider =
   return ref.watch(academicRepositoryProvider).fetchDocument(id);
 });
 
-/// Catalogue cours : cache local d’abord, puis refresh réseau en arrière-plan.
+/// Catalogue cours : réseau d’abord, cache local en secours hors-ligne.
 class CoursesNotifier extends AsyncNotifier<List<Course>> {
   @override
   Future<List<Course>> build() async {
     final repo = ref.watch(academicRepositoryProvider);
-    final cached = await repo.getCachedCourses();
-    if (cached.isNotEmpty) {
-      unawaited(_refreshInBackground());
-      return cached;
+    try {
+      return await repo.fetchCourses(preferCache: false);
+    } catch (_) {
+      final cached = await repo.getCachedCourses();
+      if (cached.isNotEmpty) return cached;
+      rethrow;
     }
-    return repo.fetchCourses(preferCache: false);
   }
 
-  Future<void> _refreshInBackground() async {
-    try {
-      final fresh =
-          await ref.read(academicRepositoryProvider).fetchCourses(preferCache: false);
-      state = AsyncData(fresh);
-    } catch (_) {
-      // Garde le cache affiché.
-    }
+  /// Force un rechargement réseau (pull-to-refresh).
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(
+      () => ref.read(academicRepositoryProvider).fetchCourses(preferCache: false),
+    );
   }
 }
 
@@ -576,8 +575,7 @@ class AcademicRepository {
   }
 
   int _estimateStudents(Course c) {
-    if (c.views > 0) return (c.views / 3).ceil().clamp(1, 9999);
-    if (c.documentCount > 0) return c.documentCount * 12;
+    // Jamais d’estimation fictive : sans API, on n’invente pas d’étudiants.
     return 0;
   }
 
@@ -595,23 +593,8 @@ class AcademicRepository {
   }
 
   List<Map<String, dynamic>> _activityFromViews(int views) {
-    final now = DateTime.now();
-    const labels = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-    final base = views > 0 ? views : 7;
-    final weights = [0.08, 0.12, 0.18, 0.15, 0.22, 0.14, 0.11];
-    return [
-      for (var i = 0; i < 7; i++)
-        {
-          'date': now
-              .subtract(Duration(days: 6 - i))
-              .toIso8601String()
-              .split('T')
-              .first,
-          'label': labels[
-              (now.subtract(Duration(days: 6 - i)).weekday - 1) % 7],
-          'value': (base * weights[i]).round().clamp(0, 99999),
-        },
-    ];
+    // Conservé pour compat : toujours vide — pas de courbe inventée.
+    return _emptyActivity7d();
   }
 
   Future<List<Course>> getCachedCourses() => _store.getCourses();
@@ -637,7 +620,7 @@ class AcademicRepository {
         final res = await _dio.get(
           'courses/',
           queryParameters: {
-            'ordering': 'code',
+            'ordering': '-created_at',
             'page': page,
             'page_size': 100,
             if (departmentId != null && departmentId.isNotEmpty)

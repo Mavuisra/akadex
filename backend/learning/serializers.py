@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from academic.models import Course
 from academic.serializers import LearningDomainSerializer, teacher_payload
+from config.media_urls import absolute_media_url, file_field_url
 
 from .models import CourseComment, CourseLesson, CourseModule, LessonProgress
 
@@ -35,6 +36,22 @@ class CourseLessonSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = ['created_at', 'updated_at']
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        request = self.context.get('request')
+        file_url = file_field_url(instance.file, request)
+        link = absolute_media_url((data.get('video_url') or '').strip(), request)
+        external = absolute_media_url(
+            (data.get('external_url') or '').strip(), request
+        )
+        # Mobile lit video_url : fichier uploadé (Supabase ou /media/) prioritaire
+        # s’il n’y a pas de lien explicite.
+        playable = link or file_url or external
+        data['video_url'] = playable
+        data['file'] = file_url or ''
+        data['external_url'] = external
+        return data
 
 
 class CourseModuleSerializer(serializers.ModelSerializer):
@@ -106,6 +123,7 @@ class CourseOutlineSerializer(serializers.ModelSerializer):
             'level_label',
             'estimated_hours',
             'views',
+            'unique_visitors',
             'teacher_name',
             'department',
             'department_name',

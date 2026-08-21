@@ -9,6 +9,7 @@ import '../../../../core/widgets/shimmer_skeletons.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
+import '../../data/ma_fac_scope.dart';
 
 /// Recherche dans un département / une promotion (depuis Ma Fac).
 class MaFacExploreScreen extends ConsumerStatefulWidget {
@@ -42,7 +43,7 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
   }
 
   List<Course> _filter(List<Course> all) {
-    var list = all.where((c) => !c.code.startsWith('AKX-')).toList();
+    var list = all.where(MaFacScope.isMaFacCourse).toList();
 
     final dept = widget.departmentName.trim().toLowerCase();
     if (dept.isNotEmpty) {
@@ -58,13 +59,11 @@ class _MaFacExploreScreenState extends ConsumerState<MaFacExploreScreen> {
 
     final promo = widget.promotionName.trim().toLowerCase();
     if (promo.isNotEmpty) {
-      final byPromo = list.where((c) {
-        final h =
-            '${c.semester} ${c.targetPromotion} ${c.levelLabel}'.toLowerCase();
-        return h.contains(promo) ||
-            promo.split(RegExp(r'[·\s]+')).any((t) => t.length > 1 && h.contains(t));
-      }).toList();
-      if (byPromo.isNotEmpty) list = byPromo;
+      list = MaFacScope.applyPromotionFilter(
+        list,
+        level: promo,
+        name: widget.promotionName,
+      );
     }
 
     final q = _query.trim().toLowerCase();

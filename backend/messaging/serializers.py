@@ -1,6 +1,8 @@
 from django.utils import timezone
 from rest_framework import serializers
 
+from config.media_urls import file_field_url
+
 from accounts.serializers import UserSerializer
 
 from .models import Conversation, ConversationActivity, Message
@@ -43,22 +45,10 @@ class MessageSerializer(serializers.ModelSerializer):
         return obj.sender.get_full_name() or obj.sender.email
 
     def get_sender_avatar(self, obj):
-        request = self.context.get('request')
-        if not obj.sender.avatar:
-            return ''
-        url = obj.sender.avatar.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        return file_field_url(obj.sender.avatar, self.context.get('request'))
 
     def get_attachment_url(self, obj):
-        if not obj.attachment:
-            return ''
-        request = self.context.get('request')
-        url = obj.attachment.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        return file_field_url(obj.attachment, self.context.get('request'))
 
 
 class ConversationActivitySerializer(serializers.ModelSerializer):

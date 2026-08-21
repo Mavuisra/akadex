@@ -96,13 +96,9 @@ class UserSerializer(serializers.ModelSerializer):
         return obj.get_full_name() or obj.email
 
     def _abs_media(self, file_field):
-        if not file_field:
-            return None
-        request = self.context.get('request')
-        url = file_field.url
-        if request is not None:
-            return request.build_absolute_uri(url)
-        return url
+        from config.media_urls import file_field_url
+
+        return file_field_url(file_field, self.context.get('request')) or None
 
     def get_avatar(self, obj):
         if getattr(obj, 'photo_url', None):

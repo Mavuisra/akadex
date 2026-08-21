@@ -2,11 +2,21 @@ import '../../../../domain/models/models.dart';
 
 /// Filtrage des cours Ma Fac (programme / contributions de promo).
 ///
-/// Indépendant d’Apprendre : les codes `AKX-*` sont la vitrine vidéo et
-/// n’apparaissent jamais ici. Le pont vers Apprendre se fait via le domaine
-/// ([LearnDomains.resolveDomainSlug]), pas en fusionnant les catalogues.
+/// Ma Fac ≠ Apprendre :
+/// - Apprendre = `AKX-*` (plateforme) + `ENS-*` (enseignants)
+/// - Ma Fac = uniquement le reste (ex. `PROP-*`, UE de promo)
 abstract final class MaFacScope {
+  /// Cours réservés au catalogue Apprendre — exclus de Ma Fac.
+  static bool isLearnCatalog(Course c) {
+    final code = c.code.trim().toUpperCase();
+    return code.startsWith('AKX-') || code.startsWith('ENS-');
+  }
+
+  static bool isMaFacCourse(Course c) => !isLearnCatalog(c);
+
   static bool courseMatchesUser(Course c, UserProfile me) {
+    if (!isMaFacCourse(c)) return false;
+
     final fac = me.faculty.trim().toLowerCase();
     final dept = me.department.trim().toLowerCase();
     final promo = me.promotion.trim().toLowerCase();
@@ -38,9 +48,26 @@ abstract final class MaFacScope {
     return false;
   }
 
+  /// Filtre promo (UE de programme uniquement).
+  static List<Course> applyPromotionFilter(
+    List<Course> scoped, {
+    required String level,
+    required String name,
+  }) {
+    final lvl = level.toLowerCase().trim();
+    final pname = name.toLowerCase().trim();
+    if (lvl.isEmpty && pname.isEmpty) return scoped;
+    final matched = scoped.where((c) {
+      final h =
+          '${c.semester} ${c.targetPromotion} ${c.levelLabel}'.toLowerCase();
+      return (lvl.isNotEmpty && h.contains(lvl)) ||
+          (pname.isNotEmpty && h.contains(pname.split(' ').first));
+    }).toList();
+    return matched.isNotEmpty ? matched : scoped;
+  }
+
   static List<Course> filterCourses(List<Course> all, UserProfile? me) {
-    // Les AKX-* sont la vitrine « Apprendre », pas le programme de promotion.
-    final catalogue = all.where((c) => !c.code.startsWith('AKX-')).toList();
+    final catalogue = all.where(isMaFacCourse).toList();
     if (me == null) return catalogue.take(12).toList();
     final matched =
         catalogue.where((c) => courseMatchesUser(c, me)).toList();

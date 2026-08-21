@@ -6,6 +6,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from config.media_urls import file_field_url
+
 from .rewards import WHEEL_SPIN_COST, WHEEL_UNLOCK_POINTS
 
 from .models import (
@@ -178,6 +180,47 @@ class CourseViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
+    def _resolve_optional_promotion(self, user):
+        """Promotion optionnelle : id existant ou nom libre (créé si besoin)."""
+        from django.utils import timezone
+
+        from academic.models import Promotion
+
+        if not user.department_id:
+            return None
+        data = self.request.data
+        if hasattr(data, 'get'):
+            raw_id = data.get('promotion_id')
+            raw_name = (data.get('promotion_name') or '').strip()
+        else:
+            raw_id = None
+            raw_name = ''
+        if raw_id not in (None, '', 'null'):
+            try:
+                return Promotion.objects.filter(
+                    pk=int(raw_id),
+                    department_id=user.department_id,
+                ).first()
+            except (TypeError, ValueError):
+                pass
+        if not raw_name:
+            return None
+        existing = Promotion.objects.filter(
+            department_id=user.department_id,
+            name__iexact=raw_name,
+        ).first()
+        if existing:
+            return existing
+        year = timezone.now().year
+        return Promotion.objects.create(
+            department_id=user.department_id,
+            name=raw_name[:255],
+            year=year,
+            level=raw_name[:64],
+            is_user_suggested=True,
+            is_verified=False,
+        )
+
     def perform_create(self, serializer):
         import uuid
 
@@ -193,15 +236,36 @@ class CourseViewSet(viewsets.ModelViewSet):
                     )
                 }
             )
-        code = (serializer.validated_data.get('code') or '').strip()
-        if not code:
-            prefix = 'ENS' if user.role == User.Role.TEACHER else 'PROP'
-            code = f'{prefix}-{uuid.uuid4().hex[:8].upper()}'
-        semester = (serializer.validated_data.get('semester') or '').strip()
-        if not semester and user.promotion_id:
-            semester = user.promotion.level or user.promotion.name
-
         is_teacher = user.role == User.Role.TEACHER or user.is_staff
+        code = (serializer.validated_data.get('code') or '').strip()
+        optional_promo = self._resolve_optional_promotion(user)
+
+        if is_teacher:
+            # Catalogue Apprendre — promo optionnelle (métadonnée), jamais Ma Fac.
+            if not code:
+                code = f'ENS-{uuid.uuid4().hex[:8].upper()}'
+            elif not code.upper().startswith('ENS-'):
+                code = f'ENS-{code}'
+            semester = ''
+            if optional_promo:
+                semester = (optional_promo.level or optional_promo.name or '')[
+                    :32
+                ]
+            level_label = (
+                serializer.validated_data.get('level_label') or ''
+            ).strip()
+            if level_label.upper() in ('S1', 'S2'):
+                level_label = ''
+        else:
+            if not code:
+                code = f'PROP-{uuid.uuid4().hex[:8].upper()}'
+            semester = (serializer.validated_data.get('semester') or '').strip()
+            if not semester and user.promotion_id:
+                semester = user.promotion.level or user.promotion.name
+            level_label = (
+                serializer.validated_data.get('level_label') or ''
+            ).strip()
+
         teacher_name = (
             serializer.validated_data.get('teacher_name') or ''
         ).strip()
@@ -211,11 +275,12 @@ class CourseViewSet(viewsets.ModelViewSet):
         if is_teacher:
             course = serializer.save(
                 department=user.department,
-                promotion=user.promotion,
+                promotion=optional_promo,
                 submitted_by=user,
                 validated_by=user,
                 code=code,
                 semester=semester,
+                level_label=level_label,
                 teacher_name=teacher_name,
                 is_approved=True,
                 moderation_status=Course.ModerationStatus.APPROVED,
@@ -234,10 +299,11 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         course = serializer.save(
             department=user.department,
-            promotion=user.promotion,
+            promotion=optional_promo or user.promotion,
             submitted_by=user,
             code=code,
             semester=semester,
+            level_label=level_label,
             teacher_name=teacher_name,
             is_approved=False,
             moderation_status=Course.ModerationStatus.PENDING,
@@ -270,8 +336,21 @@ class CourseViewSet(viewsets.ModelViewSet):
 
         is_teacher = user.role in (User.Role.TEACHER, User.Role.ADMIN)
         if is_teacher:
-            # Les enseignants peuvent mettre à jour leurs cours publiés.
-            serializer.save()
+            # Publications enseignant = catalogue Apprendre (pas Ma Fac).
+            level = serializer.validated_data.get('level_label')
+            if level is not None and str(level).strip().upper() in ('S1', 'S2'):
+                serializer.validated_data['level_label'] = course.level_label
+            save_kwargs = {'semester': course.semester or ''}
+            data = self.request.data
+            if hasattr(data, 'get') and (
+                'promotion_id' in data or 'promotion_name' in data
+            ):
+                promo = self._resolve_optional_promotion(user)
+                save_kwargs['promotion'] = promo
+                save_kwargs['semester'] = (
+                    ((promo.level or promo.name)[:32] if promo else '')
+                )
+            serializer.save(**save_kwargs)
             return
 
         if course.moderation_status not in (
@@ -305,23 +384,35 @@ class CourseViewSet(viewsets.ModelViewSet):
         lesson_ids = CourseLesson.objects.filter(
             module__course=course,
         ).values_list('id', flat=True)
-        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids)
+        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids).exclude(
+            user__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        )
         students = progress_qs.values('user_id').distinct().count()
         completed = progress_qs.filter(completed=True).values('user_id').distinct().count()
         modules = CourseModule.objects.filter(course=course).count()
         lessons = len(lesson_ids)
 
-        # Activité sur 7 jours (mises à jour de progression)
+        # Activité sur 7 jours (événements réels)
+        from learning.models import StudentLearningEvent
+
+        event_qs = StudentLearningEvent.objects.filter(course=course).exclude(
+            student__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        )
         days = []
         today = timezone.localdate()
         for i in range(6, -1, -1):
             day = today - timedelta(days=i)
-            count = progress_qs.filter(updated_at__date=day).count()
+            count = event_qs.filter(created_at__date=day).count()
             days.append({'date': day.isoformat(), 'label': day.strftime('%a'), 'value': count})
 
         return Response({
             'course_id': course.id,
             'views': course.views,
+            'unique_visitors': course.unique_visitors,
             'students': students,
             'students_completed': completed,
             'modules': modules,
@@ -333,7 +424,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def teacher_dashboard(self, request):
         """Tableau de bord agrégé pour l’enseignant connecté."""
-        from learning.models import CourseLesson, LessonProgress
+        from learning.models import CourseLesson, CourseModule, LessonProgress
 
         user = request.user
         courses = (
@@ -353,9 +444,33 @@ class CourseViewSet(viewsets.ModelViewSet):
                 module__course_id__in=course_ids,
             ).values_list('id', flat=True)
         )
-        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids)
+        modules_count = CourseModule.objects.filter(course_id__in=course_ids).count()
+        progress_qs = LessonProgress.objects.filter(lesson_id__in=lesson_ids).exclude(
+            user__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        )
         students = progress_qs.values('user_id').distinct().count()
+        students_completed = progress_qs.filter(completed=True).values(
+            'user_id'
+        ).distinct().count()
+        students_active = progress_qs.filter(completed=False).values(
+            'user_id'
+        ).distinct().count()
         views_sum = sum(c.views for c in courses)
+        unique_sum = sum(c.unique_visitors for c in courses)
+
+        published = courses.filter(
+            Q(is_approved=True) | Q(moderation_status=Course.ModerationStatus.APPROVED)
+        ).count()
+        pending = courses.filter(
+            moderation_status__in=(
+                Course.ModerationStatus.PENDING,
+                Course.ModerationStatus.CHANGES_REQUESTED,
+            ),
+            is_approved=False,
+        ).count()
+        drafts = max(0, len(course_ids) - published - pending)
 
         per_course = []
         for c in courses.order_by('-views', 'title')[:12]:
@@ -364,6 +479,12 @@ class CourseViewSet(viewsets.ModelViewSet):
             )
             c_students = (
                 LessonProgress.objects.filter(lesson_id__in=c_lessons)
+                .exclude(
+                    user__role__in=(
+                        'teacher', 'admin', 'assistant', 'library',
+                        'association', 'rep',
+                    ),
+                )
                 .values('user_id')
                 .distinct()
                 .count()
@@ -373,28 +494,341 @@ class CourseViewSet(viewsets.ModelViewSet):
                 'title': c.title,
                 'code': c.code,
                 'views': c.views,
+                'unique_visitors': c.unique_visitors,
                 'students': c_students,
                 'semester': c.semester,
+                'moderation_status': c.moderation_status,
+                'is_approved': c.is_approved,
+                'cover_url': c.cover_url or '',
+                'updated_at': c.updated_at.isoformat() if c.updated_at else None,
             })
 
+        # Activité 7 j + récente : événements Apprendre réels uniquement.
+        from learning.events import humanize_event
+        from learning.models import StudentLearningEvent
+
+        event_qs = StudentLearningEvent.objects.filter(
+            course_id__in=course_ids,
+        ).exclude(
+            student__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        )
         days = []
         today = timezone.localdate()
         for i in range(6, -1, -1):
             day = today - timedelta(days=i)
-            count = progress_qs.filter(updated_at__date=day).count()
+            count = event_qs.filter(created_at__date=day).count()
             days.append({
                 'date': day.isoformat(),
                 'label': day.strftime('%a'),
                 'value': count,
             })
 
+        recent_qs = event_qs.filter(
+            Q(teacher=user) | Q(course_id__in=course_ids)
+        ).select_related(
+            'student', 'course', 'module', 'lesson',
+        ).distinct().order_by('-created_at')[:15]
+        recent = [humanize_event(e) for e in recent_qs]
+
         return Response({
             'courses_count': len(course_ids),
+            'courses_published': published,
+            'courses_pending': pending,
+            'courses_draft': drafts,
             'views': views_sum,
+            'unique_visitors': unique_sum,
             'students': students,
+            'students_completed': students_completed,
+            'students_active': students_active,
+            'modules': modules_count,
             'lessons': len(lesson_ids),
             'activity_7d': days,
             'top_courses': per_course,
+            'recent_activity': recent,
+            # Pas de modèle revenus enseignant pour l’instant
+            'revenue_total': 0,
+            'revenue_month': 0,
+            'revenue_available': False,
+        })
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def teacher_students(self, request):
+        """Roster des étudiants ayant une progression sur les cours de l’enseignant."""
+        from learning.models import CourseLesson, LessonProgress
+
+        user = request.user
+        if user.role not in ('teacher', 'admin') and not user.is_staff:
+            raise PermissionDenied('Réservé aux enseignants.')
+
+        course_id = request.query_params.get('course')
+        search = (request.query_params.get('search') or '').strip()
+
+        courses = Course.objects.filter(
+            Q(submitted_by=user) | Q(teachers=user)
+        ).distinct()
+        if course_id:
+            courses = courses.filter(pk=course_id)
+
+        course_ids = list(courses.values_list('id', flat=True))
+        lesson_ids = list(
+            CourseLesson.objects.filter(
+                module__course_id__in=course_ids,
+            ).values_list('id', flat=True)
+        )
+
+        progress_qs = LessonProgress.objects.filter(
+            lesson_id__in=lesson_ids,
+        ).exclude(
+            user__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        ).select_related('user', 'lesson', 'lesson__module', 'lesson__module__course')
+
+        # Agrégat par (user, course)
+        buckets = {}
+        for row in progress_qs:
+            course = row.lesson.module.course
+            key = (row.user_id, course.id)
+            bucket = buckets.get(key)
+            if bucket is None:
+                bucket = {
+                    'user_id': row.user_id,
+                    'name': row.user.get_full_name() or row.user.email,
+                    'email': row.user.email,
+                    'avatar_url': getattr(row.user, 'photo_url', '') or '',
+                    'course_id': course.id,
+                    'course_title': course.title,
+                    'lessons_touched': 0,
+                    'lessons_completed': 0,
+                    'last_activity': row.updated_at,
+                    'enrolled_at': row.updated_at,
+                }
+                buckets[key] = bucket
+            bucket['lessons_touched'] += 1
+            if row.completed:
+                bucket['lessons_completed'] += 1
+            if row.updated_at and (
+                bucket['last_activity'] is None or row.updated_at > bucket['last_activity']
+            ):
+                bucket['last_activity'] = row.updated_at
+            if row.updated_at and (
+                bucket['enrolled_at'] is None or row.updated_at < bucket['enrolled_at']
+            ):
+                bucket['enrolled_at'] = row.updated_at
+
+        # Totaux leçons par cours pour % progression
+        lessons_per_course = {
+            cid: CourseLesson.objects.filter(module__course_id=cid).count()
+            for cid in course_ids
+        }
+
+        results = []
+        for bucket in buckets.values():
+            total = lessons_per_course.get(bucket['course_id'], 0) or 1
+            pct = round(100 * bucket['lessons_completed'] / total)
+            if search:
+                hay = f"{bucket['name']} {bucket['email']} {bucket['course_title']}".lower()
+                if search.lower() not in hay:
+                    continue
+            results.append({
+                **bucket,
+                'progress_pct': min(100, pct),
+                'status': (
+                    'completed' if pct >= 100
+                    else 'active' if bucket['lessons_touched'] > 0
+                    else 'new'
+                ),
+                'last_activity': (
+                    bucket['last_activity'].isoformat()
+                    if bucket['last_activity'] else None
+                ),
+                'enrolled_at': (
+                    bucket['enrolled_at'].isoformat()
+                    if bucket['enrolled_at'] else None
+                ),
+            })
+
+        results.sort(
+            key=lambda r: r['last_activity'] or '',
+            reverse=True,
+        )
+        return Response({'count': len(results), 'results': results})
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def teacher_activities(self, request):
+        """Timeline d’événements Apprendre pour les cours de l’enseignant."""
+        from learning.events import humanize_event
+        from learning.models import StudentLearningEvent
+
+        user = request.user
+        if user.role not in ('teacher', 'admin') and not user.is_staff:
+            raise PermissionDenied('Réservé aux enseignants.')
+
+        qs = StudentLearningEvent.objects.filter(
+            Q(teacher=user)
+            | Q(course__submitted_by=user)
+            | Q(course__teachers=user)
+        ).exclude(
+            student__role__in=(
+                'teacher', 'admin', 'assistant', 'library', 'association', 'rep',
+            ),
+        ).exclude(
+            # Comptes / scripts de test — jamais affichés au professeur.
+            student__email__iendswith='@test.akadex',
+        ).select_related(
+            'student',
+            'course',
+            'module',
+            'lesson',
+        ).distinct()
+
+        course_id = request.query_params.get('course')
+        student_id = request.query_params.get('student')
+        event_type = (request.query_params.get('event_type') or '').strip()
+        since = (request.query_params.get('since') or '').strip()
+        search = (request.query_params.get('search') or '').strip()
+
+        if course_id:
+            qs = qs.filter(course_id=course_id)
+        if student_id:
+            qs = qs.filter(student_id=student_id)
+        if event_type:
+            qs = qs.filter(event_type=event_type)
+        if since:
+            qs = qs.filter(created_at__gte=since)
+        if search:
+            qs = qs.filter(
+                Q(student__first_name__icontains=search)
+                | Q(student__last_name__icontains=search)
+                | Q(student__email__icontains=search)
+                | Q(course__title__icontains=search)
+                | Q(lesson__title__icontains=search)
+            )
+
+        try:
+            limit = min(200, max(1, int(request.query_params.get('limit', 50))))
+        except (TypeError, ValueError):
+            limit = 50
+
+        rows = [humanize_event(e) for e in qs.order_by('-created_at')[:limit]]
+        return Response({
+            'count': len(rows),
+            'results': rows,
+            'event_types': [
+                {'value': c.value, 'label': c.label}
+                for c in StudentLearningEvent.EventType
+            ],
+        })
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path=r'teacher_students/(?P<student_id>[^/.]+)',
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def teacher_student_detail(self, request, student_id=None):
+        """Détail d’un étudiant sur les cours de l’enseignant."""
+        from accounts.models import User
+        from learning.events import humanize_event
+        from learning.models import CourseLesson, LessonProgress, StudentLearningEvent
+
+        user = request.user
+        if user.role not in ('teacher', 'admin') and not user.is_staff:
+            raise PermissionDenied('Réservé aux enseignants.')
+
+        try:
+            student = User.objects.get(pk=student_id)
+        except (User.DoesNotExist, ValueError, TypeError):
+            return Response({'detail': 'Étudiant introuvable.'}, status=404)
+
+        courses = Course.objects.filter(
+            Q(submitted_by=user) | Q(teachers=user)
+        ).distinct()
+        course_ids = list(courses.values_list('id', flat=True))
+        lesson_ids = list(
+            CourseLesson.objects.filter(
+                module__course_id__in=course_ids,
+            ).values_list('id', flat=True)
+        )
+
+        has_touch = LessonProgress.objects.filter(
+            user=student, lesson_id__in=lesson_ids,
+        ).exists() or StudentLearningEvent.objects.filter(
+            student=student,
+            course_id__in=course_ids,
+        ).exists()
+        if not has_touch and not user.is_staff:
+            raise PermissionDenied('Cet étudiant n’est pas lié à vos cours.')
+
+        progress_qs = LessonProgress.objects.filter(
+            user=student, lesson_id__in=lesson_ids,
+        ).select_related('lesson', 'lesson__module', 'lesson__module__course')
+
+        by_course = {}
+        for row in progress_qs:
+            c = row.lesson.module.course
+            b = by_course.setdefault(
+                c.id,
+                {
+                    'course_id': c.id,
+                    'course_title': c.title,
+                    'lessons_touched': 0,
+                    'lessons_completed': 0,
+                    'last_activity': None,
+                },
+            )
+            b['lessons_touched'] += 1
+            if row.completed:
+                b['lessons_completed'] += 1
+            if row.updated_at and (
+                b['last_activity'] is None or row.updated_at > b['last_activity']
+            ):
+                b['last_activity'] = row.updated_at
+
+        course_payload = []
+        for cid, b in by_course.items():
+            total = CourseLesson.objects.filter(module__course_id=cid).count() or 1
+            pct = min(100, round(100 * b['lessons_completed'] / total))
+            course_payload.append({
+                **b,
+                'progress_pct': pct,
+                'lessons_total': total,
+                'last_activity': (
+                    b['last_activity'].isoformat() if b['last_activity'] else None
+                ),
+                'status': (
+                    'completed' if pct >= 100
+                    else 'active' if b['lessons_touched'] else 'new'
+                ),
+            })
+
+        events = StudentLearningEvent.objects.filter(
+            student=student,
+            course_id__in=course_ids,
+        ).select_related('course', 'module', 'lesson', 'student').order_by(
+            '-created_at'
+        )[:80]
+
+        return Response({
+            'student': {
+                'id': student.id,
+                'name': student.get_full_name() or student.email,
+                'email': student.email,
+            },
+            'courses': course_payload,
+            'activities': [humanize_event(e) for e in events],
+            'stats': {
+                'courses_started': len(course_payload),
+                'courses_completed': sum(
+                    1 for c in course_payload if c['status'] == 'completed'
+                ),
+                'lessons_completed': sum(
+                    c['lessons_completed'] for c in course_payload
+                ),
+                'events_count': len(events),
+            },
         })
 
     def create(self, request, *args, **kwargs):
@@ -783,7 +1217,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         doc.refresh_from_db()
         return Response(
             {
-                'file': request.build_absolute_uri(doc.file.url) if doc.file else None,
+                'file': file_field_url(doc.file, request) or None,
                 'external_url': doc.external_url or None,
                 'downloads': doc.downloads,
                 'can_download': True,

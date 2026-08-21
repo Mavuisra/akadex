@@ -54,8 +54,7 @@ class ProfessorHubScreen extends ConsumerWidget {
             child: RefreshIndicator(
               color: _fbBlue,
               onRefresh: () async {
-                ref.invalidate(coursesProvider);
-                await ref.read(coursesProvider.future);
+                await ref.read(coursesProvider.notifier).refresh();
               },
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 100),
@@ -218,8 +217,7 @@ class ProfessorHubScreen extends ConsumerWidget {
   List<Course> _teacherCourses(List<Course> courses, UserProfile user) {
     final uid = user.id;
     final name = user.name.toLowerCase();
-    final first =
-        name.split(' ').where((p) => p.isNotEmpty).firstOrNull ?? '';
+    final tokens = name.split(' ').where((p) => p.length > 1).toList();
     final mine = courses.where((c) {
       if (uid.isNotEmpty && c.submittedById == uid) return true;
       final hay = [
@@ -228,8 +226,18 @@ class ProfessorHubScreen extends ConsumerWidget {
         c.teacherFullName,
         c.submittedByName,
       ].join(' ').toLowerCase();
-      if (first.isNotEmpty && hay.contains(first)) return true;
-      if (c.code.startsWith('ENS-')) return true;
+      if (tokens.any((t) => hay.contains(t))) return true;
+      // Publication web/mobile enseignant : même fac + code ENS.
+      if (c.code.startsWith('ENS-') &&
+          user.faculty.isNotEmpty &&
+          c.faculty.toLowerCase().contains(
+                user.faculty.toLowerCase().split(' ').firstWhere(
+                      (w) => w.length > 2,
+                      orElse: () => user.faculty.toLowerCase(),
+                    ),
+              )) {
+        return true;
+      }
       return false;
     }).toList();
     if (mine.isNotEmpty) return mine.take(40).toList();

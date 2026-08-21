@@ -4,9 +4,9 @@ import '../../../../domain/models/models.dart';
 
 /// Domaine académique affiché en « story » sur Apprendre.
 ///
-/// Indépendant du catalogue Ma Fac (UE de promo) : les contenus vidéo
-/// Apprendre sont la vitrine `AKX-*`. Un cours de fac n’est pas un cours
-/// Apprendre — on résout seulement son **domaine** pour y renvoyer.
+/// Catalogue Apprendre = vitrine plateforme (`AKX-*`) + cours publiés par
+/// les enseignants (`ENS-*`). Ma Fac (programme / contributions promo) est
+/// un autre catalogue — jamais mélangé ici.
 class LearnDomain {
   const LearnDomain({
     required this.id,
@@ -24,7 +24,7 @@ class LearnDomain {
   final List<Color> colors;
   final List<String> keywords;
 
-  /// Vrai si le cours (fac ou vitrine) relève de ce domaine (M2M ou keywords).
+  /// Vrai si le cours relève de ce domaine (M2M ou keywords).
   bool matchesDomain(Course course) {
     if (course.domainSlugs.contains(id)) return true;
     final hay = [
@@ -38,16 +38,21 @@ class LearnDomain {
     return keywords.any((k) => hay.contains(k.toLowerCase()));
   }
 
-  /// Alias — matching domaine (fac ou vitrine).
   bool matches(Course course) => matchesDomain(course);
 }
 
 abstract final class LearnDomains {
-  /// Préfixe des cours vidéo du catalogue Apprendre (pas des UE de fac).
   static const vitrinePrefix = 'AKX-';
+  static const teacherPrefix = 'ENS-';
 
-  static bool isVitrine(Course course) =>
-      course.code.startsWith(vitrinePrefix);
+  /// Catalogue Apprendre : plateforme + publications enseignant.
+  static bool isLearnCatalog(Course course) {
+    final c = course.code.trim().toUpperCase();
+    return c.startsWith(vitrinePrefix) || c.startsWith(teacherPrefix);
+  }
+
+  /// Alias historique (écrans Apprendre).
+  static bool isVitrine(Course course) => isLearnCatalog(course);
 
   static const all = <LearnDomain>[
     LearnDomain(
@@ -162,7 +167,6 @@ abstract final class LearnDomains {
     return null;
   }
 
-  /// Domaine Apprendre vers lequel renvoyer depuis un cours Ma Fac.
   static String? resolveDomainSlug(Course course) {
     if (course.primaryDomainSlug.isNotEmpty) return course.primaryDomainSlug;
     for (final d in all) {
@@ -171,27 +175,29 @@ abstract final class LearnDomains {
     return null;
   }
 
-  /// Contenu vidéo d’un domaine — **uniquement** la vitrine Apprendre (AKX).
   static List<Course> filterCourses(List<Course> courses, LearnDomain domain) {
     final matched = courses
-        .where((c) => isVitrine(c) && domain.matchesDomain(c))
+        .where((c) => isLearnCatalog(c) && domain.matchesDomain(c))
         .toList();
-    matched.sort((a, b) => a.title.compareTo(b.title));
+    matched.sort((a, b) {
+      final byDate = b.id.compareTo(a.id);
+      if (byDate != 0) return byDate;
+      return a.title.compareTo(b.title);
+    });
     return matched;
   }
 
-  /// Cours vitrine pour l’accueil Apprendre (indépendants des promos).
   static List<Course> vitrineCourses(List<Course> courses, {int limit = 3}) {
-    final allV = courses.where(isVitrine).toList();
+    final allV = courses.where(isLearnCatalog).toList();
     final withCover = allV.where((c) => c.coverUrl.isNotEmpty).toList();
     final without = allV.where((c) => c.coverUrl.isEmpty).toList();
     return [...withCover, ...without].take(limit).toList();
   }
 
   static Map<String, int> vitrineCounts(List<Course> courses) {
-    final vitrine = courses.where(isVitrine);
+    final catalog = courses.where(isLearnCatalog);
     return {
-      for (final d in all) d.id: vitrine.where(d.matchesDomain).length,
+      for (final d in all) d.id: catalog.where(d.matchesDomain).length,
     };
   }
 }

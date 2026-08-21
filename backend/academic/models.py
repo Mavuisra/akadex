@@ -175,6 +175,12 @@ class Course(models.Model):
         blank=True,
         help_text='Image de couverture (URL publique)',
     )
+    cover = models.ImageField(
+        upload_to='course_covers/',
+        blank=True,
+        null=True,
+        help_text='Image de couverture uploadée',
+    )
     level_label = models.CharField(
         max_length=32,
         blank=True,
@@ -186,7 +192,16 @@ class Course(models.Model):
     )
     views = models.PositiveIntegerField(
         default=0,
-        help_text='Nombre de consultations de la page cours',
+        help_text='Nombre de consultations de la page cours (brut)',
+    )
+    views_hll = models.BinaryField(
+        blank=True,
+        null=True,
+        help_text='Sketch HyperLogLog des visiteurs uniques',
+    )
+    unique_visitors = models.PositiveIntegerField(
+        default=0,
+        help_text='Estimation HyperLogLog des visiteurs distincts',
     )
     teacher_name = models.CharField(
         max_length=255,
