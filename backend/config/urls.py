@@ -6,13 +6,15 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from accounts.auth import EmailTokenObtainPairView
-from config.views import home, storage_health, teacher_app
+from config.views import admin_app, home, storage_health, teacher_app
 
 urlpatterns = [
     path('', home, name='home'),
     path('enseignant/', teacher_app, name='teacher-app'),
     path('enseignant/<path:path>', teacher_app, name='teacher-app-path'),
-    path('admin/', admin.site.urls),
+    path('admin/', admin_app, name='akadex-admin'),
+    path('admin/<path:path>', admin_app, name='akadex-admin-path'),
+    path('django-admin/', admin.site.urls),
     path('api/health/storage/', storage_health, name='storage-health'),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path(
@@ -28,7 +30,6 @@ urlpatterns = [
     path('api/', include('messaging.urls')),
     path('api/', include('learning.urls')),
     path('api/', include('payments.urls')),
-    # Render tourne avec DEBUG=False : sans ça, les photos uploadées sont en 404.
     re_path(
         r'^media/(?P<path>.*)$',
         serve,

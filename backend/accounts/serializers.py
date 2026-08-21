@@ -77,6 +77,9 @@ class UserSerializer(serializers.ModelSerializer):
             'posts_count',
             'date_joined',
             'last_seen_at',
+            'is_active',
+            'is_staff',
+            'is_superuser',
         ]
         read_only_fields = [
             'id',
@@ -90,6 +93,9 @@ class UserSerializer(serializers.ModelSerializer):
             'date_joined',
             'role',
             'last_seen_at',
+            'is_active',
+            'is_staff',
+            'is_superuser',
         ]
 
     def get_full_name(self, obj):

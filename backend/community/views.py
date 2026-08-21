@@ -13,6 +13,8 @@ from .models import (
     PostLike,
     SavedPost,
 )
+from accounts.permissions import IsAkadexAdmin
+
 from .serializers import (
     AlumniFollowSerializer,
     PostCommentSerializer,
@@ -156,7 +158,7 @@ class PostViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsAuthorOrAdmin()]
         return [permissions.IsAuthenticated()]
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def approve(self, request, pk=None):
         from accounts.models import AppNotification
 
@@ -183,7 +185,7 @@ class PostViewSet(viewsets.ModelViewSet):
         )
         return Response(PostSerializer(post, context={'request': request}).data)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def reject(self, request, pk=None):
         from accounts.models import AppNotification
 

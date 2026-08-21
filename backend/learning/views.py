@@ -29,7 +29,10 @@ class IsTeacherOrReadOnly(permissions.BasePermission):
         return bool(
             user
             and user.is_authenticated
-            and (user.is_staff or getattr(user, 'role', '') in ('teacher', 'admin'))
+            and (
+                user.is_staff
+                or getattr(user, 'role', '') in ('teacher', 'admin')
+            )
         )
 
 

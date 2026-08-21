@@ -1,11 +1,13 @@
+from datetime import timedelta
+
 from django.db.models import Count, F, Q
 from django.utils import timezone
-from datetime import timedelta
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from accounts.permissions import IsAkadexAdmin
 from config.media_urls import file_field_url
 
 from .rewards import WHEEL_SPIN_COST, WHEEL_UNLOCK_POINTS
@@ -55,52 +57,124 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         return author == request.user or request.user.is_staff
 
 
-class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = University.objects.filter(is_active=True)
+class UniversityViewSet(viewsets.ModelViewSet):
     serializer_class = UniversitySerializer
-    lookup_field = 'slug'
+    lookup_value_regex = r'[^/]+'
     search_fields = ['name', 'city', 'country']
     pagination_class = None
 
+    def get_queryset(self):
+        qs = University.objects.all()
+        user = self.request.user
+        if user.is_authenticated and (
+            user.is_staff or getattr(user, 'role', '') == 'admin'
+        ):
+            return qs
+        return qs.filter(is_active=True)
 
-class CampusViewSet(viewsets.ReadOnlyModelViewSet):
+    def get_object(self):
+        lookup = self.kwargs.get(self.lookup_field)
+        qs = self.filter_queryset(self.get_queryset())
+        if str(lookup).isdigit():
+            obj = qs.filter(pk=int(lookup)).first()
+        else:
+            obj = qs.filter(slug=lookup).first()
+        if obj is None:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound()
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
+
+
+class CampusViewSet(viewsets.ModelViewSet):
     queryset = Campus.objects.select_related('university')
     serializer_class = CampusSerializer
     filterset_fields = ['university']
     pagination_class = None
 
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
 
-class FacultyViewSet(viewsets.ReadOnlyModelViewSet):
+
+class FacultyViewSet(viewsets.ModelViewSet):
     queryset = Faculty.objects.select_related('university', 'campus')
     serializer_class = FacultySerializer
     filterset_fields = ['university', 'campus']
     search_fields = ['name']
     pagination_class = None
 
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
 
-class DepartmentViewSet(viewsets.ReadOnlyModelViewSet):
+
+class DepartmentViewSet(viewsets.ModelViewSet):
     queryset = Department.objects.select_related('faculty', 'faculty__university')
     serializer_class = DepartmentSerializer
     filterset_fields = ['faculty', 'faculty__university']
     search_fields = ['name']
     pagination_class = None
 
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
 
-class PromotionViewSet(viewsets.ReadOnlyModelViewSet):
+
+class PromotionViewSet(viewsets.ModelViewSet):
     queryset = Promotion.objects.select_related('department')
     serializer_class = PromotionSerializer
     filterset_fields = ['department', 'year', 'level']
     pagination_class = None
 
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
 
-class LearningDomainViewSet(viewsets.ReadOnlyModelViewSet):
+
+class LearningDomainViewSet(viewsets.ModelViewSet):
     serializer_class = LearningDomainSerializer
-    lookup_field = 'slug'
+    lookup_value_regex = r'[^/]+'
     pagination_class = None
     search_fields = ['name', 'slug', 'keywords']
 
     def get_queryset(self):
-        return LearningDomain.objects.filter(is_active=True)
+        qs = LearningDomain.objects.all()
+        user = self.request.user
+        if user.is_authenticated and (
+            user.is_staff or getattr(user, 'role', '') == 'admin'
+        ):
+            return qs
+        return qs.filter(is_active=True)
+
+    def get_object(self):
+        lookup = self.kwargs.get(self.lookup_field)
+        qs = self.filter_queryset(self.get_queryset())
+        if str(lookup).isdigit():
+            obj = qs.filter(pk=int(lookup)).first()
+        else:
+            obj = qs.filter(slug=lookup).first()
+        if obj is None:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound()
+        self.check_object_permissions(self.request, obj)
+        return obj
+
+    def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return [IsAkadexAdmin()]
+        return [permissions.AllowAny()]
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -167,6 +241,8 @@ class CourseViewSet(viewsets.ModelViewSet):
         )
 
     def get_permissions(self):
+        from accounts.permissions import IsAkadexAdmin
+
         if self.action == 'create':
             return [permissions.IsAuthenticated()]
         if self.action in (
@@ -175,7 +251,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             'request_changes',
             'destroy',
         ):
-            return [permissions.IsAdminUser()]
+            return [IsAkadexAdmin()]
         if self.action in ('update', 'partial_update'):
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
@@ -862,7 +938,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             course.domains.set(domains)
         return ','.join(d.slug for d in course.domains.all())
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def approve(self, request, pk=None):
         from accounts.models import AppNotification
 
@@ -912,7 +988,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(
         detail=True,
         methods=['post'],
-        permission_classes=[permissions.IsAdminUser],
+        permission_classes=[IsAkadexAdmin],
         url_path='request-changes',
     )
     def request_changes(self, request, pk=None):
@@ -952,7 +1028,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             )
         return Response(CourseSerializer(course, context={'request': request}).data)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def reject(self, request, pk=None):
         from accounts.models import AppNotification
 
@@ -1059,7 +1135,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         user.refresh_from_db()
         return doc
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def approve(self, request, pk=None):
         doc = self.get_object()
         if doc.moderation_status not in ('pending_admin', 'pending_peers', 'pending'):
@@ -1148,7 +1224,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(ser.data)
         return Response(ser.data)
 
-    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    @action(detail=True, methods=['post'], permission_classes=[IsAkadexAdmin])
     def reject(self, request, pk=None):
         from accounts.models import AppNotification
 

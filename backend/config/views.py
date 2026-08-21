@@ -20,6 +20,11 @@ def teacher_app(request, path=''):
     return render(request, 'teacher/app.html')
 
 
+def admin_app(request, path=''):
+    """SPA administration Akadex — /admin/."""
+    return render(request, 'platform_admin/app.html')
+
+
 def storage_health(request):
     """Diagnostic stockage média (Supabase / local) — sans secrets."""
     backend = settings.STORAGES.get('default', {}).get('BACKEND', '')

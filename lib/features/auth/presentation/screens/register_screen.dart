@@ -246,10 +246,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (picked != null) setState(() => _birthDate = picked);
   }
 
-  InputDecoration _dec(String hint, {IconData? icon}) {
+  InputDecoration _dec(
+    String hint, {
+    IconData? icon,
+    required Color hintColor,
+  }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: icon == null ? null : Icon(icon),
+      hintStyle: TextStyle(color: hintColor),
+      prefixIcon: icon == null ? null : Icon(icon, color: hintColor),
       border: InputBorder.none,
       filled: true,
       fillColor: Colors.transparent,
@@ -264,6 +269,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final isLast = _step == _totalSteps - 1;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleColor = isDark ? AkadexColors.inkOnDark : AkadexColors.ink;
+    final subtitleColor =
+        isDark ? AkadexColors.metaOnDark : AkadexColors.inkMuted;
+    final linkColor =
+        isDark ? AkadexColors.primaryOnDark : AkadexColors.primary;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -284,10 +296,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Text(
                             _stepTitle,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AkadexColors.ink,
+                              color: titleColor,
+                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -295,8 +308,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             _stepSubtitle,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: AkadexColors.inkMuted
-                                  .withValues(alpha: 0.95),
+                              color: subtitleColor,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 22),
@@ -320,10 +333,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             child: KeyedSubtree(
                               key: ValueKey('step-$_step-$_role'),
                               child: switch (_step) {
-                                0 => _buildRoleStep(),
-                                1 => _buildIdentityStep(),
-                                2 => _buildAccountStep(),
-                                _ => _buildAcademicStep(),
+                                0 => _buildRoleStep(
+                                    titleColor: titleColor,
+                                    subtitleColor: subtitleColor,
+                                  ),
+                                1 => _buildIdentityStep(
+                                    titleColor: titleColor,
+                                    subtitleColor: subtitleColor,
+                                  ),
+                                2 => _buildAccountStep(
+                                    titleColor: titleColor,
+                                    subtitleColor: subtitleColor,
+                                  ),
+                                _ => _buildAcademicStep(
+                                    titleColor: titleColor,
+                                    subtitleColor: subtitleColor,
+                                  ),
                               },
                             ),
                           ),
@@ -335,8 +360,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 vertical: 12,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFDECEC),
+                                color: isDark
+                                    ? const Color(0xFF3A2020)
+                                    : const Color(0xFFFDECEC),
                                 borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: AkadexColors.danger.withValues(
+                                    alpha: isDark ? 0.45 : 0.25,
+                                  ),
+                                ),
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -385,17 +417,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             Center(
                               child: GestureDetector(
                                 onTap: () => context.go('/login'),
-                                child: const Text.rich(
+                                child: Text.rich(
                                   TextSpan(
-                                    style: TextStyle(
-                                      color: AkadexColors.inkMuted,
-                                    ),
+                                    style: TextStyle(color: subtitleColor),
                                     children: [
-                                      TextSpan(text: 'Déjà un compte ? '),
+                                      const TextSpan(text: 'Déjà un compte ? '),
                                       TextSpan(
                                         text: 'Se connecter',
                                         style: TextStyle(
-                                          color: AkadexColors.primary,
+                                          color: linkColor,
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),
@@ -410,7 +440,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             Center(
                               child: TextButton(
                                 onPressed: _loading ? null : _goBack,
-                                child: const Text('Étape précédente'),
+                                child: Text(
+                                  'Étape précédente',
+                                  style: TextStyle(color: linkColor),
+                                ),
                               ),
                             ),
                           ],
@@ -424,7 +457,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildRoleStep() {
+  Widget _buildRoleStep({
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -433,6 +469,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           icon: Icons.school_outlined,
           title: 'Étudiant',
           subtitle: 'Cours, communauté et mentorat alumni',
+          titleColor: titleColor,
+          subtitleColor: subtitleColor,
           onTap: () => setState(() => _role = 'student'),
         ),
         const SizedBox(height: 12),
@@ -441,6 +479,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           icon: Icons.workspace_premium_outlined,
           title: 'Ancien étudiant (Alumni)',
           subtitle: 'Partage ton parcours et mentorise',
+          titleColor: titleColor,
+          subtitleColor: subtitleColor,
           onTap: () => setState(() => _role = 'alumni'),
         ),
         const SizedBox(height: 16),
@@ -453,11 +493,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 color: AkadexColors.primary.withValues(alpha: 0.9),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Les comptes enseignants sont créés exclusivement '
                   'par l’administrateur.',
-                  style: TextStyle(height: 1.4, fontSize: 13),
+                  style: TextStyle(
+                    height: 1.4,
+                    fontSize: 13,
+                    color: subtitleColor,
+                  ),
                 ),
               ),
             ],
@@ -467,7 +511,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildIdentityStep() {
+  Widget _buildIdentityStep({
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
     final isStudent = _role == 'student';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -475,7 +522,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _softField(
           child: TextField(
             controller: _lastName,
-            decoration: _dec('Nom', icon: Icons.badge_outlined),
+            style: TextStyle(color: titleColor),
+            decoration: _dec(
+              'Nom',
+              icon: Icons.badge_outlined,
+              hintColor: subtitleColor,
+            ),
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
           ),
@@ -484,7 +536,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _softField(
           child: TextField(
             controller: _postnom,
-            decoration: _dec('Postnom', icon: Icons.badge_outlined),
+            style: TextStyle(color: titleColor),
+            decoration: _dec(
+              'Postnom',
+              icon: Icons.badge_outlined,
+              hintColor: subtitleColor,
+            ),
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
           ),
@@ -493,7 +550,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _softField(
           child: TextField(
             controller: _firstName,
-            decoration: _dec('Prénom', icon: Icons.person_outline_rounded),
+            style: TextStyle(color: titleColor),
+            decoration: _dec(
+              'Prénom',
+              icon: Icons.person_outline_rounded,
+              hintColor: subtitleColor,
+            ),
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.done,
           ),
@@ -504,10 +566,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: DropdownButtonFormField<String>(
               key: ValueKey('gender-$_gender'),
               initialValue: _gender,
-              decoration: _dec('Sexe'),
-              items: const [
-                DropdownMenuItem(value: 'M', child: Text('Masculin')),
-                DropdownMenuItem(value: 'F', child: Text('Féminin')),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              style: TextStyle(color: titleColor),
+              decoration: _dec('Sexe', hintColor: subtitleColor),
+              items: [
+                DropdownMenuItem(
+                  value: 'M',
+                  child: Text('Masculin', style: TextStyle(color: titleColor)),
+                ),
+                DropdownMenuItem(
+                  value: 'F',
+                  child: Text('Féminin', style: TextStyle(color: titleColor)),
+                ),
               ],
               onChanged: (v) => setState(() => _gender = v),
             ),
@@ -521,15 +591,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 decoration: _dec(
                   'Date de naissance',
                   icon: Icons.cake_outlined,
+                  hintColor: subtitleColor,
                 ),
                 child: Text(
                   _birthDate == null
                       ? 'Sélectionner'
                       : DateFormat('dd/MM/yyyy').format(_birthDate!),
                   style: TextStyle(
-                    color: _birthDate == null
-                        ? AkadexColors.inkSoft
-                        : AkadexColors.ink,
+                    color: _birthDate == null ? subtitleColor : titleColor,
                   ),
                 ),
               ),
@@ -540,41 +609,59 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildAccountStep() {
+  Widget _buildAccountStep({
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _softField(
           child: TextField(
             controller: _email,
+            style: TextStyle(color: titleColor),
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
-            decoration: _dec('Email', icon: Icons.mail_outline_rounded),
+            decoration: _dec(
+              'Email',
+              icon: Icons.mail_outline_rounded,
+              hintColor: subtitleColor,
+            ),
           ),
         ),
         const SizedBox(height: 12),
         _softField(
           child: TextField(
             controller: _phone,
+            style: TextStyle(color: titleColor),
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
-            decoration: _dec('Téléphone', icon: Icons.phone_outlined),
+            decoration: _dec(
+              'Téléphone',
+              icon: Icons.phone_outlined,
+              hintColor: subtitleColor,
+            ),
           ),
         ),
         const SizedBox(height: 12),
         _softField(
           child: TextField(
             controller: _password,
+            style: TextStyle(color: titleColor),
             obscureText: _obscure,
             textInputAction: TextInputAction.done,
-            decoration: _dec('Mot de passe', icon: Icons.lock_outline_rounded)
-                .copyWith(
+            decoration: _dec(
+              'Mot de passe',
+              icon: Icons.lock_outline_rounded,
+              hintColor: subtitleColor,
+            ).copyWith(
               suffixIcon: IconButton(
                 onPressed: () => setState(() => _obscure = !_obscure),
                 icon: Icon(
                   _obscure
                       ? Icons.visibility_outlined
                       : Icons.visibility_off_outlined,
+                  color: subtitleColor,
                 ),
               ),
             ),
@@ -585,23 +672,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           'Au moins 8 caractères',
           style: TextStyle(
             fontSize: 12,
-            color: AkadexColors.inkSoft.withValues(alpha: 0.95),
+            color: subtitleColor,
           ),
         ),
       ],
     );
   }
 
-  Widget _catalogPlaceholder(String label, {IconData? icon}) {
+  Widget _catalogPlaceholder(
+    String label, {
+    IconData? icon,
+    required Color subtitleColor,
+  }) {
     return _softField(
       child: TextField(
         enabled: false,
-        decoration: _dec(label, icon: icon),
+        style: TextStyle(color: subtitleColor),
+        decoration: _dec(label, icon: icon, hintColor: subtitleColor),
       ),
     );
   }
 
-  Widget _buildAcademicStep() {
+  Widget _buildAcademicStep({
+    required Color titleColor,
+    required Color subtitleColor,
+  }) {
     final unisAsync = ref.watch(universitiesProvider);
     final hasUni = _universityId != null && _universityId!.isNotEmpty;
     final hasFac = _facultyId != null && _facultyId!.isNotEmpty;
@@ -640,8 +735,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 Text(
                   apiErrorMessage(catalogError),
-                  style: const TextStyle(
-                    color: AkadexColors.inkMuted,
+                  style: TextStyle(
+                    color: subtitleColor,
                     height: 1.35,
                   ),
                 ),
@@ -677,12 +772,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               _catalogPlaceholder(
                 'Université (chargement…)',
                 icon: Icons.account_balance_outlined,
+                subtitleColor: subtitleColor,
               ),
             ],
           ),
           error: (_, _) => _catalogPlaceholder(
             'Université (indisponible — réessayer)',
             icon: Icons.account_balance_outlined,
+            subtitleColor: subtitleColor,
           ),
           data: (unis) => AcademicAutocomplete(
             key: ValueKey('uni-$_universityId'),
@@ -716,12 +813,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (isStudent) ...[
           const SizedBox(height: 12),
           if (!hasUni)
-            _catalogPlaceholder('Faculté (choisis d’abord l’université)')
+            _catalogPlaceholder(
+              'Faculté (choisis d’abord l’université)',
+              subtitleColor: subtitleColor,
+            )
           else
             facultiesAsync.when(
-              loading: () => _catalogPlaceholder('Faculté (chargement…)'),
-              error: (_, _) =>
-                  _catalogPlaceholder('Faculté (indisponible — réessayer)'),
+              loading: () => _catalogPlaceholder(
+                'Faculté (chargement…)',
+                subtitleColor: subtitleColor,
+              ),
+              error: (_, _) => _catalogPlaceholder(
+                'Faculté (indisponible — réessayer)',
+                subtitleColor: subtitleColor,
+              ),
               data: (facs) => AcademicAutocomplete(
                 key: ValueKey('fac-$_universityId-$_facultyId'),
                 label: 'Faculté',
@@ -755,9 +860,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ],
         const SizedBox(height: 12),
         if (!hasUni)
-          _catalogPlaceholder('Département (choisis d’abord l’université)')
+          _catalogPlaceholder(
+            'Département (choisis d’abord l’université)',
+            subtitleColor: subtitleColor,
+          )
         else if (isStudent && !hasFac)
-          _catalogPlaceholder('Département (choisis d’abord la faculté)')
+          _catalogPlaceholder(
+            'Département (choisis d’abord la faculté)',
+            subtitleColor: subtitleColor,
+          )
         else
           deptsAsync.when(
             loading: () => Column(
@@ -765,11 +876,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               children: [
                 const LinearProgressIndicator(minHeight: 2),
                 const SizedBox(height: 8),
-                _catalogPlaceholder('Département (chargement…)'),
+                _catalogPlaceholder(
+                  'Département (chargement…)',
+                  subtitleColor: subtitleColor,
+                ),
               ],
             ),
-            error: (_, _) =>
-                _catalogPlaceholder('Département (indisponible — réessayer)'),
+            error: (_, _) => _catalogPlaceholder(
+              'Département (indisponible — réessayer)',
+              subtitleColor: subtitleColor,
+            ),
             data: (all) {
               final uniId = _universityId;
               final facId = _facultyId;
@@ -822,12 +938,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
         const SizedBox(height: 12),
         if (!hasDept)
-          _catalogPlaceholder('Promotion (choisis d’abord le département)')
+          _catalogPlaceholder(
+            'Promotion (choisis d’abord le département)',
+            subtitleColor: subtitleColor,
+          )
         else
           promosAsync.when(
-            loading: () => _catalogPlaceholder('Promotion (chargement…)'),
-            error: (_, _) =>
-                _catalogPlaceholder('Promotion (indisponible — réessayer)'),
+            loading: () => _catalogPlaceholder(
+              'Promotion (chargement…)',
+              subtitleColor: subtitleColor,
+            ),
+            error: (_, _) => _catalogPlaceholder(
+              'Promotion (indisponible — réessayer)',
+              subtitleColor: subtitleColor,
+            ),
             data: (promos) => AcademicAutocomplete(
               key: ValueKey('promo-$_departmentId-$_promotionId'),
               label: 'Promotion',
@@ -863,7 +987,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _softField(
             child: TextField(
               controller: _matricule,
-              decoration: _dec('Matricule', icon: Icons.numbers_rounded),
+              style: TextStyle(color: titleColor),
+              decoration: _dec(
+                'Matricule',
+                icon: Icons.numbers_rounded,
+                hintColor: subtitleColor,
+              ),
             ),
           ),
         ] else ...[
@@ -871,9 +1000,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _softField(
             child: TextField(
               controller: _domain,
+              style: TextStyle(color: titleColor),
               decoration: _dec(
                 'Domaine professionnel',
                 icon: Icons.work_outline_rounded,
+                hintColor: subtitleColor,
               ),
             ),
           ),
@@ -881,9 +1012,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _softField(
             child: TextField(
               controller: _company,
+              style: TextStyle(color: titleColor),
               decoration: _dec(
                 'Entreprise (optionnel)',
                 icon: Icons.business_outlined,
+                hintColor: subtitleColor,
               ),
             ),
           ),
@@ -891,10 +1024,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _softField(
             child: TextField(
               controller: _gradYear,
+              style: TextStyle(color: titleColor),
               keyboardType: TextInputType.number,
               decoration: _dec(
                 'Année du diplôme',
                 icon: Icons.calendar_today_outlined,
+                hintColor: subtitleColor,
               ),
             ),
           ),
@@ -910,6 +1045,8 @@ class _RoleCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.titleColor,
+    required this.subtitleColor,
     required this.onTap,
   });
 
@@ -917,10 +1054,13 @@ class _RoleCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color titleColor;
+  final Color subtitleColor;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return SoftCard(
       onTap: onTap,
       accentBorder: selected,
@@ -932,12 +1072,16 @@ class _RoleCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: selected
                   ? AkadexColors.primarySoft
-                  : AkadexColors.background,
+                  : (isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : AkadexColors.background),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
               icon,
-              color: selected ? AkadexColors.primary : AkadexColors.inkMuted,
+              color: selected
+                  ? (isDark ? AkadexColors.primaryOnDark : AkadexColors.primary)
+                  : subtitleColor,
             ),
           ),
           const SizedBox(width: 14),
@@ -947,16 +1091,17 @@ class _RoleCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
+                    color: titleColor,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: AkadexColors.inkMuted,
+                  style: TextStyle(
+                    color: subtitleColor,
                     fontSize: 13,
                   ),
                 ),
@@ -967,7 +1112,9 @@ class _RoleCard extends StatelessWidget {
             selected
                 ? Icons.radio_button_checked_rounded
                 : Icons.radio_button_off_rounded,
-            color: selected ? AkadexColors.primary : AkadexColors.inkSoft,
+            color: selected
+                ? (isDark ? AkadexColors.primaryOnDark : AkadexColors.primary)
+                : subtitleColor,
           ),
         ],
       ),
