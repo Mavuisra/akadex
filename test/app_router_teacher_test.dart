@@ -2,6 +2,8 @@ import 'package:akadex/core/router/app_router.dart';
 import 'package:akadex/core/theme/akadex_theme.dart';
 import 'package:akadex/data/api/api_client.dart';
 import 'package:akadex/data/auth/auth_repository.dart';
+import 'package:akadex/data/local/local_academic_store.dart';
+import 'package:akadex/data/sync/sync_service.dart';
 import 'package:akadex/domain/models/models.dart';
 import 'package:akadex/features/shell/teacher_shell.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +43,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        localStoreProvider.overrideWithValue(LocalAcademicStore.memory()),
         authStateProvider.overrideWith(
           (ref) => _FakeAuth(ref.watch(authRepositoryProvider), _teacher()),
         ),

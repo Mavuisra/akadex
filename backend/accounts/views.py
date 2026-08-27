@@ -1,4 +1,7 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.mail import send_mail
+from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
@@ -15,6 +18,11 @@ from .serializers import (
 )
 
 User = get_user_model()
+
+_PASSWORD_RESET_OK = (
+    'Si un compte est associé à cette adresse, un code de réinitialisation '
+    'a été envoyé.'
+)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -40,6 +48,13 @@ class MeView(APIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+    def delete(self, request):
+        """Suppression définitive du compte (anonymisation + désactivation)."""
+        from .account_deletion import delete_user_account
+
+        delete_user_account(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ConfirmEmailView(APIView):
@@ -72,6 +87,99 @@ class ConfirmEmailView(APIView):
             update_fields=['email', 'pending_email', 'email_verification_token']
         )
         return Response(UserSerializer(user, context={'request': request}).data)
+
+
+class PasswordResetRequestView(APIView):
+    """Demande un code de réinitialisation (anti-énumération : toujours 200)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        import secrets
+        from datetime import timedelta
+
+        email = (request.data.get('email') or '').strip().lower()
+        payload = {'detail': _PASSWORD_RESET_OK}
+
+        if not email:
+            return Response(
+                {'email': 'Indique ton adresse e-mail.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = User.objects.filter(email__iexact=email).first()
+        if user is not None:
+            code = f'{secrets.randbelow(1_000_000):06d}'
+            user.password_reset_token = code
+            user.password_reset_expires = timezone.now() + timedelta(hours=1)
+            user.save(
+                update_fields=['password_reset_token', 'password_reset_expires']
+            )
+            subject = 'Akadex — réinitialisation du mot de passe'
+            body = (
+                f'Bonjour,\n\n'
+                f'Ton code de réinitialisation Akadex est : {code}\n'
+                f'Il expire dans 1 heure.\n\n'
+                f'Si tu n’as pas demandé ce code, ignore ce message.\n'
+            )
+            try:
+                send_mail(
+                    subject,
+                    body,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [user.email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass
+            # Dev / console : exposer le code pour tester sans SMTP.
+            if settings.DEBUG:
+                payload['dev_code'] = code
+
+        return Response(payload)
+
+
+class PasswordResetConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = (request.data.get('email') or '').strip().lower()
+        token = (request.data.get('token') or '').strip()
+        password = request.data.get('password') or ''
+        password_confirm = request.data.get('password_confirm') or ''
+
+        errors = {}
+        if not email:
+            errors['email'] = 'Indique ton adresse e-mail.'
+        if not token:
+            errors['token'] = 'Indique le code reçu.'
+        if len(password) < 8:
+            errors['password'] = 'Le mot de passe doit contenir au moins 8 caractères.'
+        if password != password_confirm:
+            errors['password_confirm'] = 'Les mots de passe ne correspondent pas.'
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email__iexact=email).first()
+        if (
+            user is None
+            or not user.password_reset_token
+            or user.password_reset_token != token
+            or not user.password_reset_expires
+            or user.password_reset_expires < timezone.now()
+        ):
+            return Response(
+                {'token': 'Code invalide ou expiré.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(password)
+        user.password_reset_token = ''
+        user.password_reset_expires = None
+        user.save(
+            update_fields=['password', 'password_reset_token', 'password_reset_expires']
+        )
+        return Response({'detail': 'Mot de passe mis à jour. Tu peux te connecter.'})
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):

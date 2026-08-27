@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/akadex_theme.dart';
 import '../../core/theme/timeline_tokens.dart';
+import '../../core/widgets/offline_status_banner.dart';
 
 /// Navigation enseignant — style Facebook (barre blanche, bleu actif).
 class TeacherShell extends StatelessWidget {
@@ -30,7 +31,12 @@ class TeacherShell extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: feed.feedBg,
-      body: navigationShell,
+      body: Column(
+        children: [
+          const OfflineStatusBanner(),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: Container(
         color: feed.cardBg,
         child: CupertinoTabBar(

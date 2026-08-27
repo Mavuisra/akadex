@@ -68,9 +68,17 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Akadex a besoin du micro pour envoyer des messages vocaux.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Akadex utilise la caméra pour prendre des photos de profil et de publications.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Akadex accède à ta galerie pour choisir des photos de profil et de publications.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Akadex peut enregistrer des images dans ta galerie lorsque tu partages un contenu.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

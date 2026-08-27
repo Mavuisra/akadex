@@ -10,7 +10,7 @@ import 'package:akadex/data/api/api_client.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('Login affiche Connexion et Se connecter', (tester) async {
+  testWidgets('Login affiche slogan et Se connecter', (tester) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
 
@@ -36,7 +36,8 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
-    expect(find.text('Connexion'), findsOneWidget);
+    expect(find.text('L’outil que tu cherchais'), findsOneWidget);
     expect(find.text('Se connecter'), findsOneWidget);
+    expect(find.text('Créer un nouveau compte'), findsOneWidget);
   });
 }

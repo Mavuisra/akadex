@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/theme_mode_provider.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/widgets/common_widgets.dart';
@@ -20,7 +21,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  bool _showMore = false;
   bool _helpOpen = false;
   bool _settingsOpen = false;
   bool _themeOpen = false;
@@ -96,44 +96,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
                 const SizedBox(height: 12),
                 _MenuItem(
-                  icon: Icons.people_outline_rounded,
-                  label: 'Ami(e)s',
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: 'Messages',
                   ink: feed.ink,
-                  onTap: () => context.push('/friends'),
+                  onTap: () => context.push('/messages'),
                 ),
                 _MenuItem(
-                  icon: Icons.grid_view_rounded,
-                  label: 'Tableau de bord',
+                  icon: Icons.notifications_none_rounded,
+                  label: 'Notifications',
                   ink: feed.ink,
-                  onTap: () => context.push('/dashboard'),
+                  onTap: () => context.push('/notifications'),
                 ),
-                _MenuItem(
-                  icon: Icons.bookmark_border_rounded,
-                  label: 'Enregistrements',
-                  ink: feed.ink,
-                  onTap: () => context.push('/saved'),
-                ),
-                _MenuItem(
-                  icon: Icons.auto_awesome,
-                  label: 'Akadex IA',
-                  ink: feed.ink,
-                  onTap: () => context.push('/ai'),
-                ),
-                if (user.usesStudentShell)
+                if (user.usesStudentShell) ...[
                   _MenuItem(
-                    icon: Icons.fact_check_outlined,
-                    label: 'Noter des docs',
+                    icon: Icons.bookmark_border_rounded,
+                    label: 'Enregistrements',
                     ink: feed.ink,
-                    onTap: () => context.push('/peer-review'),
+                    onTap: () => context.push('/saved'),
                   ),
-                if (user.usesStudentShell)
-                  _MenuItem(
-                    icon: Icons.card_giftcard_rounded,
-                    label: 'Récompenses',
-                    ink: feed.ink,
-                    onTap: () => context.push('/rewards'),
-                  ),
-                if (_showMore) ...[
                   _MenuItem(
                     icon: Icons.upload_file_rounded,
                     label: 'Proposer une contribution',
@@ -141,43 +121,25 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     onTap: () => context.push('/contribute'),
                   ),
                   _MenuItem(
-                    icon: Icons.explore_outlined,
-                    label: 'Apprendre',
+                    icon: Icons.play_circle_outline_rounded,
+                    label: 'Cours vidéo (Apprendre)',
                     ink: feed.ink,
                     onTap: () => context.go('/learn'),
                   ),
-                  if (user.usesTeacherShell)
-                    _MenuItem(
-                      icon: Icons.cloud_upload_outlined,
-                      label: 'Publier une leçon',
-                      ink: feed.ink,
-                      onTap: () => context.go('/teacher-publish'),
-                    ),
-                ],
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: Material(
-                    color: feed.commentBubble,
-                    borderRadius: BorderRadius.circular(8),
-                    child: InkWell(
-                      onTap: () => setState(() => _showMore = !_showMore),
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          _showMore ? 'Voir moins' : 'Voir plus',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 15,
-                            color: feed.ink,
-                          ),
-                        ),
-                      ),
-                    ),
+                  _MenuItem(
+                    icon: Icons.account_balance_outlined,
+                    label: 'Ma filière (Ma Fac)',
+                    ink: feed.ink,
+                    onTap: () => context.go('/library'),
                   ),
-                ),
+                ],
+                if (user.usesTeacherShell)
+                  _MenuItem(
+                    icon: Icons.cloud_upload_outlined,
+                    label: 'Publier une leçon',
+                    ink: feed.ink,
+                    onTap: () => context.go('/teacher-publish'),
+                  ),
                 const SizedBox(height: 16),
                 Divider(height: 1, color: feed.divider),
                 _ExpandRow(
@@ -190,24 +152,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _SubItem(
                       label: 'Centre d’aide',
                       meta: feed.meta,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Centre d’aide bientôt disponible'),
-                          ),
-                        );
-                      },
+                      onTap: () => context.push('/profile/help'),
                     ),
                     _SubItem(
                       label: 'Signaler un problème',
                       meta: feed.meta,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Merci — bientôt disponible'),
-                          ),
-                        );
-                      },
+                      onTap: () => context.push('/profile/report'),
                     ),
                   ],
                 ),
@@ -259,13 +209,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     _SubItem(
                       label: 'Confidentialité',
                       meta: feed.meta,
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Paramètres bientôt disponibles'),
-                          ),
-                        );
-                      },
+                      onTap: () => context.push('/profile/privacy'),
+                    ),
+                    _SubItem(
+                      label: 'Conditions d’utilisation',
+                      meta: feed.meta,
+                      onTap: () => context.push('/profile/terms'),
+                    ),
+                    _SubItem(
+                      label: 'Supprimer mon compte',
+                      meta: feed.meta,
+                      onTap: () => _confirmDeleteAccount(context, ref),
                     ),
                     _SubItem(
                       label: 'Se déconnecter',
@@ -286,12 +240,66 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     fontSize: 12,
                   ),
                 ),
+                const SizedBox(height: 6),
+                Text(
+                  'Pour retirer l’app du téléphone : '
+                  'iOS — appui long sur l’icône ; '
+                  'Android — Réglages → Applications → Désinstaller.',
+                  style: TextStyle(
+                    color: feed.meta,
+                    fontSize: 11,
+                    height: 1.35,
+                  ),
+                ),
               ],
             ),
           );
         },
       ),
     );
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Supprimer mon compte ?'),
+        content: const Text(
+          'Cette action est définitive. Ton compte sera désactivé, '
+          'tes données personnelles anonymisées, et tu seras déconnecté. '
+          'Pour seulement retirer l’application du téléphone, désinstalle-la '
+          'depuis les réglages iOS ou Android.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AkadexColors.danger,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(authStateProvider.notifier).deleteAccount();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compte supprimé.')),
+        );
+        context.go('/login');
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e))),
+      );
+    }
   }
 }
 

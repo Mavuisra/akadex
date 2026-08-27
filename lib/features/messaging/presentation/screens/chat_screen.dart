@@ -16,6 +16,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/theme/chat_ui.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/models/messaging_models.dart';
@@ -50,6 +51,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   DateTime? _recordingStartedAt;
   String? _recordingPath;
   Timer? _pollTimer;
+  int _pollTicks = 0;
   Timer? _typingDebounce;
   Timer? _typingClearTimer;
   Timer? _recordTick;
@@ -154,8 +156,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
   Future<void> _pollOnce() async {
     try {
       final repo = ref.read(messagingRepositoryProvider);
-      // Sans `after` : snapshot récent (≤100) pour rafraîchir ticks + activité.
-      final result = await repo.poll(_conversationId);
+      _pollTicks = (_pollTicks + 1) % 4;
+      // 1 poll sur 4 = snapshot complet (ticks de livraison) ;
+      // sinon incrémental via `after` (plus léger, temps réel).
+      final DateTime? after = (_pollTicks == 0 || _messages.isEmpty)
+          ? null
+          : _messages.last.createdAt;
+      final result = await repo.poll(_conversationId, after: after);
       if (!mounted) return;
 
       final me = ref.read(authStateProvider).valueOrNull?.id;
@@ -528,23 +535,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
     final hasText = _textController.text.trim().isNotEmpty;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8EEF8),
+      backgroundColor: ChatUi.scaffold,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.96),
+        backgroundColor: ChatUi.appBar,
+        foregroundColor: ChatUi.ink,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
         ),
         titleSpacing: 0,
         title: _searchOpen
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
+                style: const TextStyle(color: ChatUi.ink),
                 decoration: const InputDecoration(
                   hintText: 'Rechercher dans la conversation…',
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: AkadexColors.inkSoft),
+                  hintStyle: TextStyle(color: ChatUi.meta),
                 ),
                 onChanged: (v) {
                   _typingDebounce?.cancel();
@@ -572,9 +581,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             fontSize: 16,
-                            color: AkadexColors.ink,
+                            color: ChatUi.ink,
                           ),
                         ),
                         AnimatedSwitcher(
@@ -588,8 +597,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                               color: (conv?.peerIsTyping == true ||
                                       conv?.peerIsRecording == true ||
                                       peer?.isOnline == true)
-                                  ? AkadexColors.primary
-                                  : AkadexColors.inkSoft,
+                                  ? ChatUi.accentSoft
+                                  : ChatUi.meta,
                             ),
                           ),
                         ),
@@ -612,6 +621,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
             },
             icon: Icon(
               _searchOpen ? Icons.close_rounded : Icons.search_rounded,
+              color: ChatUi.ink,
             ),
           ),
         ],
@@ -657,10 +667,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_error!, textAlign: TextAlign.center),
+              Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: ChatUi.ink)),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: _bootstrap,
+                style: TextButton.styleFrom(foregroundColor: ChatUi.accentSoft),
                 child: const Text('Réessayer'),
               ),
             ],
@@ -680,7 +691,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
               Icon(
                 Icons.chat_bubble_outline_rounded,
                 size: 48,
-                color: AkadexColors.primary.withValues(alpha: 0.45),
+                color: ChatUi.meta.withValues(alpha: 0.9),
               ),
               const SizedBox(height: 12),
               Text(
@@ -690,7 +701,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 17,
-                  color: AkadexColors.ink,
+                  color: ChatUi.ink,
                 ),
               ),
               const SizedBox(height: 6),
@@ -699,7 +710,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen>
                     ? 'Essaie un autre mot-clé.'
                     : 'Envoie le premier message de cette conversation.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AkadexColors.inkMuted),
+                style: const TextStyle(color: ChatUi.meta),
               ),
             ],
           ),
@@ -786,16 +797,15 @@ class _DateSeparator extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AkadexColors.border.withValues(alpha: 0.7)),
+            color: ChatUi.datePill,
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,
             style: const TextStyle(
               fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: AkadexColors.inkMuted,
+              fontWeight: FontWeight.w600,
+              color: ChatUi.meta,
             ),
           ),
         ),
@@ -824,8 +834,11 @@ class _MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final time = DateFormat('HH:mm').format(message.createdAt.toLocal());
-    final bubbleColor = mine ? AkadexColors.primary : Colors.white;
-    final textColor = mine ? Colors.white : AkadexColors.ink;
+    final bubbleColor = mine ? ChatUi.outgoing : ChatUi.incoming;
+    final textColor = ChatUi.ink;
+    final metaColor = mine
+        ? Colors.white.withValues(alpha: 0.7)
+        : ChatUi.meta;
 
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -835,41 +848,28 @@ class _MessageBubble extends StatelessWidget {
         ),
         child: Padding(
           padding: EdgeInsets.only(
-            top: 3,
-            bottom: 3,
-            left: mine ? 40 : 4,
-            right: mine ? 4 : 40,
+            top: 2,
+            bottom: 2,
+            left: mine ? 48 : 8,
+            right: mine ? 8 : 48,
           ),
-          child: Column(
-            crossAxisAlignment:
-                mine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: message.isAudio
-                    ? const EdgeInsets.fromLTRB(10, 10, 14, 10)
-                    : const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: bubbleColor,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(mine ? 18 : 6),
-                    bottomRight: Radius.circular(mine ? 6 : 18),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AkadexColors.primary.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: mine
-                      ? null
-                      : Border.all(
-                          color: AkadexColors.border.withValues(alpha: 0.9),
-                        ),
-                ),
-                child: message.isAudio
+          child: Container(
+            padding: message.isAudio
+                ? const EdgeInsets.fromLTRB(10, 8, 10, 6)
+                : const EdgeInsets.fromLTRB(12, 8, 10, 6),
+            decoration: BoxDecoration(
+              color: bubbleColor,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(12),
+                topRight: const Radius.circular(12),
+                bottomLeft: Radius.circular(mine ? 12 : 2),
+                bottomRight: Radius.circular(mine ? 2 : 12),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                message.isAudio
                     ? _AudioBubbleContent(
                         mine: mine,
                         playing: playing,
@@ -879,35 +879,38 @@ class _MessageBubble extends StatelessWidget {
                             : Duration(milliseconds: message.audioDurationMs),
                         onToggle: onToggleAudio,
                       )
-                    : Text(
-                        message.content,
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 15.5,
-                          height: 1.35,
-                          fontWeight: FontWeight.w500,
+                    : Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          message.content,
+                          style: TextStyle(
+                            color: textColor,
+                            fontSize: 15.5,
+                            height: 1.35,
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
                       ),
-              ),
-              const SizedBox(height: 3),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    time,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AkadexColors.inkSoft,
-                      fontWeight: FontWeight.w500,
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      time,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: metaColor,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  if (mine) ...[
-                    const SizedBox(width: 4),
-                    _DeliveryTicks(status: message.deliveryStatus),
+                    if (mine) ...[
+                      const SizedBox(width: 3),
+                      _DeliveryTicks(status: message.deliveryStatus),
+                    ],
                   ],
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -924,7 +927,7 @@ class _DeliveryTicks extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRead = status == 'read';
     final isDelivered = status == 'delivered' || isRead;
-    final color = isRead ? const Color(0xFF4A9BFF) : AkadexColors.inkSoft;
+    final color = isRead ? ChatUi.tickRead : Colors.white.withValues(alpha: 0.75);
 
     if (!isDelivered) {
       return Icon(Icons.check_rounded, size: 14, color: color);
@@ -952,10 +955,10 @@ class _AudioBubbleContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final totalMs = duration.inMilliseconds.clamp(1, 1 << 30);
     final progress = (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
-    final fg = mine ? Colors.white : AkadexColors.primary;
+    final fg = mine ? Colors.white : ChatUi.accentSoft;
     final track = mine
         ? Colors.white.withValues(alpha: 0.28)
-        : AkadexColors.primary.withValues(alpha: 0.15);
+        : ChatUi.accentSoft.withValues(alpha: 0.25);
     final label = _fmt(playing || position.inMilliseconds > 0
         ? position
         : duration);
@@ -1052,22 +1055,8 @@ class _ComposerBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.97),
-          border: Border(
-            top: BorderSide(
-              color: AkadexColors.border.withValues(alpha: 0.8),
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+        color: ChatUi.composerBar,
         child: recording
             ? Row(
                 children: [
@@ -1083,8 +1072,8 @@ class _ComposerBar extends StatelessWidget {
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: AkadexColors.danger.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(22),
+                        color: AkadexColors.danger.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
                         children: [
@@ -1102,7 +1091,7 @@ class _ComposerBar extends StatelessWidget {
                             'Relâche pour envoyer',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AkadexColors.inkSoft,
+                              color: ChatUi.meta,
                             ),
                           ),
                         ],
@@ -1111,7 +1100,7 @@ class _ComposerBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   _RoundAction(
-                    color: AkadexColors.primary,
+                    color: ChatUi.accent,
                     icon: Icons.send_rounded,
                     onTap: () => onMicUp(),
                   ),
@@ -1120,15 +1109,17 @@ class _ComposerBar extends StatelessWidget {
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  IconButton(
+                    onPressed: null,
+                    tooltip: 'Joindre',
+                    icon: const Icon(Icons.add_rounded, color: ChatUi.meta),
+                  ),
                   Expanded(
                     child: Container(
                       constraints: const BoxConstraints(maxHeight: 120),
                       decoration: BoxDecoration(
-                        color: AkadexColors.primaryMist,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: AkadexColors.border.withValues(alpha: 0.9),
-                        ),
+                        color: ChatUi.field,
+                        borderRadius: BorderRadius.circular(24),
                       ),
                       child: TextField(
                         controller: controller,
@@ -1136,19 +1127,20 @@ class _ComposerBar extends StatelessWidget {
                         minLines: 1,
                         maxLines: 5,
                         textInputAction: TextInputAction.newline,
+                        cursorColor: ChatUi.accentSoft,
                         decoration: const InputDecoration(
-                          hintText: 'Écrire un message…',
+                          hintText: 'Message',
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
-                          hintStyle: TextStyle(color: AkadexColors.inkSoft),
+                          hintStyle: TextStyle(color: ChatUi.meta),
                         ),
                         style: const TextStyle(
-                          color: AkadexColors.ink,
+                          color: ChatUi.ink,
                           fontSize: 15.5,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w400,
                         ),
                         onSubmitted: (_) {
                           if (hasText) onSend();
@@ -1156,13 +1148,11 @@ class _ComposerBar extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 4),
                   if (hasText)
                     _RoundAction(
-                      color: AkadexColors.primary,
-                      icon: sending
-                          ? null
-                          : Icons.send_rounded,
+                      color: ChatUi.accent,
+                      icon: sending ? null : Icons.send_rounded,
                       loading: sending,
                       onTap: sending ? null : onSend,
                     )
@@ -1175,17 +1165,9 @@ class _ComposerBar extends StatelessWidget {
                         duration: const Duration(milliseconds: 160),
                         width: 46,
                         height: 46,
-                        decoration: BoxDecoration(
-                          color: AkadexColors.primary,
+                        decoration: const BoxDecoration(
+                          color: ChatUi.accent,
                           shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AkadexColors.primary.withValues(alpha: 0.35),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
                         ),
                         child: const Icon(
                           Icons.mic_rounded,

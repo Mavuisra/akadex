@@ -102,6 +102,44 @@ class AuthRepository {
     return userFromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
+  /// Demande un code de reset. Retourne éventuellement `dev_code` (DEBUG serveur).
+  Future<String?> requestPasswordReset(String email) async {
+    final res = await _dio.post(
+      'auth/password-reset/',
+      data: {'email': email.trim()},
+    );
+    final data = res.data;
+    if (data is Map && data['dev_code'] != null) {
+      return data['dev_code'].toString();
+    }
+    return null;
+  }
+
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String token,
+    required String password,
+    required String passwordConfirm,
+  }) async {
+    await _dio.post(
+      'auth/password-reset/confirm/',
+      data: {
+        'email': email.trim(),
+        'token': token.trim(),
+        'password': password,
+        'password_confirm': passwordConfirm,
+      },
+    );
+  }
+
+  Future<UserProfile> confirmEmail(String token) async {
+    final res = await _dio.post(
+      'auth/me/confirm-email/',
+      data: {'token': token.trim()},
+    );
+    return userFromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
   /// PATCH `auth/me/`. Si `avatar` / `cover` sont fournis (chemin, [XFile],
   /// ou bytes), envoie un [FormData] multipart ; sinon JSON.
   Future<UserProfile> updateProfile(Map<String, dynamic> data) async {
@@ -182,10 +220,21 @@ class AuthRepository {
     await _prefs.remove('access_token');
     await _prefs.remove('refresh_token');
   }
+
+  /// Suppression de compte (API) puis nettoyage local des jetons.
+  Future<void> deleteAccount() async {
+    await _dio.delete('auth/me/');
+    await logout();
+  }
 }
 
 class AuthController extends StateNotifier<AsyncValue<UserProfile?>> {
-  AuthController(this._repo) : super(const AsyncValue.data(null)) {
+  AuthController(this._repo)
+      : super(
+          _repo.hasToken
+              ? const AsyncValue.loading()
+              : const AsyncValue.data(null),
+        ) {
     restore();
   }
 
@@ -259,8 +308,24 @@ class AuthController extends StateNotifier<AsyncValue<UserProfile?>> {
     state = AsyncValue.data(user);
   }
 
+  Future<void> confirmEmail(String token) async {
+    final user = await _repo.confirmEmail(token);
+    state = AsyncValue.data(user);
+  }
+
   Future<void> logout() async {
     await _repo.logout();
     state = const AsyncValue.data(null);
+  }
+
+  Future<void> deleteAccount() async {
+    state = const AsyncValue.loading();
+    try {
+      await _repo.deleteAccount();
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+      rethrow;
+    }
   }
 }

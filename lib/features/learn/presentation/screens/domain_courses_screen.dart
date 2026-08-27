@@ -17,7 +17,9 @@ class DomainCoursesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final domain = LearnDomains.byId(domainId);
+    final domains =
+        ref.watch(learningDomainsProvider).valueOrNull ?? LearnDomains.fallback;
+    final domain = LearnDomains.byId(domainId, domains);
     final coursesAsync = ref.watch(coursesProvider);
     final feed = TimelineTokens.of(context);
 

@@ -74,6 +74,8 @@ class User(AbstractUser):
     badges = models.JSONField(default=list, blank=True)
     pending_email = models.EmailField(blank=True)
     email_verification_token = models.CharField(max_length=64, blank=True)
+    password_reset_token = models.CharField(max_length=64, blank=True)
+    password_reset_expires = models.DateTimeField(null=True, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
 
     USERNAME_FIELD = 'email'
@@ -97,6 +99,8 @@ class AppNotification(models.Model):
         POST_APPROVED = 'post_approved', 'Publication validée'
         POST_REJECTED = 'post_rejected', 'Publication refusée'
         POINTS = 'points', 'Points'
+        MESSAGE = 'message', 'Message'
+        PAYMENT = 'payment', 'Paiement'
         GENERAL = 'general', 'Général'
 
     user = models.ForeignKey(
@@ -112,6 +116,8 @@ class AppNotification(models.Model):
     title = models.CharField(max_length=255)
     message = models.TextField()
     points = models.PositiveIntegerField(default=0)
+    # Deep-link app (ex. /messages/chat/12, /learn)
+    link = models.CharField(max_length=255, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 

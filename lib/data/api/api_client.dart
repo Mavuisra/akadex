@@ -107,8 +107,14 @@ String apiErrorMessage(Object error) {
     final data = error.response?.data;
     if (data is Map) {
       if (data['detail'] != null) return data['detail'].toString();
-      final first = data.values.whereType<List>().expand((e) => e);
-      if (first.isNotEmpty) return first.first.toString();
+      for (final value in data.values) {
+        if (value is List && value.isNotEmpty) {
+          return value.first.toString();
+        }
+        if (value is String && value.trim().isNotEmpty) {
+          return value;
+        }
+      }
     }
     if (status != null && status >= 500) {
       return 'Le serveur Akadex est temporairement indisponible '

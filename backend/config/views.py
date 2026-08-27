@@ -15,6 +15,18 @@ def home(request):
     )
 
 
+def legal_privacy(request):
+    return render(request, 'legal/privacy.html')
+
+
+def legal_terms(request):
+    return render(request, 'legal/terms.html')
+
+
+def legal_delete_account(request):
+    return render(request, 'legal/delete_account.html')
+
+
 def teacher_app(request, path=''):
     """SPA dashboard enseignant (HTML/CSS/JS) — /enseignant/."""
     return render(request, 'teacher/app.html')

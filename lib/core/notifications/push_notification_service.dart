@@ -1,15 +1,21 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../data/api/api_client.dart';
 import '../../data/repositories/push_token_repository.dart';
+import '../permissions/media_permissions.dart';
 
 const _fcmTokenPrefsKey = 'fcm_token';
+const _androidChannelId = 'akadex_general';
+const _androidChannelName = 'Akadex';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -27,6 +33,8 @@ final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) 
   );
 });
 
+typedef PushOpenCallback = void Function(RemoteMessage message);
+
 class PushNotificationService {
   PushNotificationService(this._prefs, this._pushTokens);
 
@@ -34,22 +42,38 @@ class PushNotificationService {
   final PushTokenRepository _pushTokens;
   bool _initialized = false;
   bool _loggedIn = false;
+  PushOpenCallback? _onOpen;
   StreamSubscription<String>? _tokenRefreshSub;
   StreamSubscription<RemoteMessage>? _messageSub;
   StreamSubscription<RemoteMessage>? _openedAppSub;
+
+  final FlutterLocalNotificationsPlugin _local =
+      FlutterLocalNotificationsPlugin();
 
   static Future<void> bootstrap() async {
     if (kIsWeb) return;
     try {
       await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      await FirebaseCrashlytics.instance
+          .setCrashlyticsCollectionEnabled(!kDebugMode);
     } catch (e) {
-      debugPrint('FCM bootstrap non initialise: $e');
+      debugPrint('FCM/Crashlytics bootstrap non initialise: $e');
     }
   }
 
-  Future<void> initialize({required bool isLoggedIn}) async {
+  Future<void> initialize({
+    required bool isLoggedIn,
+    PushOpenCallback? onOpen,
+  }) async {
     _loggedIn = isLoggedIn;
+    _onOpen = onOpen;
     if (_initialized || kIsWeb) return;
     _initialized = true;
 
@@ -57,6 +81,9 @@ class PushNotificationService {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp();
       }
+
+      await _initLocalNotifications();
+      await MediaPermissions.ensureNotifications();
 
       final messaging = FirebaseMessaging.instance;
       await messaging.requestPermission(
@@ -94,14 +121,101 @@ class PushNotificationService {
           'Push recue (foreground): ${message.notification?.title ?? ''} '
           '${message.notification?.body ?? ''}',
         );
+        unawaited(_showForegroundNotification(message));
       });
 
       _openedAppSub?.cancel();
-      _openedAppSub = FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        debugPrint('Push cliquee: ${message.messageId}');
-      });
+      _openedAppSub = FirebaseMessaging.onMessageOpenedApp.listen(_handleOpen);
+
+      final initial = await messaging.getInitialMessage();
+      if (initial != null) {
+        _handleOpen(initial);
+      }
     } catch (e) {
       debugPrint('Initialisation FCM echouee: $e');
+    }
+  }
+
+  Future<void> _initLocalNotifications() async {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    await _local.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+      onDidReceiveNotificationResponse: (response) {
+        // Tap sur notif locale (foreground) → notifications in-app.
+        _onOpen?.call(
+          RemoteMessage(
+            data: {'kind': 'general', 'route': '/notifications'},
+          ),
+        );
+      },
+    );
+
+    if (Platform.isAndroid) {
+      const channel = AndroidNotificationChannel(
+        _androidChannelId,
+        _androidChannelName,
+        description: 'Notifications Akadex',
+        importance: Importance.high,
+      );
+      await _local
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(channel);
+    }
+  }
+
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
+    final n = message.notification;
+    if (n == null) return;
+    // iOS affiche déjà via setForegroundNotificationPresentationOptions.
+    if (Platform.isIOS) return;
+
+    await _local.show(
+      message.hashCode,
+      n.title,
+      n.body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _androidChannelId,
+          _androidChannelName,
+          channelDescription: 'Notifications Akadex',
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+      payload: message.data['notification_id']?.toString(),
+    );
+  }
+
+  void _handleOpen(RemoteMessage message) {
+    debugPrint(
+      'Push cliquee: ${message.messageId} kind=${message.data['kind']}',
+    );
+    _onOpen?.call(message);
+  }
+
+  /// Route cible depuis le payload FCM (défaut: /notifications).
+  static String routeForMessage(RemoteMessage message) {
+    final explicit = (message.data['route'] ?? '').toString().trim();
+    if (explicit.startsWith('/')) return explicit;
+    final kind = (message.data['kind'] ?? '').toString();
+    switch (kind) {
+      case 'message':
+        final cid = (message.data['conversation_id'] ?? '').toString();
+        if (cid.isNotEmpty) return '/messages/chat/$cid';
+        return '/messages';
+      case 'payment':
+        return '/learn';
+      case 'document_approved':
+      case 'document_rejected':
+        return '/library';
+      case 'post_approved':
+      case 'post_rejected':
+        return '/home';
+      default:
+        return '/notifications';
     }
   }
 

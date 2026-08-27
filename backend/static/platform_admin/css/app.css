@@ -761,6 +761,104 @@ table.data tr:hover td {
   font-size: 0.8rem;
 }
 
+.person-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+
+.person-av {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--blue-soft);
+}
+
+.person-av.ph {
+  display: grid;
+  place-items: center;
+  color: var(--blue);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.person-meta {
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.person-name {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-email {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-sub {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comment-h {
+  margin: 20px 0 10px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.comment-list {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.comment-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) 1fr auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--blue-mist);
+}
+
+.comment-body p {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+}
+
+.comment-body time {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+
+@media (max-width: 640px) {
+  .comment-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ——— Activity ——— */
 .timeline {
   display: grid;
@@ -1330,8 +1428,31 @@ table.data tr:hover td {
   background: rgba(18, 24, 38, 0.4);
 }
 
-.admin-dialog form {
-  padding: 22px 22px 18px;
+.dlg-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.55rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dlg-close:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.admin-dialog > form {
+  padding: 22px 52px 18px 22px;
 }
 
 .admin-dialog h2 {

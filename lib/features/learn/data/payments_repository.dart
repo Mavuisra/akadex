@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/api/api_client.dart';
+import 'course_pricing.dart';
 
 /// Opérateur Mobile Money (codes backend / PawaPay).
 enum MomoProvider {
@@ -45,6 +46,10 @@ class DepositResult {
     this.pawapayStatus = '',
     this.amount = '',
     this.currency = 'USD',
+    this.courseIds = const [],
+    this.grantedCourseIds = const [],
+    this.accessGranted = false,
+    this.failureMessage = '',
   });
 
   final String depositId;
@@ -53,13 +58,31 @@ class DepositResult {
   final String pawapayStatus;
   final String amount;
   final String currency;
+  final List<String> courseIds;
+  final List<String> grantedCourseIds;
+  final bool accessGranted;
+  final String failureMessage;
 
   bool get accepted =>
       status == 'ACCEPTED' || pawapayStatus.toUpperCase() == 'ACCEPTED';
 
-  bool get completed => status == 'COMPLETED';
+  bool get completed =>
+      status == 'COMPLETED' || pawapayStatus.toUpperCase() == 'COMPLETED';
+
+  bool get failed =>
+      status == 'FAILED' ||
+      status == 'REJECTED' ||
+      pawapayStatus.toUpperCase() == 'FAILED' ||
+      pawapayStatus.toUpperCase() == 'REJECTED';
+
+  bool get isTerminal => completed || failed;
 
   factory DepositResult.fromJson(Map<String, dynamic> json) {
+    List<String> asIds(dynamic raw) {
+      if (raw is! List) return const [];
+      return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
+    }
+
     return DepositResult(
       depositId: (json['deposit_id'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
@@ -67,6 +90,10 @@ class DepositResult {
       pawapayStatus: (json['pawapay_status'] ?? '').toString(),
       amount: (json['amount'] ?? '').toString(),
       currency: (json['currency'] ?? 'USD').toString(),
+      courseIds: asIds(json['course_ids']),
+      grantedCourseIds: asIds(json['granted_course_ids']),
+      accessGranted: json['access_granted'] == true,
+      failureMessage: (json['failure_message'] ?? '').toString(),
     );
   }
 }
@@ -98,7 +125,7 @@ class PaymentsRepository {
     } on DioException catch (e) {
       if (e.response?.statusCode == 401) {
         throw Exception(
-          'Connecte-toi pour payer avec Mobile Money (PawaPay).',
+          'Connecte-toi pour finaliser le paiement.',
         );
       }
       if (e.response?.statusCode == 503) {
@@ -107,14 +134,12 @@ class PaymentsRepository {
           throw Exception(data['detail'].toString());
         }
         throw Exception(
-          'PawaPay indisponible (503). Vérifie PAWAPAY_API_TOKEN sur Render.',
+          'Paiement temporairement indisponible. Réessaie dans un moment.',
         );
       }
       if (e.response?.statusCode == 404) {
         throw Exception(
-          'Paiement indisponible sur le serveur. '
-          'L’API PawaPay n’est pas encore déployée sur Render '
-          '(endpoint /payments/deposits).',
+          'Paiement indisponible pour le moment. Réessaie plus tard.',
         );
       }
       final data = e.response?.data;
@@ -132,17 +157,56 @@ class PaymentsRepository {
         if (detail != null) {
           throw Exception(detail.toString());
         }
+        final amountErr = mapped['amount'];
+        if (amountErr != null) {
+          throw Exception(amountErr.toString());
+        }
       }
       throw Exception(apiErrorMessage(e));
     }
+  }
+
+  Future<CatalogPricing> fetchPricing() async {
+    final res = await _dio.get('payments/pricing/');
+    final data = res.data;
+    if (data is Map) {
+      return CatalogPricing.fromJson(Map<String, dynamic>.from(data));
+    }
+    return CatalogPricing.offlineFallback;
   }
 
   Future<DepositResult> getDepositStatus(String depositId) async {
     final res = await _dio.get('payments/deposits/$depositId/');
     return DepositResult.fromJson(Map<String, dynamic>.from(res.data as Map));
   }
+
+  Future<Set<String>> fetchPurchasedCourseIds() async {
+    final res = await _dio.get('payments/my-courses/');
+    final data = res.data;
+    if (data is! Map) return {};
+    final raw = data['course_ids'];
+    if (raw is! List) return {};
+    return raw.map((e) => e.toString()).where((e) => e.isNotEmpty).toSet();
+  }
 }
 
 final paymentsRepositoryProvider = Provider<PaymentsRepository>((ref) {
   return PaymentsRepository(ref.watch(dioProvider));
+});
+
+final catalogPricingProvider = FutureProvider<CatalogPricing>((ref) async {
+  try {
+    return await ref.watch(paymentsRepositoryProvider).fetchPricing();
+  } catch (_) {
+    return CatalogPricing.offlineFallback;
+  }
+});
+
+/// Cours débloqués après paiement MoMo confirmé.
+final purchasedCourseIdsProvider = FutureProvider<Set<String>>((ref) async {
+  try {
+    return await ref.watch(paymentsRepositoryProvider).fetchPurchasedCourseIds();
+  } catch (_) {
+    return {};
+  }
 });

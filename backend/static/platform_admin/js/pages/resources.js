@@ -3,12 +3,12 @@
  * inscriptions, notifications, structure académique.
  */
 import { api, unwrapList } from '../api.js';
-import { confirmDelete, esc, formatDateTime, toast } from '../utils.js';
+import { confirmDelete, esc, formatDateTime, personCell, toast } from '../utils.js';
 
 export async function renderDomains(root) {
   root.innerHTML = `
     <div class="page-head">
-      <div><h1>Domaines (catégories)</h1><p>LearningDomain — visible dans Apprendre</p></div>
+      <div><h1>Domaines (catégories)</h1></div>
       <div class="page-actions"><button class="btn btn-primary" type="button" id="add">+ Ajouter</button></div>
     </div>
     <div class="panel"><div class="panel-b table-wrap" id="table"></div></div>
@@ -80,7 +80,7 @@ export async function renderDomains(root) {
 
 export async function renderModules(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Modules</h1><p>Chapitres de cours</p></div>
+    <div class="page-head"><div><h1>Modules</h1></div>
       <div class="page-actions"><button class="btn btn-primary" type="button" id="add">+ Ajouter</button></div></div>
     <div class="toolbar"><input type="search" id="q" placeholder="Recherche…" style="flex:1"></div>
     <div class="panel"><div class="panel-b table-wrap" id="table"></div></div>
@@ -155,7 +155,7 @@ export async function renderModules(root) {
 
 export async function renderLessons(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Leçons</h1><p>Contenus pédagogiques (vidéo, pdf, quiz…)</p></div>
+    <div class="page-head"><div><h1>Leçons</h1></div>
       <div class="page-actions"><button class="btn btn-primary" type="button" id="add">+ Ajouter</button></div></div>
     <div class="toolbar"><input type="search" id="q" placeholder="Recherche…" style="flex:1"></div>
     <div class="panel"><div class="panel-b table-wrap" id="table"></div></div>
@@ -240,7 +240,7 @@ export async function renderLessons(root) {
 
 export async function renderDocuments(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Documents</h1><p>Bibliothèque & modération</p></div></div>
+    <div class="page-head"><div><h1>Documents</h1></div></div>
     <div class="toolbar">
       <input type="search" id="q" placeholder="Titre…" style="flex:1">
       <select id="st"><option value="">Tous</option><option value="pending_admin">En attente admin</option><option value="pending_peers">Pairs</option><option value="approved">Approuvés</option></select>
@@ -302,7 +302,7 @@ export async function renderDocuments(root) {
 
 export async function renderPayments(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Paiements</h1><p>Dépôts PawaPay réels</p></div></div>
+    <div class="page-head"><div><h1>Paiements</h1></div></div>
     <div class="toolbar">
       <select id="st"><option value="">Tous</option><option value="COMPLETED">Terminés</option><option value="PENDING">En attente</option><option value="FAILED">Échoués</option></select>
     </div>
@@ -338,7 +338,7 @@ export async function renderPayments(root) {
 
 export async function renderEnrollments(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Inscriptions</h1><p>Dérivées de la progression réelle (LessonProgress)</p></div></div>
+    <div class="page-head"><div><h1>Inscriptions</h1></div></div>
     <div class="toolbar"><input type="search" id="q" placeholder="Étudiant ou cours…" style="flex:1"></div>
     <div class="panel"><div class="panel-b table-wrap" id="table"></div></div>
   `;
@@ -376,7 +376,7 @@ export async function renderEnrollments(root) {
 export async function renderNotifications(root) {
   root.innerHTML = `
     <div class="page-head">
-      <div><h1>Notifications</h1><p>Diffuser une alerte réelle aux utilisateurs</p></div>
+      <div><h1>Notifications</h1></div>
     </div>
     <div class="panel"><div class="panel-h"><h2>Envoyer</h2></div><div class="panel-b">
       <form id="form" class="form-grid">
@@ -458,7 +458,6 @@ export async function renderStructure(root) {
     <div class="page-head">
       <div>
         <h1>Structure académique</h1>
-        <p>Universités &amp; facultés — CRUD complet</p>
       </div>
     </div>
     <div class="struct-stats" id="struct-stats">
@@ -845,44 +844,242 @@ export async function renderStructure(root) {
   await load();
 }
 
+function statusChip(status) {
+  if (status === 'approved') return '<span class="chip chip-ok">Validée</span>';
+  if (status === 'pending') return '<span class="chip chip-wait">En examen</span>';
+  if (status === 'rejected') return '<span class="chip chip-draft">Refusée</span>';
+  return `<span class="chip chip-draft">${esc(status || '—')}</span>`;
+}
+
 export async function renderPosts(root) {
   root.innerHTML = `
-    <div class="page-head"><div><h1>Communauté</h1><p>Modération des publications</p></div></div>
-    <div class="panel"><div class="panel-b table-wrap" id="table"></div></div>
+    <div class="page-head">
+      <div>
+        <h1>Publications</h1>
+      </div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Titre, contenu, auteur…" style="flex:1;min-width:180px">
+      <select id="status">
+        <option value="">Tous les statuts</option>
+        <option value="pending">En examen</option>
+        <option value="approved">Validées</option>
+        <option value="rejected">Refusées</option>
+      </select>
+      <select id="kind">
+        <option value="">Tous les types</option>
+        <option value="discussion">Discussions</option>
+        <option value="question">Questions</option>
+        <option value="exam">Examens</option>
+        <option value="tp">TP / TD</option>
+        <option value="summary">Résumés</option>
+        <option value="notes">Notes</option>
+        <option value="support">Supports</option>
+        <option value="rapport">Rapports</option>
+        <option value="tfc">TFC</option>
+        <option value="memoire">Mémoires</option>
+      </select>
+    </div>
+    <div class="panel"><div class="panel-b table-wrap" id="table"><div class="skeleton" style="height:120px"></div></div></div>
+    <dialog class="admin-dialog" id="dlg-post" style="width:min(720px,94vw)">
+      <form method="dialog" id="form-post">
+        <h2 id="post-dlg-title">Publication</h2>
+        <div id="post-dlg-body"></div>
+        <div class="admin-dialog-actions">
+          <button class="btn btn-secondary" value="cancel" type="submit">Fermer</button>
+        </div>
+      </form>
+    </dialog>
   `;
-  try {
-    const rows = unwrapList(await api('posts/?page_size=40'));
-    document.getElementById('table').innerHTML = rows.length
-      ? `<table class="data"><thead><tr><th>Contenu</th><th>Statut</th><th></th></tr></thead><tbody>${rows
-          .map(
-            (p) => `<tr>
-            <td>${esc((p.content || p.title || '').slice(0, 80))}</td>
-            <td>${esc(p.moderation_status || (p.is_approved ? 'approved' : 'pending'))}</td>
-            <td>
-              ${!p.is_approved || p.moderation_status === 'pending' ? `<button class="btn btn-ghost btn-ok" data-id="${p.id}" type="button">Approuver</button>` : ''}
-              <button class="btn btn-ghost btn-no" data-id="${p.id}" type="button">Refuser</button>
-            </td></tr>`,
-          )
-          .join('')}</tbody></table>`
-      : '<div class="empty">Aucune publication</div>';
-    root.querySelectorAll('.btn-ok').forEach((b) =>
-      b.addEventListener('click', async () => {
-        await api(`posts/${b.dataset.id}/approve/`, { method: 'POST', body: '{}' });
-        toast('Approuvé');
-        renderPosts(root);
+
+  const dlg = document.getElementById('dlg-post');
+
+  const renderComments = (comments) => {
+    if (!comments.length) {
+      return '<div class="struct-hint" style="padding:16px 0"><strong>Aucun commentaire</strong></div>';
+    }
+    return `<div class="comment-list">${comments
+      .map(
+        (c) => `<div class="comment-row" data-id="${c.id}">
+          ${personCell({
+            id: c.author_id,
+            name: c.author_name,
+            email: c.author_email,
+            role: c.author_role,
+            avatar: c.author_avatar,
+          })}
+          <div class="comment-body">
+            <p>${esc(c.content || '')}</p>
+            <time>${esc(formatDateTime(c.created_at))}</time>
+          </div>
+          <button class="btn btn-ghost btn-del-com" data-id="${c.id}" data-name="${esc((c.content || 'ce commentaire').slice(0, 40))}" type="button">Supprimer</button>
+        </div>`,
+      )
+      .join('')}</div>`;
+  };
+
+  const bindCommentDeletes = (postId) => {
+    document.querySelectorAll('.btn-del-com').forEach((b) =>
+      b.addEventListener('click', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (!(await confirmDelete(b.dataset.name))) return;
+        try {
+          await api(`post-comments/${b.dataset.id}/`, { method: 'DELETE' });
+          toast('Commentaire supprimé');
+          const p = byIdCache[String(postId)];
+          if (p) await openPost(p);
+          load();
+        } catch (e) {
+          toast(e.message, 'error');
+        }
       }),
     );
-    root.querySelectorAll('.btn-no').forEach((b) =>
-      b.addEventListener('click', async () => {
-        await api(`posts/${b.dataset.id}/reject/`, { method: 'POST', body: '{}' });
-        toast('Refusé');
-        renderPosts(root);
-      }),
-    );
-  } catch (e) {
-    document.getElementById('table').innerHTML =
-      `<div class="alert alert-error">${esc(e.message)}</div>`;
-  }
+  };
+
+  let byIdCache = {};
+
+  const openPost = async (p) => {
+    document.getElementById('post-dlg-title').textContent = p.title || 'Publication';
+    const media = p.image_url
+      ? `<img src="${esc(p.image_url)}" alt="" style="max-width:100%;border-radius:10px;margin:12px 0">`
+      : '';
+    const file = p.attachment_url
+      ? `<p><a href="${esc(p.attachment_url)}" target="_blank" rel="noopener">Pièce jointe</a></p>`
+      : '';
+    document.getElementById('post-dlg-body').innerHTML = `
+      <div style="margin-bottom:14px">${personCell({
+        id: p.author_id,
+        name: p.author_name,
+        email: p.author_email,
+        role: p.author_role,
+        avatar: p.author_avatar,
+        university: p.author_university,
+        faculty: p.author_faculty,
+      })}</div>
+      <p style="margin:0 0 8px;color:var(--ink-muted)">${esc(p.kind_display || p.kind || '')} · ${statusChip(p.moderation_status)}</p>
+      <p style="white-space:pre-wrap;margin:0">${esc(p.content || '—')}</p>
+      ${media}${file}
+      <h3 class="comment-h">Commentaires</h3>
+      <div id="post-comments"><div class="skeleton" style="height:48px"></div></div>
+    `;
+    if (!dlg.open) dlg.showModal();
+    try {
+      const comments = unwrapList(
+        await api(`post-comments/?post=${p.id}&page_size=100&ordering=created_at`),
+      );
+      document.getElementById('post-comments').innerHTML = renderComments(comments);
+      bindCommentDeletes(p.id);
+    } catch (e) {
+      document.getElementById('post-comments').innerHTML =
+        `<div class="alert alert-error">${esc(e.message)}</div>`;
+    }
+  };
+
+  const load = async () => {
+    const q = document.getElementById('q').value.trim();
+    const status = document.getElementById('status').value;
+    const kind = document.getElementById('kind').value;
+    const params = new URLSearchParams({
+      page_size: '50',
+      scope: 'timeline',
+      ordering: '-created_at',
+    });
+    if (q) params.set('search', q);
+    if (kind) params.set('kind', kind);
+    if (status) params.set('moderation_status', status);
+    try {
+      const rows = unwrapList(await api(`posts/?${params}`));
+      const box = document.getElementById('table');
+      if (!rows.length) {
+        box.innerHTML = '<div class="empty"><strong>Aucune publication</strong>Rien ne correspond à ces filtres.</div>';
+        return;
+      }
+      box.innerHTML = `<table class="data">
+        <thead><tr><th>Auteur</th><th>Publication</th><th>Type</th><th>Réactions</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+        <tbody>${rows
+          .map((p) => {
+            const excerpt = (p.title || p.content || 'Sans titre').slice(0, 100);
+            return `<tr>
+              <td>${personCell({
+                id: p.author_id,
+                name: p.author_name,
+                email: p.author_email,
+                role: p.author_role,
+                avatar: p.author_avatar,
+                university: p.author_university,
+                faculty: p.author_faculty,
+              })}</td>
+              <td>${esc(excerpt)}</td>
+              <td>${esc(p.kind_display || p.kind || '—')}</td>
+              <td>${p.likes_count || 0} ♥ · <button class="btn btn-ghost btn-view" data-id="${p.id}" type="button">${p.comments_count || 0} com.</button></td>
+              <td>${statusChip(p.moderation_status)}</td>
+              <td>${esc(formatDateTime(p.created_at))}</td>
+              <td>
+                <div class="row-actions">
+                  <button class="btn btn-ghost btn-view" data-id="${p.id}" type="button">Voir</button>
+                  ${p.moderation_status !== 'approved' ? `<button class="btn btn-ghost btn-ok" data-id="${p.id}" type="button">Approuver</button>` : ''}
+                  ${p.moderation_status !== 'rejected' ? `<button class="btn btn-ghost btn-no" data-id="${p.id}" type="button">Refuser</button>` : ''}
+                  <button class="btn btn-ghost btn-del" data-id="${p.id}" data-name="${esc(p.title || 'cette publication')}" type="button">Supprimer</button>
+                </div>
+              </td>
+            </tr>`;
+          })
+          .join('')}</tbody></table>`;
+
+      const byId = Object.fromEntries(rows.map((p) => [String(p.id), p]));
+      byIdCache = byId;
+      root.querySelectorAll('.btn-view').forEach((b) =>
+        b.addEventListener('click', () => openPost(byId[b.dataset.id])),
+      );
+      root.querySelectorAll('.btn-ok').forEach((b) =>
+        b.addEventListener('click', async () => {
+          try {
+            await api(`posts/${b.dataset.id}/approve/`, { method: 'POST', body: '{}' });
+            toast('Publication validée');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
+        }),
+      );
+      root.querySelectorAll('.btn-no').forEach((b) =>
+        b.addEventListener('click', async () => {
+          const reason = window.prompt('Motif du refus (optionnel)') || '';
+          try {
+            await api(`posts/${b.dataset.id}/reject/`, {
+              method: 'POST',
+              body: JSON.stringify({ reason }),
+            });
+            toast('Publication refusée');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
+        }),
+      );
+      root.querySelectorAll('.btn-del').forEach((b) =>
+        b.addEventListener('click', async () => {
+          if (!(await confirmDelete(b.dataset.name))) return;
+          try {
+            await api(`posts/${b.dataset.id}/`, { method: 'DELETE' });
+            toast('Publication supprimée');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
+        }),
+      );
+    } catch (e) {
+      document.getElementById('table').innerHTML =
+        `<div class="alert alert-error">${esc(e.message)}</div>`;
+    }
+  };
+
+  document.getElementById('q').addEventListener('input', () => load());
+  document.getElementById('status').addEventListener('change', () => load());
+  document.getElementById('kind').addEventListener('change', () => load());
+  load();
 }
 
 export async function renderSettings(root, user) {

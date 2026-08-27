@@ -54,7 +54,8 @@ abstract final class LearnDomains {
   /// Alias historique (écrans Apprendre).
   static bool isVitrine(Course course) => isLearnCatalog(course);
 
-  static const all = <LearnDomain>[
+  /// Fallback hors-ligne si `/learning-domains/` est vide / indisponible.
+  static const fallback = <LearnDomain>[
     LearnDomain(
       id: 'informatique',
       name: 'Informatique',
@@ -160,16 +161,59 @@ abstract final class LearnDomains {
     ),
   ];
 
-  static LearnDomain? byId(String id) {
-    for (final d in all) {
+  /// Alias pour compatibilité (préférer [catalog] via provider).
+  static List<LearnDomain> get all => fallback;
+
+  static (IconData, List<Color>) styleForSlug(String slug) {
+    final known = byId(slug, fallback);
+    if (known != null) return (known.icon, known.colors);
+    return (
+      Icons.category_outlined,
+      const [Color(0xFF546E7A), Color(0xFF37474F)],
+    );
+  }
+
+  static LearnDomain fromApi({
+    required String slug,
+    required String name,
+    String description = '',
+    String keywordsCsv = '',
+  }) {
+    final (icon, colors) = styleForSlug(slug);
+    final keywords = [
+      for (final part in keywordsCsv.split(','))
+        if (part.trim().isNotEmpty) part.trim(),
+      if (name.trim().isNotEmpty) name.trim(),
+      slug,
+    ];
+    final short = name.trim().isEmpty
+        ? slug
+        : (name.trim().length <= 8
+            ? name.trim()
+            : '${name.trim().substring(0, 7)}.');
+    return LearnDomain(
+      id: slug,
+      name: name.trim().isEmpty ? slug : name.trim(),
+      shortLabel: short,
+      icon: icon,
+      colors: colors,
+      keywords: keywords,
+    );
+  }
+
+  static LearnDomain? byId(String id, [List<LearnDomain>? catalog]) {
+    for (final d in catalog ?? fallback) {
       if (d.id == id) return d;
     }
     return null;
   }
 
-  static String? resolveDomainSlug(Course course) {
+  static String? resolveDomainSlug(
+    Course course, [
+    List<LearnDomain>? catalog,
+  ]) {
     if (course.primaryDomainSlug.isNotEmpty) return course.primaryDomainSlug;
-    for (final d in all) {
+    for (final d in catalog ?? fallback) {
       if (d.matchesDomain(course)) return d.id;
     }
     return null;
@@ -194,10 +238,15 @@ abstract final class LearnDomains {
     return [...withCover, ...without].take(limit).toList();
   }
 
-  static Map<String, int> vitrineCounts(List<Course> courses) {
-    final catalog = courses.where(isLearnCatalog);
+  static Map<String, int> vitrineCounts(
+    List<Course> courses, [
+    List<LearnDomain>? catalog,
+  ]) {
+    final domains = catalog ?? fallback;
+    final catalogCourses = courses.where(isLearnCatalog);
     return {
-      for (final d in all) d.id: catalog.where(d.matchesDomain).length,
+      for (final d in domains)
+        d.id: catalogCourses.where(d.matchesDomain).length,
     };
   }
 }

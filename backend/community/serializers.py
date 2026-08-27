@@ -38,6 +38,9 @@ class FlexibleTagsField(serializers.Field):
 class PostCommentSerializer(serializers.ModelSerializer):
     author_name = serializers.SerializerMethodField()
     author_avatar = serializers.SerializerMethodField()
+    author_id = serializers.IntegerField(source='author.id', read_only=True)
+    author_email = serializers.CharField(source='author.email', read_only=True)
+    author_role = serializers.CharField(source='author.role', read_only=True)
 
     class Meta:
         model = PostComment
@@ -45,7 +48,10 @@ class PostCommentSerializer(serializers.ModelSerializer):
             'id',
             'post',
             'author',
+            'author_id',
             'author_name',
+            'author_email',
+            'author_role',
             'author_avatar',
             'content',
             'parent',
@@ -67,7 +73,9 @@ class PostSerializer(serializers.ModelSerializer):
     author_avatar = serializers.SerializerMethodField()
     author_role = serializers.CharField(source='author.role', read_only=True)
     author_id = serializers.IntegerField(source='author.id', read_only=True)
+    author_email = serializers.EmailField(source='author.email', read_only=True)
     author_university = serializers.SerializerMethodField()
+    author_faculty = serializers.SerializerMethodField()
     author_promotion = serializers.SerializerMethodField()
     department_name = serializers.CharField(
         source='department.name',
@@ -89,9 +97,11 @@ class PostSerializer(serializers.ModelSerializer):
             'author',
             'author_id',
             'author_name',
+            'author_email',
             'author_avatar',
             'author_role',
             'author_university',
+            'author_faculty',
             'author_promotion',
             'department',
             'department_name',
@@ -152,6 +162,10 @@ class PostSerializer(serializers.ModelSerializer):
     def get_author_university(self, obj):
         uni = getattr(obj.author, 'university', None)
         return uni.name if uni else ''
+
+    def get_author_faculty(self, obj):
+        fac = getattr(obj.author, 'faculty', None)
+        return fac.name if fac else ''
 
     def get_author_promotion(self, obj):
         promo = getattr(obj.author, 'promotion', None)

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,8 @@ import '../../../../data/repositories/repositories.dart';
 import '../../../../domain/models/models.dart';
 import '../../../learn/data/cart_provider.dart';
 import '../../../learn/data/course_cover_images.dart';
+import '../../../learn/data/course_pricing.dart';
+import '../../../learn/data/payments_repository.dart';
 import '../../../learn/presentation/widgets/course_price_row.dart';
 
 /// Détail cours style Udemy.
@@ -92,6 +96,71 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
     return 'https://www.youtube.com/watch?v=8mAITcNT3bM';
   }
 
+  bool _ownsCourse(String courseId) {
+    final ids = ref.watch(purchasedCourseIdsProvider).valueOrNull ?? {};
+    return ids.contains(courseId);
+  }
+
+  Future<bool> _ensurePurchased(String courseId) async {
+    if (_ownsCourse(courseId)) return true;
+    final goCheckout = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cours payant'),
+        content: const Text(
+          'Ce cours est payant. Finalise le paiement pour accéder aux leçons. '
+          'L’accès est débloqué après confirmation.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Plus tard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Acheter'),
+          ),
+        ],
+      ),
+    );
+    if (goCheckout == true && mounted) {
+      final outline =
+          ref.read(courseOutlineProvider(courseId)).valueOrNull;
+      final price = ref.read(catalogPricingProvider).valueOrNull?.salePriceUsd ??
+          CatalogPricing.offlineFallback.salePriceUsd;
+      if (outline != null) {
+        ref.read(cartProvider.notifier).addCourse(
+              outline.course,
+              priceUsd: price,
+            );
+      }
+      context.push('/checkout');
+    }
+    return false;
+  }
+
+  Future<void> _openLesson({
+    required CourseLessonItem lesson,
+    required Course course,
+    required List<CourseModuleItem> modules,
+    bool isFreePreview = false,
+  }) async {
+    if (!isFreePreview) {
+      final ok = await _ensurePurchased(course.id);
+      if (!ok) return;
+    }
+    if (!mounted) return;
+    context.push(
+      '/library/lesson/${lesson.id}/play',
+      extra: {
+        'lesson': lesson,
+        'courseId': widget.courseId,
+        'modules': modules,
+        'courseTitle': course.title,
+      },
+    );
+  }
+
   void _openCoursePreview(
     BuildContext context, {
     required Course course,
@@ -100,10 +169,13 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
     final lessons = modules.expand((m) => m.lessons).toList();
     final withVideo = lessons.where((l) => l.videoUrl.trim().isNotEmpty);
     final CourseLessonItem lesson;
+    final bool freePreview;
     if (withVideo.isNotEmpty) {
       lesson = withVideo.first;
+      freePreview = false;
     } else if (lessons.isNotEmpty) {
       lesson = lessons.first;
+      freePreview = false;
     } else {
       lesson = CourseLessonItem(
         id: 'preview-${course.id}',
@@ -117,16 +189,16 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
         videoUrl: _previewYoutubeFor(course),
         durationSeconds: 600,
       );
+      freePreview = true;
     }
 
-    context.push(
-      '/library/lesson/${lesson.id}/play',
-      extra: {
-        'lesson': lesson,
-        'courseId': widget.courseId,
-        'modules': modules,
-        'courseTitle': course.title,
-      },
+    unawaited(
+      _openLesson(
+        lesson: lesson,
+        course: course,
+        modules: modules,
+        isFreePreview: freePreview,
+      ),
     );
   }
 
@@ -604,14 +676,12 @@ class _CourseDetailScreenState extends ConsumerState<CourseDetailScreen> {
                                   });
                                 },
                                 onLesson: (lesson) {
-                                  context.push(
-                                    '/library/lesson/${lesson.id}/play',
-                                    extra: {
-                                      'lesson': lesson,
-                                      'courseId': widget.courseId,
-                                      'modules': outline.modules,
-                                      'courseTitle': course.title,
-                                    },
+                                  unawaited(
+                                    _openLesson(
+                                      lesson: lesson,
+                                      course: course,
+                                      modules: outline.modules,
+                                    ),
                                   );
                                 },
                               ),
@@ -968,6 +1038,49 @@ class _CourseBuyBar extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final notifier = ref.read(cartProvider.notifier);
     final inCart = cart.any((e) => e.courseId == course.id);
+    final owned =
+        (ref.watch(purchasedCourseIdsProvider).valueOrNull ?? {}).contains(
+      course.id,
+    );
+
+    if (owned) {
+      return Material(
+        color: feed.cardBg,
+        elevation: 8,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            child: SizedBox(
+              height: 48,
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  // Relance l’aperçu / première leçon via le parent —
+                  // simple: reste sur la page, scroll contenu.
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Cours débloqué — ouvre une leçon ci-dessus.'),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded),
+                label: const Text(
+                  'Accès confirmé',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: primary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Material(
       color: feed.cardBg,
@@ -987,7 +1100,13 @@ class _CourseBuyBar extends ConsumerWidget {
                       context.push('/cart');
                       return;
                     }
-                    final added = notifier.addCourse(course);
+                    final price = ref
+                            .read(catalogPricingProvider)
+                            .valueOrNull
+                            ?.salePriceUsd ??
+                        CatalogPricing.offlineFallback.salePriceUsd;
+                    final added =
+                        notifier.addCourse(course, priceUsd: price);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
@@ -1020,7 +1139,12 @@ class _CourseBuyBar extends ConsumerWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: () {
-                    notifier.addCourse(course);
+                    final price = ref
+                            .read(catalogPricingProvider)
+                            .valueOrNull
+                            ?.salePriceUsd ??
+                        CatalogPricing.offlineFallback.salePriceUsd;
+                    notifier.addCourse(course, priceUsd: price);
                     context.push('/checkout');
                   },
                   style: FilledButton.styleFrom(

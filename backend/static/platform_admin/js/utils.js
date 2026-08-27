@@ -16,6 +16,33 @@ export function initials(name) {
   return (p[0][0] + p[1][0]).toUpperCase();
 }
 
+export function personCell({
+  id,
+  name,
+  email,
+  role,
+  avatar,
+  university,
+  faculty,
+} = {}) {
+  const label = name || email || 'Utilisateur';
+  const meta = [role, university, faculty].filter(Boolean).join(' · ');
+  const av = avatar
+    ? `<img class="person-av" src="${esc(avatar)}" alt="">`
+    : `<span class="person-av ph">${esc(initials(label))}</span>`;
+  const link = id
+    ? `<a class="person-name" href="#/utilisateurs">${esc(label)}</a>`
+    : `<strong class="person-name">${esc(label)}</strong>`;
+  return `<div class="person-cell">
+    ${av}
+    <div class="person-meta">
+      ${link}
+      ${email ? `<div class="person-email">${esc(email)}</div>` : ''}
+      ${meta ? `<div class="person-sub">${esc(meta)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
 export function formatDate(iso) {
   if (!iso) return '—';
   try {
@@ -84,4 +111,19 @@ export function statusActive(active) {
 
 export async function confirmDelete(label = 'cet élément') {
   return window.confirm(`Supprimer définitivement ${label} ?`);
+}
+
+export function attachDialogClose(root = document) {
+  root.querySelectorAll('dialog').forEach((dlg) => {
+    dlg.classList.add('admin-dialog');
+    if (dlg.querySelector(':scope > .dlg-close')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'dlg-close';
+    btn.setAttribute('aria-label', 'Quitter');
+    btn.title = 'Quitter';
+    btn.innerHTML = '&times;';
+    btn.addEventListener('click', () => dlg.close());
+    dlg.insertBefore(btn, dlg.firstChild);
+  });
 }

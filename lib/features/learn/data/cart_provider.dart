@@ -1,16 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/models/models.dart';
-import 'course_pricing.dart';
 
-/// Ligne panier (cours vidéo à 15$).
+/// Ligne panier — prix = tarif serveur (ou fallback hors-ligne).
 class CartItem {
   const CartItem({
     required this.courseId,
     required this.title,
     required this.teacher,
     required this.coverUrl,
-    this.priceUsd = CoursePricing.salePriceUsd,
+    required this.priceUsd,
   });
 
   final String courseId;
@@ -19,13 +18,13 @@ class CartItem {
   final String coverUrl;
   final double priceUsd;
 
-  factory CartItem.fromCourse(Course course) {
+  factory CartItem.fromCourse(Course course, {required double priceUsd}) {
     return CartItem(
       courseId: course.id,
       title: course.title,
       teacher: course.displayTeacher,
       coverUrl: course.coverUrl,
-      priceUsd: CoursePricing.salePriceUsd,
+      priceUsd: priceUsd,
     );
   }
 }
@@ -42,7 +41,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     return true;
   }
 
-  bool addCourse(Course course) => add(CartItem.fromCourse(course));
+  bool addCourse(Course course, {required double priceUsd}) =>
+      add(CartItem.fromCourse(course, priceUsd: priceUsd));
 
   void remove(String courseId) {
     state = state.where((e) => e.courseId != courseId).toList();

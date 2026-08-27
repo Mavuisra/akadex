@@ -163,6 +163,20 @@ class _MaFacScreenState extends ConsumerState<MaFacScreen> {
         child: Column(
           children: [
             _FbHeader(user: me),
+            Container(
+              width: double.infinity,
+              color: TimelineTokens.of(context).cardBg,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: Text(
+                'UE, docs et parcours de ta filière. '
+                'Les cours vidéo payants sont dans Apprendre.',
+                style: TextStyle(
+                  color: TimelineTokens.of(context).meta,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ),
             _FbTabBar(
               tabs: _tabs,
               selected: _tab,

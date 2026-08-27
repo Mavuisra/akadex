@@ -6,10 +6,21 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from accounts.auth import EmailTokenObtainPairView
-from config.views import admin_app, home, storage_health, teacher_app
+from config.views import (
+    admin_app,
+    home,
+    legal_delete_account,
+    legal_privacy,
+    legal_terms,
+    storage_health,
+    teacher_app,
+)
 
 urlpatterns = [
     path('', home, name='home'),
+    path('legal/privacy/', legal_privacy, name='legal-privacy'),
+    path('legal/terms/', legal_terms, name='legal-terms'),
+    path('legal/delete-account/', legal_delete_account, name='legal-delete-account'),
     path('enseignant/', teacher_app, name='teacher-app'),
     path('enseignant/<path:path>', teacher_app, name='teacher-app-path'),
     path('admin/', admin_app, name='akadex-admin'),

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/akadex_theme.dart';
+import '../../../../core/widgets/messages_icon_button.dart';
+import '../../../../core/widgets/notification_icon_button.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -109,6 +111,11 @@ class ProfessorHubScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        const MessagesIconButton(
+                          iconSize: 24,
+                          color: _fbInk,
+                        ),
+                        const NotificationIconButton(iconSize: 24),
                       ],
                     ),
                   ),
@@ -227,21 +234,9 @@ class ProfessorHubScreen extends ConsumerWidget {
         c.submittedByName,
       ].join(' ').toLowerCase();
       if (tokens.any((t) => hay.contains(t))) return true;
-      // Publication web/mobile enseignant : même fac + code ENS.
-      if (c.code.startsWith('ENS-') &&
-          user.faculty.isNotEmpty &&
-          c.faculty.toLowerCase().contains(
-                user.faculty.toLowerCase().split(' ').firstWhere(
-                      (w) => w.length > 2,
-                      orElse: () => user.faculty.toLowerCase(),
-                    ),
-              )) {
-        return true;
-      }
       return false;
     }).toList();
-    if (mine.isNotEmpty) return mine.take(40).toList();
-    return courses.where((c) => !c.code.startsWith('AKX-')).take(40).toList();
+    return mine.take(40).toList();
   }
 }
 

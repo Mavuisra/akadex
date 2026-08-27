@@ -9,13 +9,14 @@ import '../../domain/models/models.dart';
 import '../../features/ai/presentation/screens/ai_assistant_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_profile_screen.dart';
 import '../../features/alumni/presentation/screens/alumni_publish_screen.dart';
-import '../../features/alumni/presentation/screens/alumni_screen.dart';
+import '../../features/auth/presentation/screens/confirm_email_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/reset_password_screen.dart';
 import '../../features/calendar/presentation/screens/calendar_screen.dart';
 import '../../features/notifications/presentation/screens/notifications_screen.dart';
 import '../../features/community/presentation/screens/community_publish_screen.dart';
-import '../../features/community/presentation/screens/community_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/pdf_reader_screen.dart';
 import '../../features/learn/presentation/screens/cart_screen.dart';
@@ -45,6 +46,7 @@ import '../../features/professor/presentation/screens/professor_dashboard_screen
 import '../../features/professor/presentation/screens/professor_hub_screen.dart';
 import '../../features/professor/presentation/screens/professor_publish_screen.dart';
 import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/help_privacy_screens.dart';
 import '../../features/profile/presentation/screens/my_profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/rewards_screen.dart';
@@ -70,8 +72,6 @@ final _sNav0 = GlobalKey<NavigatorState>(debugLabel: 's-nav-0');
 final _sNav1 = GlobalKey<NavigatorState>(debugLabel: 's-nav-1');
 final _sNav2 = GlobalKey<NavigatorState>(debugLabel: 's-nav-2');
 final _sNav3 = GlobalKey<NavigatorState>(debugLabel: 's-nav-3');
-final _sNav4 = GlobalKey<NavigatorState>(debugLabel: 's-nav-4');
-final _sNav5 = GlobalKey<NavigatorState>(debugLabel: 's-nav-5');
 
 class _AuthRefresh extends ChangeNotifier {
   _AuthRefresh(Ref ref) {
@@ -124,14 +124,26 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: refresh,
     redirect: (context, state) {
       final loc = state.matchedLocation;
-      final authUser = ref.read(authStateProvider).valueOrNull;
+      final auth = ref.read(authStateProvider);
+
+      // Pendant restore/login : ne pas traiter comme déconnecté (évite flash login).
+      if (auth.isLoading) {
+        return null;
+      }
+
+      final authUser = auth.valueOrNull;
       final role = authUser?.role;
 
       if (RoleAccess.isPublicLocation(loc)) {
-        if (authUser != null && (loc == '/login' || loc == '/register')) {
+        if (authUser != null && RoleAccess.bounceAuthenticatedAway(loc)) {
           return RoleAccess.homeForRole(role);
         }
         return null;
+      }
+
+      // Routes privées : connexion obligatoire.
+      if (authUser == null) {
+        return '/login';
       }
 
       if (!RoleAccess.canAccess(role: role, location: loc)) {
@@ -141,6 +153,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (loc == '/professor') return '/teacher';
       if (loc.startsWith('/professor/publish')) return '/teacher-publish';
       if (loc == '/explorer' || loc.startsWith('/explorer/')) return '/learn';
+      // Sections retirées de la nav (stubs) → cœur métier.
+      if (loc == '/community' || loc.startsWith('/community/')) {
+        if (loc == '/community/publish') return null;
+        return '/home';
+      }
+      if (loc == '/alumni' || loc.startsWith('/alumni/')) return '/home';
+      if (loc == '/ai') return '/home';
 
       return null;
     },
@@ -154,6 +173,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         pageBuilder: (context, state) =>
             _cupertino(state, const RegisterScreen()),
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ForgotPasswordScreen()),
+      ),
+      GoRoute(
+        path: '/reset-password',
+        pageBuilder: (context, state) {
+          final q = state.uri.queryParameters;
+          return _cupertino(
+            state,
+            ResetPasswordScreen(
+              initialEmail: q['email'] ?? '',
+              devCode: q['dev_code'],
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/confirm-email',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+          return _cupertino(
+            state,
+            ConfirmEmailScreen(initialToken: token),
+          );
+        },
       ),
       _teacherShellRoute,
       _studentShellRoute,
@@ -323,6 +371,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) =>
             _cupertino(state, const EditProfileScreen()),
+      ),
+      GoRoute(
+        path: '/profile/help',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const HelpCenterScreen()),
+      ),
+      GoRoute(
+        path: '/profile/report',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const ReportProblemScreen()),
+      ),
+      GoRoute(
+        path: '/profile/privacy',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const PrivacySettingsScreen()),
+      ),
+      GoRoute(
+        path: '/profile/terms',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) =>
+            _cupertino(state, const TermsOfServiceScreen()),
       ),
       GoRoute(
         path: '/profile/me',
@@ -590,26 +662,6 @@ final _studentShellRoute = StatefulShellRoute.indexedStack(
     ),
     StatefulShellBranch(
       navigatorKey: _sNav3,
-      routes: [
-        GoRoute(
-          path: '/community',
-          pageBuilder: (context, state) =>
-              _fadeSlide(state, const CommunityScreen()),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      navigatorKey: _sNav4,
-      routes: [
-        GoRoute(
-          path: '/alumni',
-          pageBuilder: (context, state) =>
-              _fadeSlide(state, const AlumniScreen()),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      navigatorKey: _sNav5,
       routes: [
         GoRoute(
           path: '/profile',

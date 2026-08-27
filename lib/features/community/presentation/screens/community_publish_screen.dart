@@ -9,9 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/theme/timeline_tokens.dart';
 import '../../../../core/theme/status_backgrounds.dart';
+import '../../../../core/permissions/media_permissions.dart';
 import '../../../../core/utils/pdf_thumbnail.dart';
 import '../../../../core/widgets/academic_autocomplete.dart';
 import '../../../../core/widgets/post_academic_tags.dart';
@@ -309,6 +309,24 @@ class _CommunityPublishScreenState
 
   Future<void> _pickImage(ImageSource source) async {
     if (_loading || _mediaBusy) return;
+    if (!kIsWeb) {
+      final ok = source == ImageSource.camera
+          ? await MediaPermissions.ensureCamera()
+          : await MediaPermissions.ensureGallery();
+      if (!ok) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              MediaPermissions.deniedMessage(
+                camera: source == ImageSource.camera,
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+    }
     setState(() {
       _mediaBusy = true;
       _mediaProgress = 0.12;
@@ -569,30 +587,32 @@ class _CommunityPublishScreenState
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final feed = TimelineTokens.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: feed.cardBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: feed.cardBg,
+        foregroundColor: feed.ink,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           onPressed: (_loading || _mediaBusy) ? null : () => context.pop(),
-          icon: Icon(Icons.close, color: AkadexColors.primary, size: 26),
+          icon: Icon(Icons.close, color: feed.linkBlue, size: 26),
         ),
         title: Text(
           _isEditing ? 'Modifier la publication' : 'Nouvelle publication',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 17,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF050505),
+            color: feed.ink,
           ),
         ),
         centerTitle: true,
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 8),
-            child: Icon(Icons.more_horiz, color: AkadexColors.primary),
+            padding: const EdgeInsets.only(right: 8),
+            child: Icon(Icons.more_horiz, color: feed.linkBlue),
           ),
         ],
         bottom: PreferredSize(
@@ -603,10 +623,10 @@ class _CommunityPublishScreenState
                       ? _mediaProgress
                       : null,
                   minHeight: 3,
-                  backgroundColor: const Color(0xFFE7F3FF),
-                  color: TimelineTokens.of(context).likeActive,
+                  backgroundColor: feed.softTint,
+                  color: feed.likeActive,
                 )
-              : Container(height: 0.5, color: const Color(0xFFCED0D4)),
+              : Container(height: 0.5, color: feed.divider),
         ),
       ),
       body: Stack(
@@ -677,16 +697,16 @@ class _CommunityPublishScreenState
                     controller: _content,
                     maxLines: null,
                     minLines: 5,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 22,
                       height: 1.35,
-                      color: Color(0xFF050505),
+                      color: feed.ink,
                     ),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Quoi de neuf ?',
                       hintStyle: TextStyle(
                         fontSize: 22,
-                        color: Color(0xFF65676B),
+                        color: feed.meta,
                         fontWeight: FontWeight.w400,
                       ),
                       border: InputBorder.none,
@@ -703,9 +723,7 @@ class _CommunityPublishScreenState
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: _canUseBg
-                          ? const Color(0xFF050505)
-                          : const Color(0xFF65676B),
+                      color: _canUseBg ? feed.ink : feed.meta,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -724,17 +742,20 @@ class _CommunityPublishScreenState
                               width: 40,
                               height: 40,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF0F2F5),
+                                color: feed.commentBubble,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: selected
-                                      ? TimelineTokens.of(context).likeActive
-                                      : const Color(0xFFCED0D4),
+                                      ? feed.likeActive
+                                      : feed.divider,
                                   width: selected ? 3 : 1,
                                 ),
                               ),
-                              child: const Icon(Icons.format_color_reset,
-                                  size: 18),
+                              child: Icon(
+                                Icons.format_color_reset,
+                                size: 18,
+                                color: feed.ink,
+                              ),
                             ),
                           );
                         }
@@ -793,10 +814,10 @@ class _CommunityPublishScreenState
                                   ? 'Publication en cours…'
                                   : 'Chargement…')
                               : _mediaBusyLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF050505),
+                            color: feed.ink,
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -843,7 +864,7 @@ class _CommunityPublishScreenState
                           fontWeight: FontWeight.w600,
                           color: _needsPdf && !_hasPdf
                               ? const Color(0xFFB54708)
-                              : const Color(0xFF65676B),
+                              : feed.meta,
                         ),
                       ),
                       if (_publishBlockedReason != null) ...[
@@ -999,18 +1020,18 @@ class _CommunityPublishScreenState
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Contexte académique *',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF050505),
+                    color: feed.ink,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Université, faculté et promotion sont obligatoires.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF65676B)),
+                  style: TextStyle(fontSize: 12, color: feed.meta),
                 ),
                 const SizedBox(height: 10),
                 Builder(
@@ -1112,12 +1133,12 @@ class _CommunityPublishScreenState
             ),
           ),
           Material(
-            color: Colors.white,
+            color: feed.cardBg,
             child: Container(
               padding: EdgeInsets.fromLTRB(12, 8, 12, 10 + bottomInset),
               decoration: BoxDecoration(
                 border: Border(
-                  top: BorderSide(color: Color(0xFFCED0D4), width: 0.5),
+                  top: BorderSide(color: feed.divider, width: 0.5),
                 ),
               ),
               child: Row(
@@ -1128,19 +1149,20 @@ class _CommunityPublishScreenState
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE4E6EB),
+                      color: feed.commentBubble,
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.public, size: 16),
-                        SizedBox(width: 6),
+                        Icon(Icons.public, size: 16, color: feed.ink),
+                        const SizedBox(width: 6),
                         Text(
                           'Public',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 13,
+                            color: feed.ink,
                           ),
                         ),
                       ],
@@ -1158,12 +1180,12 @@ class _CommunityPublishScreenState
                           ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _canPublish
-                            ? TimelineTokens.of(context).likeActive
-                            : const Color(0xFFE4E6EB),
-                        disabledBackgroundColor: const Color(0xFFE4E6EB),
+                            ? feed.likeActive
+                            : feed.commentBubble,
+                        disabledBackgroundColor: feed.commentBubble,
                         foregroundColor:
-                            _canPublish ? Colors.white : const Color(0xFF65676B),
-                        disabledForegroundColor: const Color(0xFFBCC0C4),
+                            _canPublish ? Colors.white : feed.meta,
+                        disabledForegroundColor: feed.meta,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 28),
                         minimumSize: const Size(96, 44),
@@ -1213,8 +1235,9 @@ class _KindChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
     return Material(
-      color: selected ? const Color(0xFFE7F3FF) : const Color(0xFFE4E6EB),
+      color: selected ? feed.softTint : feed.commentBubble,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -1227,9 +1250,7 @@ class _KindChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: selected
-                    ? TimelineTokens.of(context).likeActive
-                    : const Color(0xFF050505),
+                color: selected ? feed.likeActive : feed.ink,
               ),
               const SizedBox(width: 6),
               Text(
@@ -1237,9 +1258,7 @@ class _KindChip extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: selected
-                      ? TimelineTokens.of(context).likeActive
-                      : const Color(0xFF050505),
+                  color: selected ? feed.likeActive : feed.ink,
                 ),
               ),
             ],
@@ -1257,9 +1276,10 @@ class _UserRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
     final name = (user?.name.trim().isNotEmpty == true)
         ? user!.name.trim()
-        : 'Étudiant';
+        : 'Utilisateur';
     final avatar = user?.avatarUrl;
     final initial = name[0].toUpperCase();
 
@@ -1267,7 +1287,7 @@ class _UserRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 22,
-          backgroundColor: AkadexColors.primarySoft,
+          backgroundColor: feed.softTint,
           backgroundImage: avatar != null && avatar.isNotEmpty
               ? CachedNetworkImageProvider(avatar)
               : null,
@@ -1275,9 +1295,9 @@ class _UserRow extends StatelessWidget {
               ? null
               : Text(
                   initial,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: AkadexColors.primary,
+                    color: feed.linkBlue,
                   ),
                 ),
         ),
@@ -1285,10 +1305,10 @@ class _UserRow extends StatelessWidget {
         Expanded(
           child: Text(
             name,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF050505),
+              color: feed.ink,
             ),
           ),
         ),
@@ -1314,10 +1334,11 @@ class _MediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final feed = TimelineTokens.of(context);
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: Material(
-        color: selected ? const Color(0xFFE7F3FF) : const Color(0xFFF0F2F5),
+        color: selected ? feed.softTint : feed.commentBubble,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: enabled ? onTap : null,
@@ -1327,7 +1348,7 @@ class _MediaCard extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: selected
-                  ? Border.all(color: TimelineTokens.of(context).likeActive, width: 2)
+                  ? Border.all(color: feed.likeActive, width: 2)
                   : null,
             ),
             child: Column(
@@ -1336,9 +1357,7 @@ class _MediaCard extends StatelessWidget {
                 Icon(
                   icon,
                   size: 28,
-                  color: selected
-                      ? TimelineTokens.of(context).likeActive
-                      : const Color(0xFF050505),
+                  color: selected ? feed.likeActive : feed.ink,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1346,9 +1365,7 @@ class _MediaCard extends StatelessWidget {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: selected
-                        ? TimelineTokens.of(context).likeActive
-                        : const Color(0xFF050505),
+                    color: selected ? feed.likeActive : feed.ink,
                   ),
                 ),
               ],

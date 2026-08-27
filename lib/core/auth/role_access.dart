@@ -24,13 +24,30 @@ abstract final class RoleAccess {
     return !usesTeacherShell(role);
   }
 
+  static bool isAuthenticated(String? role) =>
+      role != null && role.isNotEmpty;
+
   static String homeForRole(String? role) {
     return usesTeacherShell(role) ? '/teacher' : '/home';
   }
 
   static bool isPublicLocation(String location) {
-    return location == '/login' ||
-        location == '/register';
+    if (location == '/login' || location == '/register') return true;
+    if (location == '/forgot-password') return true;
+    if (location == '/reset-password' ||
+        location.startsWith('/reset-password?')) {
+      return true;
+    }
+    if (location == '/profile/terms' || location == '/profile/privacy') {
+      return true;
+    }
+    return false;
+  }
+
+  /// Login / register : rediriger un user déjà connecté vers son home.
+  /// Forgot / reset : rester accessibles même connecté.
+  static bool bounceAuthenticatedAway(String location) {
+    return location == '/login' || location == '/register';
   }
 
   /// Liste bibliothèque = étudiant only ; détail cours/doc/leçon = partagé.
@@ -51,6 +68,8 @@ abstract final class RoleAccess {
     required String location,
   }) {
     if (isPublicLocation(location)) return true;
+    // Invité : aucune route privée.
+    if (!isAuthenticated(role)) return false;
 
     if (usesTeacherShell(role)) {
       for (final p in studentOnlyPrefixes) {
@@ -69,6 +88,7 @@ abstract final class RoleAccess {
     required String? role,
     required String location,
   }) {
+    if (!isAuthenticated(role)) return '/login';
     if (usesTeacherShell(role)) return '/teacher';
     return '/home';
   }

@@ -166,7 +166,7 @@ class CheckoutScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Mobile Money',
+                            'Payer sur le téléphone',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 16,
@@ -175,7 +175,7 @@ class CheckoutScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'M-Pesa, Airtel Money, Orange Money…',
+                            'Vodacom, Airtel ou Orange',
                             style: TextStyle(fontSize: 12, color: feed.meta),
                           ),
                         ],

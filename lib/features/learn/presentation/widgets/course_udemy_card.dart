@@ -61,16 +61,12 @@ class CourseUdemyCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
-                      errorWidget: (_, _, _) => Image.network(
-                        'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                      errorWidget: (_, _, _) => Container(
                           color: feed.softTint,
                           alignment: Alignment.center,
                           child: Icon(Icons.school_outlined,
                               size: 40, color: feed.meta),
                         ),
-                      ),
                     ),
                     Container(
                       decoration: const BoxDecoration(
@@ -290,25 +286,6 @@ class DomainStoriesRow extends StatelessWidget {
   final Map<String, int> courseCounts;
   final void Function(LearnDomain domain) onTap;
 
-  static const _photos = <String, String>{
-    'informatique':
-        'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600&q=80',
-    'droit':
-        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&q=80',
-    'medecine':
-        'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&q=80',
-    'economie':
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=80',
-    'sciences':
-        'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&q=80',
-    'lettres':
-        'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&q=80',
-    'ingenierie':
-        'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&q=80',
-    'agronomie':
-        'https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=600&q=80',
-  };
-
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -325,7 +302,7 @@ class DomainStoriesRow extends StatelessWidget {
           final d = domains[i - 1];
           return _DomainStoryCard(
             name: d.name,
-            photoUrl: _photos[d.id],
+            photoUrl: null,
             colors: d.colors,
             count: courseCounts[d.id] ?? 0,
             onTap: () => onTap(d),

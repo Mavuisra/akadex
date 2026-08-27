@@ -61,3 +61,8 @@ backend/.env.*
 backend/secrets/
 *-firebase-adminsdk-*.json
 *.egg-info/
+
+# Nested local backend copy (secrets)
+backend/backend/
+tmp/
+

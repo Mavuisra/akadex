@@ -70,9 +70,7 @@ class CartScreen extends ConsumerWidget {
                     separatorBuilder: (_, _) => const SizedBox(height: 10),
                     itemBuilder: (context, i) {
                       final item = items[i];
-                      final cover = item.coverUrl.isNotEmpty
-                          ? item.coverUrl
-                          : 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80';
+                      final cover = item.coverUrl;
                       return Material(
                         color: feed.cardBg,
                         borderRadius: BorderRadius.circular(12),

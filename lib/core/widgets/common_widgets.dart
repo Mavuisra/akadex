@@ -99,10 +99,9 @@ class _SoftCardState extends State<SoftCard>
             onTap: widget.onTap == null ? null : _tap,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withValues(alpha: widget.fullBleed ? 1 : 0.94),
+                color: widget.fullBleed
+                    ? TimelineTokens.of(context).cardBg
+                    : TimelineTokens.of(context).commentBubble,
                 borderRadius: widget.fullBleed
                     ? BorderRadius.zero
                     : BorderRadius.circular(18),
@@ -114,7 +113,7 @@ class _SoftCardState extends State<SoftCard>
                                   .colorScheme
                                   .primary
                                   .withValues(alpha: 0.22)
-                              : Theme.of(context).dividerColor,
+                              : TimelineTokens.of(context).divider,
                         ),
                       )
                     : Border.all(
@@ -123,8 +122,8 @@ class _SoftCardState extends State<SoftCard>
                                 .colorScheme
                                 .primary
                                 .withValues(alpha: 0.22)
-                            : Theme.of(context)
-                                .dividerColor
+                            : TimelineTokens.of(context)
+                                .divider
                                 .withValues(alpha: 0.85),
                       ),
                 boxShadow: widget.fullBleed

@@ -31,6 +31,10 @@ class _AkadexAppState extends ConsumerState<AkadexApp> {
       final loggedIn = ref.read(authStateProvider).valueOrNull != null;
       ref.read(pushNotificationServiceProvider).initialize(
             isLoggedIn: loggedIn,
+            onOpen: (message) {
+              final route = PushNotificationService.routeForMessage(message);
+              ref.read(routerProvider).go(route);
+            },
           );
     });
   }

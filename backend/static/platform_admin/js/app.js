@@ -5,7 +5,7 @@ import {
   isAdminUser,
   login,
 } from './api.js';
-import { esc, initials } from './utils.js';
+import { attachDialogClose, esc, initials } from './utils.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderUsers } from './pages/users.js';
 import { renderCourses } from './pages/courses.js';
@@ -35,7 +35,7 @@ const NAV = [
   { href: '#/inscriptions', label: 'Inscriptions', icon: '⇢' },
   { href: '#/paiements', label: 'Paiements', icon: '¤' },
   { href: '#/notifications', label: 'Notifications', icon: '◉' },
-  { href: '#/communaute', label: 'Communauté', icon: '💬' },
+  { href: '#/communaute', label: 'Publications', icon: '💬' },
   { href: '#/structure', label: 'Universités', icon: '⌂' },
   { href: '#/parametres', label: 'Paramètres', icon: '⚙' },
 ];
@@ -194,6 +194,7 @@ async function route() {
       default:
         location.hash = '#/dashboard';
     }
+    attachDialogClose(content);
   } catch (e) {
     content.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
   }

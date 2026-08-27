@@ -75,10 +75,10 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
     }
   }
 
-  List<LearnDomain> _filterDomains(String q) {
-    if (q.isEmpty) return LearnDomains.all;
+  List<LearnDomain> _filterDomains(String q, List<LearnDomain> catalog) {
+    if (q.isEmpty) return catalog;
     final lower = q.toLowerCase();
-    return LearnDomains.all.where((d) {
+    return catalog.where((d) {
       final hay = [
         d.name,
         d.shortLabel,
@@ -119,8 +119,10 @@ class _LearnSearchScreenState extends ConsumerState<LearnSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final coursesAsync = ref.watch(coursesProvider);
+    final catalog =
+        ref.watch(learningDomainsProvider).valueOrNull ?? LearnDomains.fallback;
     final q = _query;
-    final domains = _filterDomains(q);
+    final domains = _filterDomains(q, catalog);
     final feed = TimelineTokens.of(context);
 
     return Scaffold(

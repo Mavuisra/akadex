@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../domain/models/document_type.dart';
 import '../../domain/models/models.dart';
+import '../../features/learn/data/learn_domains.dart';
 import '../api/api_client.dart';
 import '../auth/auth_repository.dart';
 import '../local/local_academic_store.dart';
@@ -65,6 +66,16 @@ final courseProvider = FutureProvider.family<Course, String>((ref, id) {
 
 final universitiesProvider = FutureProvider<List<UniversityItem>>((ref) {
   return ref.watch(academicRepositoryProvider).fetchUniversities();
+});
+
+/// Domaines Apprendre depuis l’API (`learning-domains/`), fallback local.
+final learningDomainsProvider = FutureProvider<List<LearnDomain>>((ref) async {
+  try {
+    final remote =
+        await ref.watch(academicRepositoryProvider).fetchLearningDomains();
+    if (remote.isNotEmpty) return remote;
+  } catch (_) {}
+  return LearnDomains.fallback;
 });
 
 final departmentsProvider =
@@ -544,7 +555,7 @@ class AcademicRepository {
       'courses_count': mine.length,
       'views': views,
       'students': students,
-      'lessons': mine.fold<int>(0, (a, c) => a + (c.documentCount > 0 ? c.documentCount : 3)),
+      'lessons': mine.fold<int>(0, (a, c) => a + c.documentCount),
       'activity_7d': activity,
       'top_courses': top,
     };
@@ -567,11 +578,10 @@ class AcademicRepository {
         c.submittedByName,
       ].join(' ').toLowerCase();
       if (first.isNotEmpty && hay.contains(first)) return true;
-      if (c.code.startsWith('ENS-')) return true;
       return false;
     }).toList();
     if (mine.isNotEmpty) return mine;
-    return courses.where((c) => !c.code.startsWith('AKX-')).take(20).toList();
+    return [];
   }
 
   int _estimateStudents(Course c) {
@@ -830,6 +840,30 @@ class AcademicRepository {
       }
     }
     return _pullUniversities();
+  }
+
+  Future<List<LearnDomain>> fetchLearningDomains() async {
+    try {
+      final res = await _dio.get('learning-domains/');
+      final raw = unwrapList(res.data);
+      final mapped = <LearnDomain>[];
+      for (final row in raw) {
+        final slug = (row['slug'] ?? '').toString().trim();
+        if (slug.isEmpty) continue;
+        mapped.add(
+          LearnDomains.fromApi(
+            slug: slug,
+            name: (row['name'] ?? slug).toString(),
+            description: (row['description'] ?? '').toString(),
+            keywordsCsv: (row['keywords'] ?? '').toString(),
+          ),
+        );
+      }
+      mapped.sort((a, b) => a.name.compareTo(b.name));
+      return mapped;
+    } catch (_) {
+      return const [];
+    }
   }
 
   Future<List<UniversityItem>> _pullUniversities() async {

@@ -16,6 +16,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('StudentShell verrouille Apprendre (plus Explorer)', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'student_feature_tour_v1_done': true,
+    });
+    final prefs = await SharedPreferences.getInstance();
+
     final router = GoRouter(
       initialLocation: '/home',
       routes: [
@@ -28,8 +33,6 @@ void main() {
               '/home',
               '/learn',
               '/library',
-              '/community',
-              '/alumni',
               '/profile',
             ])
               StatefulShellBranch(
@@ -46,9 +49,14 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp.router(
-        theme: AkadexTheme.light(),
-        routerConfig: router,
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
+        child: MaterialApp.router(
+          theme: AkadexTheme.light(),
+          routerConfig: router,
+        ),
       ),
     );
     await tester.pump();
@@ -80,7 +88,7 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Cours'), findsWidgets);
+    expect(find.text('Apprendre'), findsWidgets);
     expect(find.text('Cours vidéo'), findsOneWidget);
     expect(find.text('Informatique'), findsWidgets);
   });

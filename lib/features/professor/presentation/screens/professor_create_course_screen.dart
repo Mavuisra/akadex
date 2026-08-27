@@ -638,7 +638,10 @@ class _ProfessorCreateCourseScreenState
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final d in LearnDomains.all)
+                    for (final d in (ref
+                            .watch(learningDomainsProvider)
+                            .valueOrNull ??
+                        LearnDomains.fallback))
                       FilterChip(
                         label: Text(d.shortLabel),
                         selected: _domainSlugs.contains(d.id),

@@ -47,8 +47,15 @@ class IsAuthorOrAdmin(permissions.BasePermission):
 
 class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
-    filterset_fields = ['department', 'author', 'kind']
-    search_fields = ['title', 'content', 'tags']
+    filterset_fields = ['department', 'author', 'kind', 'moderation_status']
+    search_fields = [
+        'title',
+        'content',
+        'tags',
+        'author__first_name',
+        'author__last_name',
+        'author__email',
+    ]
     ordering_fields = ['created_at', 'likes_count', 'comments_count']
 
     def get_queryset(self):
@@ -56,6 +63,7 @@ class PostViewSet(viewsets.ModelViewSet):
             'author',
             'department',
             'author__department',
+            'author__faculty',
             'author__university',
             'author__promotion',
         )
@@ -235,10 +243,23 @@ class PostViewSet(viewsets.ModelViewSet):
 
 class PostCommentViewSet(viewsets.ModelViewSet):
     serializer_class = PostCommentSerializer
-    filterset_fields = ['post', 'parent']
+    filterset_fields = ['post', 'parent', 'author']
+    search_fields = [
+        'content',
+        'author__first_name',
+        'author__last_name',
+        'author__email',
+    ]
+    ordering_fields = ['created_at']
+    ordering = ['created_at']
 
     def get_queryset(self):
-        return PostComment.objects.select_related('author', 'post')
+        return PostComment.objects.select_related(
+            'author',
+            'author__university',
+            'author__faculty',
+            'post',
+        )
 
     def perform_create(self, serializer):
         comment = serializer.save(author=self.request.user)
@@ -246,9 +267,18 @@ class PostCommentViewSet(viewsets.ModelViewSet):
             comments_count=F('comments_count') + 1
         )
 
+    def perform_destroy(self, instance):
+        post_id = instance.post_id
+        instance.delete()
+        Post.objects.filter(pk=post_id).update(
+            comments_count=PostComment.objects.filter(post_id=post_id).count()
+        )
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [permissions.AllowAny()]
+        if self.action in ('update', 'partial_update', 'destroy'):
+            return [permissions.IsAuthenticated(), IsAuthorOrAdmin()]
         return [permissions.IsAuthenticated()]
 
 

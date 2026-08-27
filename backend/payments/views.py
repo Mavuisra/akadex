@@ -6,9 +6,32 @@ from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import CourseDeposit
+from .models import CourseDeposit, CoursePurchase
 from .pawapay import PROVIDERS, PawaPayClient, PawaPayError
 from .serializers import InitiateDepositSerializer
+from .services import (
+    apply_remote_status,
+    deposit_public_payload,
+    grant_course_access,
+)
+
+
+class CatalogPricingView(APIView):
+    """GET /api/payments/pricing/ — tarifs catalogue (source de vérité serveur)."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        sale = getattr(settings, 'COURSE_SALE_PRICE_USD', Decimal('15'))
+        list_price = getattr(settings, 'COURSE_LIST_PRICE_USD', Decimal('29'))
+        currency = getattr(settings, 'PAWAPAY_CURRENCY', 'USD')
+        return Response(
+            {
+                'sale_price_usd': str(sale),
+                'list_price_usd': str(list_price),
+                'currency': currency,
+            }
+        )
 
 
 class ProvidersView(APIView):
@@ -189,34 +212,25 @@ class InitiateDepositView(APIView):
                 or reason.get('rejectionCode')
                 or 'Rejeté par PawaPay'
             )[:500]
+        elif pawapay_status in ('COMPLETED', 'COMPLETE'):
+            deposit.status = CourseDeposit.Status.COMPLETED
         else:
             deposit.status = CourseDeposit.Status.PENDING
 
         deposit.pawapay_response = result
         deposit.save()
 
+        if deposit.status == CourseDeposit.Status.COMPLETED:
+            grant_course_access(deposit)
+
         return Response(
-            {
-                'deposit_id': str(deposit.deposit_id),
-                'local_id': str(deposit.id),
-                'status': deposit.status,
-                'pawapay_status': pawapay_status,
-                'amount': str(deposit.amount),
-                'currency': deposit.currency,
-                'provider': deposit.provider,
-                'phone': deposit.phone,
-                'message': (
-                    'Demande envoyée. Validez le paiement sur votre téléphone.'
-                    if deposit.status == CourseDeposit.Status.ACCEPTED
-                    else deposit.failure_message or 'Statut en attente.'
-                ),
-            },
+            deposit_public_payload(deposit, pawapay_status=pawapay_status),
             status=status.HTTP_200_OK,
         )
 
 
 class DepositStatusView(APIView):
-    """GET /api/payments/deposits/<deposit_id>/ — poll statut PawaPay."""
+    """GET /api/payments/deposits/<deposit_id>/ — poll statut PawaPay + grant accès."""
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -233,14 +247,26 @@ class DepositStatusView(APIView):
         ):
             return Response({'detail': 'Accès refusé.'}, status=403)
 
+        # Déjà final : renvoyer sans rappeler PawaPay (sauf ACCEPTED à rafraîchir).
+        if deposit.status == CourseDeposit.Status.COMPLETED:
+            if not deposit.access_granted:
+                grant_course_access(deposit)
+                deposit.refresh_from_db()
+            return Response(deposit_public_payload(deposit))
+
+        if deposit.status in (
+            CourseDeposit.Status.FAILED,
+            CourseDeposit.Status.REJECTED,
+        ):
+            return Response(deposit_public_payload(deposit))
+
         client = PawaPayClient()
         try:
             remote = client.get_deposit(str(deposit.deposit_id))
         except PawaPayError as exc:
             return Response(
                 {
-                    'deposit_id': str(deposit.deposit_id),
-                    'status': deposit.status,
+                    **deposit_public_payload(deposit),
                     'detail': str(exc),
                 },
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -252,45 +278,49 @@ class DepositStatusView(APIView):
         remote_status = ''
         if isinstance(item, dict):
             remote_status = (item.get('status') or '').upper()
-            deposit.pawapay_response = item
 
-        if remote_status in ('COMPLETED', 'COMPLETE'):
-            deposit.status = CourseDeposit.Status.COMPLETED
-        elif remote_status in ('FAILED', 'REJECTED'):
-            deposit.status = (
-                CourseDeposit.Status.FAILED
-                if remote_status == 'FAILED'
-                else CourseDeposit.Status.REJECTED
-            )
-            if isinstance(item, dict):
-                fr = item.get('failureReason') or item.get('rejectionReason') or {}
-                if isinstance(fr, dict):
-                    deposit.failure_message = (
-                        fr.get('failureMessage')
-                        or fr.get('rejectionMessage')
-                        or remote_status
-                    )[:500]
-        elif remote_status in ('ACCEPTED', 'SUBMITTED', 'PROCESSING', 'PENDING'):
-            deposit.status = CourseDeposit.Status.ACCEPTED
-
-        deposit.save(
-            update_fields=[
-                'status',
-                'pawapay_response',
-                'failure_message',
-                'updated_at',
-            ]
-        )
-
+        apply_remote_status(deposit, remote_status, item if isinstance(item, dict) else None)
+        deposit.refresh_from_db()
         return Response(
-            {
-                'deposit_id': str(deposit.deposit_id),
-                'status': deposit.status,
-                'pawapay_status': remote_status,
-                'amount': str(deposit.amount),
-                'currency': deposit.currency,
-                'provider': deposit.provider,
-                'phone': deposit.phone,
-                'failure_message': deposit.failure_message,
-            }
+            deposit_public_payload(deposit, pawapay_status=remote_status)
         )
+
+
+class DepositCallbackView(APIView):
+    """POST /api/payments/deposits/callback/ — webhook PawaPay (AllowAny)."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        data = request.data
+        if not isinstance(data, dict):
+            return Response({'detail': 'Payload invalide.'}, status=400)
+
+        deposit_id = data.get('depositId') or data.get('deposit_id')
+        remote_status = (data.get('status') or '').upper()
+        if not deposit_id:
+            return Response({'detail': 'depositId manquant.'}, status=400)
+
+        try:
+            deposit = CourseDeposit.objects.get(deposit_id=deposit_id)
+        except (CourseDeposit.DoesNotExist, ValueError):
+            # Toujours 200 pour éviter les retries infinis sur id inconnu.
+            return Response({'ok': True, 'ignored': True})
+
+        apply_remote_status(deposit, remote_status, data)
+        return Response({'ok': True, 'status': deposit.status})
+
+
+class MyPurchasedCoursesView(APIView):
+    """GET /api/payments/my-courses/ — ids des cours achetés."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        ids = list(
+            CoursePurchase.objects.filter(user=request.user).values_list(
+                'course_id', flat=True
+            )
+        )
+        return Response({'course_ids': ids, 'count': len(ids)})

@@ -26,8 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String? _facLabel;
   String? _deptLabel;
   String? _promoLabel;
-  String? _tagLabel;
-  String? _yearLabel;
   String? _lastPersonalizedUserId;
   bool _forYouMode = true;
 
@@ -53,24 +51,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ('discussion', 'Discussions'),
     ('question', 'Questions'),
   ];
-
-  static const _domains = [
-    'Informatique',
-    'Réseaux',
-    'Mathématiques',
-    'Gestion',
-    'Pédagogie',
-  ];
-
-  static const _subjects = [
-    'POO',
-    'Algorithmique',
-    'Bases de données',
-    'Compta',
-    'Probabilités',
-  ];
-
-  static const _years = ['2026', '2025', '2024', '2023'];
 
   /// Applique fac / département / promotion de l’utilisateur connecté.
   void _applyUserAcademicScope(UserProfile? me, {String? kind}) {
@@ -156,39 +136,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               facLabel: _facLabel,
               deptLabel: _deptLabel,
               promoLabel: _promoLabel,
-              tagLabel: _tagLabel,
-              yearLabel: _yearLabel,
               onPickUniversity: () => _pickUniversity(),
               onPickFaculty: () => _pickFaculty(),
               onPickDepartment: () => _pickDepartment(),
               onPickPromotion: () => _pickPromotion(),
-              onPickDomain: () => _pickChipList(
-                title: 'Domaine',
-                items: _domains,
-                onPick: (v) => setState(() {
-                  _tagLabel = v;
-                  _query = _query.copyWith(tag: v);
-                }),
-              ),
-              onPickSubject: () => _pickChipList(
-                title: 'Matière',
-                items: _subjects,
-                onPick: (v) => setState(() {
-                  _tagLabel = v;
-                  _query = _query.copyWith(tag: v);
-                }),
-              ),
-              onPickYear: () => _pickChipList(
-                title: 'Année académique',
-                items: _years,
-                onPick: (v) => setState(() {
-                  _yearLabel = v;
-                  _query = _query.copyWith(year: v);
-                }),
-              ),
               onClear: () => setState(() {
-                _tagLabel = null;
-                _yearLabel = null;
                 if (_forYouMode) {
                   // Repart sur le parcours de l’utilisateur connecté.
                   _applyUserAcademicScope(me);
@@ -392,19 +344,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Future<void> _pickChipList({
-    required String title,
-    required List<String> items,
-    required ValueChanged<String> onPick,
-  }) async {
-    final picked = await _showPickerSheet<String>(
-      title: title,
-      items: items,
-      labelOf: (s) => s,
-    );
-    if (picked != null) onPick(picked);
-  }
-
   Future<T?> _showPickerSheet<T>({
     required String title,
     required List<T> items,
@@ -520,11 +459,6 @@ class _TimelineHeader extends StatelessWidget {
             ),
           ),
           const NotificationIconButton(),
-          IconButton(
-            tooltip: 'Messages',
-            onPressed: () => context.push('/messages'),
-            icon: const Icon(Icons.messenger_outline_rounded, size: 24),
-          ),
         ],
       ),
     );
@@ -587,32 +521,22 @@ class _AcademicFilterBar extends StatelessWidget {
     required this.onPickFaculty,
     required this.onPickDepartment,
     required this.onPickPromotion,
-    required this.onPickDomain,
-    required this.onPickSubject,
-    required this.onPickYear,
     required this.onClear,
     this.uniLabel,
     this.facLabel,
     this.deptLabel,
     this.promoLabel,
-    this.tagLabel,
-    this.yearLabel,
   });
 
   final VoidCallback onPickUniversity;
   final VoidCallback onPickFaculty;
   final VoidCallback onPickDepartment;
   final VoidCallback onPickPromotion;
-  final VoidCallback onPickDomain;
-  final VoidCallback onPickSubject;
-  final VoidCallback onPickYear;
   final VoidCallback onClear;
   final String? uniLabel;
   final String? facLabel;
   final String? deptLabel;
   final String? promoLabel;
-  final String? tagLabel;
-  final String? yearLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -621,9 +545,6 @@ class _AcademicFilterBar extends StatelessWidget {
       (facLabel ?? 'Faculté', onPickFaculty, facLabel != null),
       (deptLabel ?? 'Département', onPickDepartment, deptLabel != null),
       (promoLabel ?? 'Promotion', onPickPromotion, promoLabel != null),
-      (tagLabel ?? 'Domaine', onPickDomain, tagLabel != null),
-      ('Matière', onPickSubject, false),
-      (yearLabel ?? 'Année', onPickYear, yearLabel != null),
     ];
 
     return Container(

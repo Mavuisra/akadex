@@ -261,23 +261,9 @@ class Course extends Equatable {
 
     var name = clean(teacherFullName);
     if (name.isEmpty) name = clean(teacher);
-
-    // Roster de secours si l’API n’envoie pas encore l’enseignant.
-    if (name.isEmpty) {
-      const roster = <(String, String)>[
-        ('Professeur', 'Jean-Pierre Mukendi'),
-        ('Maître de conférences', 'Aïsha Mbala'),
-        ('Docteur', 'Koffi Tshisekedi'),
-        ('Professeure', 'Fatou Diallo'),
-        ('Docteur', 'Emmanuel Kabongo'),
-        ('Professeure', 'Grace Lumumba'),
-      ];
-      final pick = roster[id.hashCode.abs() % roster.length];
-      return '${pick.$1} ${pick.$2}';
-    }
+    if (name.isEmpty) return '';
 
     var title = clean(teacherTitle);
-    if (title.isEmpty) title = 'Professeur';
 
     final nameLower = name.toLowerCase();
     final titleLower = title.toLowerCase();

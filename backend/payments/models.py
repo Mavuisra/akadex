@@ -37,6 +37,7 @@ class CourseDeposit(models.Model):
     course_ids = models.JSONField(default=list, blank=True)
     pawapay_response = models.JSONField(default=dict, blank=True)
     failure_message = models.CharField(max_length=500, blank=True)
+    access_granted = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -45,3 +46,38 @@ class CourseDeposit(models.Model):
 
     def __str__(self) -> str:
         return f'{self.deposit_id} · {self.status} · {self.amount} {self.currency}'
+
+
+class CoursePurchase(models.Model):
+    """Accès cours débloqué après un dépôt COMPLETED."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='course_purchases',
+    )
+    course = models.ForeignKey(
+        'academic.Course',
+        on_delete=models.CASCADE,
+        related_name='purchases',
+    )
+    deposit = models.ForeignKey(
+        CourseDeposit,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='purchases',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'course'],
+                name='uniq_course_purchase_user_course',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.user_id} · course {self.course_id}'

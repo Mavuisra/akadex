@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/akadex_theme.dart';
+import '../theme/auth_entry_style.dart';
+import '../theme/timeline_tokens.dart';
 import 'common_widgets.dart';
 
 class AcademicOption {
@@ -26,6 +28,7 @@ class AcademicAutocomplete extends StatefulWidget {
     this.contentPadding =
         const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     this.softStyle = false,
+    this.authOutline = false,
   });
 
   final String label;
@@ -38,8 +41,10 @@ class AcademicAutocomplete extends StatefulWidget {
   final bool enabled;
   final IconData? icon;
   final EdgeInsets contentPadding;
-  /// Style login : SoftCard + hint, sans bordure Material.
+  /// Style SoftCard + hint, sans bordure Material.
   final bool softStyle;
+  /// Style connexion/inscription (fond + contour type Facebook).
+  final bool authOutline;
 
   @override
   State<AcademicAutocomplete> createState() => _AcademicAutocompleteState();
@@ -160,39 +165,71 @@ class _AcademicAutocompleteState extends State<AcademicAutocomplete> {
         widget.onSelected(option.id, option.name);
       },
       fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final suffix = _selectedId != null && _selectedId!.isNotEmpty
+            ? IconButton(
+                tooltip: 'Effacer',
+                onPressed: widget.enabled
+                    ? () {
+                        setState(() {
+                          _selectedId = null;
+                          controller.clear();
+                        });
+                        widget.onSelected('', '');
+                      }
+                    : null,
+                icon: const Icon(Icons.clear_rounded, size: 20),
+              )
+            : Icon(
+                Icons.arrow_drop_down_rounded,
+                color: AuthEntryStyle.muted(isDark),
+              );
+
+        late final InputDecoration decoration;
+        if (widget.authOutline) {
+          decoration = AuthEntryStyle.fieldDecoration(
+            hint: widget.label,
+            isDark: isDark,
+            suffixIcon: suffix,
+          );
+        } else {
+          final feed = TimelineTokens.of(context);
+          decoration = InputDecoration(
+            hintText: widget.softStyle ? widget.label : null,
+            labelText: widget.softStyle ? null : widget.label,
+            hintStyle: widget.softStyle
+                ? TextStyle(color: feed.meta, fontSize: 15)
+                : null,
+            prefixIcon: widget.icon == null
+                ? null
+                : Icon(widget.icon, color: feed.meta),
+            border: widget.softStyle ? InputBorder.none : null,
+            filled: true,
+            fillColor: widget.softStyle ? Colors.transparent : null,
+            contentPadding: widget.contentPadding,
+            suffixIcon: IconTheme(
+              data: IconThemeData(color: feed.meta),
+              child: suffix,
+            ),
+          );
+        }
+
+        final feedColors = TimelineTokens.of(context);
         final field = TextField(
           controller: controller,
           focusNode: focusNode,
           enabled: widget.enabled,
           textCapitalization: TextCapitalization.words,
           onSubmitted: (_) => onFieldSubmitted(),
-          decoration: InputDecoration(
-            hintText: widget.softStyle ? widget.label : null,
-            labelText: widget.softStyle ? null : widget.label,
-            prefixIcon: widget.icon == null ? null : Icon(widget.icon),
-            border: widget.softStyle ? InputBorder.none : null,
-            filled: true,
-            fillColor:
-                widget.softStyle ? Colors.transparent : null,
-            contentPadding: widget.contentPadding,
-            suffixIcon: _selectedId != null && _selectedId!.isNotEmpty
-                ? IconButton(
-                    tooltip: 'Effacer',
-                    onPressed: widget.enabled
-                        ? () {
-                            setState(() {
-                              _selectedId = null;
-                              controller.clear();
-                            });
-                            widget.onSelected('', '');
-                          }
-                        : null,
-                    icon: const Icon(Icons.clear_rounded, size: 20),
-                  )
-                : const Icon(Icons.arrow_drop_down_rounded),
+          style: TextStyle(
+            color: widget.authOutline
+                ? AuthEntryStyle.title(isDark)
+                : feedColors.ink,
+            fontSize: 16,
           ),
+          decoration: decoration,
         );
-        if (!widget.softStyle) return field;
+        if (widget.authOutline || !widget.softStyle) return field;
         return SoftCard(padding: EdgeInsets.zero, child: field);
       },
       optionsViewBuilder: (context, onSelected, options) {

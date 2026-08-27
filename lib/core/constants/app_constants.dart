@@ -8,6 +8,14 @@ class AppConstants {
   static const String logoAsset = 'assets/images/logo.png';
   static const String presentationAsset = 'assets/images/presentation.png';
 
+  /// URLs légales (App Store / Play Store).
+  static const String privacyPolicyUrl =
+      'https://akadex.onrender.com/legal/privacy/';
+  static const String termsOfServiceUrl =
+      'https://akadex.onrender.com/legal/terms/';
+  static const String deleteAccountUrl =
+      'https://akadex.onrender.com/legal/delete-account/';
+
   static const String _prodApi = 'https://akadex.onrender.com/api/';
 
   /// Override : `--dart-define=API_BASE_URL=http://192.168.x.x:8000/api/`

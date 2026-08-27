@@ -1,12 +1,11 @@
 import { api } from '../api.js';
-import { barsHtml, esc, formatDateTime } from '../utils.js';
+import { barsHtml, esc, formatDateTime, personCell } from '../utils.js';
 
 export async function renderDashboard(root) {
   root.innerHTML = `
     <div class="page-head">
       <div>
         <h1>Dashboard</h1>
-        <p>Vue d’ensemble réelle de la plateforme Akadex</p>
       </div>
     </div>
     <div class="grid-stats" id="stats">${[1, 2, 3, 4, 5, 6, 7, 8]
@@ -19,6 +18,13 @@ export async function renderDashboard(root) {
       <div class="panel"><div class="panel-h"><h2>Nouveaux utilisateurs (7 j)</h2></div><div class="panel-b" id="chart"></div></div>
       <div class="panel"><div class="panel-h"><h2>Derniers utilisateurs</h2></div><div class="panel-b" id="recent-users"></div></div>
     </div>
+    <div class="panel">
+      <div class="panel-h">
+        <h2>Publications (page d’accueil)</h2>
+        <a class="btn btn-ghost" href="#/communaute">Tout voir</a>
+      </div>
+      <div class="panel-b table-wrap" id="recent-posts"></div>
+    </div>
     <div class="panel"><div class="panel-h"><h2>Derniers cours</h2></div><div class="panel-b table-wrap" id="recent-courses"></div></div>
   `;
 
@@ -29,10 +35,10 @@ export async function renderDashboard(root) {
       ['Étudiants', d.students, ''],
       ['Enseignants', d.teachers, ''],
       ['Cours', d.courses_total, `${d.courses_published || 0} publiés`],
-      ['En attente', d.courses_pending, 'modération'],
+      ['Publications', d.posts ?? 0, 'page d’accueil'],
+      ['Pubs. en attente', d.posts_pending ?? 0, 'modération'],
       ['Inscriptions', d.enrollments, 'via progression'],
       ['Paiements', d.payments_completed, `${d.payments_total || 0} total`],
-      ['Revenus', `${d.revenue_total ?? 0}`, 'complétés'],
     ];
     document.getElementById('stats').innerHTML = cards
       .map(
@@ -63,6 +69,36 @@ export async function renderDashboard(root) {
           )
           .join('')}</div>`
       : '<div class="empty">Aucun utilisateur</div>';
+
+    const posts = d.recent_posts || [];
+    document.getElementById('recent-posts').innerHTML = posts.length
+      ? `<table class="data"><thead><tr><th>Auteur</th><th>Publication</th><th>Type</th><th>Statut</th><th>Date</th></tr></thead><tbody>${posts
+          .map((p) => {
+            const st = p.status || 'approved';
+            const chip =
+              st === 'approved'
+                ? '<span class="chip chip-ok">Validée</span>'
+                : st === 'pending'
+                  ? '<span class="chip chip-wait">En examen</span>'
+                  : '<span class="chip chip-draft">Refusée</span>';
+            const body = (p.title || p.content || 'Sans titre').slice(0, 90);
+            return `<tr>
+              <td>${personCell({
+                id: p.author_id,
+                name: p.author,
+                email: p.author_email,
+                role: p.author_role,
+                university: p.author_university,
+                faculty: p.author_faculty,
+              })}</td>
+              <td>${esc(body)}</td>
+              <td>${esc(p.kind_display || p.kind || '—')}</td>
+              <td>${chip}</td>
+              <td>${esc(formatDateTime(p.created_at))}</td>
+            </tr>`;
+          })
+          .join('')}</tbody></table>`
+      : '<div class="empty">Aucune publication</div>';
 
     const courses = d.recent_courses || [];
     document.getElementById('recent-courses').innerHTML = courses.length

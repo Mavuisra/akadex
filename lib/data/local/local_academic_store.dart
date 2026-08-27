@@ -23,6 +23,9 @@ class LocalAcademicStore {
   final List<Map<String, dynamic>> _memPending = [];
   final Map<String, String> _memMeta = {};
 
+  /// Cache mémoire (tests / web) — sans SQLite.
+  static LocalAcademicStore memory() => LocalAcademicStore._(null);
+
   static Future<LocalAcademicStore> open() async {
     if (kIsWeb) {
       return LocalAcademicStore._(null);

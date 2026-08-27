@@ -148,14 +148,7 @@ export async function renderRevenue(root) {
     <div class="page-head">
       <div>
         <h1>Revenus</h1>
-        <p>Monétisation de vos cours</p>
       </div>
-    </div>
-    <div class="grid-stats">
-      <div class="stat-card"><div class="label">Total</div><div class="value">—</div></div>
-      <div class="stat-card"><div class="label">Ce mois</div><div class="value">—</div></div>
-      <div class="stat-card"><div class="label">Ventes</div><div class="value">—</div></div>
-      <div class="stat-card"><div class="label">Disponible</div><div class="value">—</div></div>
     </div>
     <div class="panel">
       <div class="panel-b">

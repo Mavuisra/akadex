@@ -111,7 +111,7 @@ class AdminDashboardView(APIView):
 
     def get(self, request):
         from academic.models import Course, Document, LearningDomain
-        from community.models import Post
+        from community.models import Post, PostKind
         from learning.models import LessonProgress, StudentLearningEvent
         from payments.models import CourseDeposit
 
@@ -161,6 +161,38 @@ class AdminDashboardView(APIView):
             for c in courses.order_by('-created_at')[:8]
         ]
 
+        alumni_kinds = [k for k in PostKind.values if str(k).startswith('alumni_')]
+        homepage_posts = Post.objects.exclude(kind__in=alumni_kinds).select_related(
+            'author',
+            'author__university',
+            'author__faculty',
+            'department',
+        )
+        recent_posts = [
+            {
+                'id': p.id,
+                'title': p.title,
+                'content': (p.content or '')[:180],
+                'kind': p.kind,
+                'kind_display': p.get_kind_display(),
+                'author_id': p.author_id,
+                'author': p.author.get_full_name() or p.author.email,
+                'author_email': p.author.email,
+                'author_role': p.author.role,
+                'author_university': (
+                    p.author.university.name if p.author.university_id else ''
+                ),
+                'author_faculty': (
+                    p.author.faculty.name if p.author.faculty_id else ''
+                ),
+                'status': p.moderation_status,
+                'likes_count': p.likes_count,
+                'comments_count': p.comments_count,
+                'created_at': p.created_at.isoformat() if p.created_at else None,
+            }
+            for p in homepage_posts.order_by('-created_at')[:12]
+        ]
+
         enrollments = (
             LessonProgress.objects.values('user_id', 'lesson__module__course_id')
             .distinct()
@@ -189,10 +221,11 @@ class AdminDashboardView(APIView):
             'documents_pending': Document.objects.filter(
                 moderation_status__in=('pending_peers', 'pending_admin'),
             ).count(),
-            'posts': Post.objects.count(),
-            'posts_pending': Post.objects.filter(
+            'posts': homepage_posts.count(),
+            'posts_pending': homepage_posts.filter(
                 moderation_status='pending',
             ).count(),
+            'recent_posts': recent_posts,
             'enrollments': enrollments,
             'payments_total': deposits.count(),
             'payments_completed': completed_deposits.count(),

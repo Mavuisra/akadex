@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -26,6 +27,9 @@ class SyncState {
   final int localCourses;
   final int localDocuments;
 
+  bool get isOfflineVisible =>
+      status == SyncStatus.offline || status == SyncStatus.error;
+
   SyncState copyWith({
     SyncStatus? status,
     DateTime? lastSyncedAt,
@@ -53,7 +57,12 @@ final syncServiceProvider = Provider<SyncService>((ref) {
 
 final syncStateProvider =
     StateNotifierProvider<SyncController, SyncState>((ref) {
-  return SyncController(ref.watch(syncServiceProvider), ref.watch(localStoreProvider));
+  final controller = SyncController(
+    ref.watch(syncServiceProvider),
+    ref.watch(localStoreProvider),
+  );
+  controller.startConnectivityWatch();
+  return controller;
 });
 
 class SyncController extends StateNotifier<SyncState> {
@@ -63,6 +72,36 @@ class SyncController extends StateNotifier<SyncState> {
 
   final SyncService _sync;
   final LocalAcademicStore _store;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
+  bool _wasOffline = false;
+
+  void startConnectivityWatch() {
+    _connectivitySub?.cancel();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((results) {
+      final hasNetwork = results.any((r) => r != ConnectivityResult.none);
+      if (!hasNetwork) {
+        _wasOffline = true;
+        if (state.status != SyncStatus.syncing) {
+          state = state.copyWith(
+            status: SyncStatus.offline,
+            message: 'Hors ligne — données locales utilisées',
+          );
+        }
+        return;
+      }
+      // Retour réseau → resync automatique.
+      if (_wasOffline || state.status == SyncStatus.offline) {
+        _wasOffline = false;
+        unawaited(syncNow(force: true));
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub?.cancel();
+    super.dispose();
+  }
 
   Future<void> refreshCounts() async {
     final courses = await _store.courseCount();
@@ -81,6 +120,7 @@ class SyncController extends StateNotifier<SyncState> {
     try {
       final online = await _sync.isOnline();
       if (!online) {
+        _wasOffline = true;
         state = state.copyWith(
           status: SyncStatus.offline,
           message: 'Hors ligne — données locales utilisées',
@@ -90,6 +130,7 @@ class SyncController extends StateNotifier<SyncState> {
       }
       await _sync.pullAndPush();
       await refreshCounts();
+      _wasOffline = false;
       state = state.copyWith(
         status: SyncStatus.online,
         lastSyncedAt: DateTime.now(),

@@ -19,6 +19,8 @@ class LearnScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final coursesAsync = ref.watch(coursesProvider);
+    final domains =
+        ref.watch(learningDomainsProvider).valueOrNull ?? LearnDomains.fallback;
     final me = ref.watch(authStateProvider).valueOrNull;
     final courses = coursesAsync.valueOrNull ?? const <Course>[];
     final busy = coursesAsync.isLoading && courses.isEmpty;
@@ -58,7 +60,7 @@ class LearnScreen extends ConsumerWidget {
       );
     }
 
-    final counts = LearnDomains.vitrineCounts(courses);
+    final counts = LearnDomains.vitrineCounts(courses, domains);
     final trending = LearnDomains.vitrineCourses(courses, limit: 3);
 
     return Scaffold(
@@ -75,7 +77,7 @@ class LearnScreen extends ConsumerWidget {
             surfaceTintColor: Colors.transparent,
             foregroundColor: feed.ink,
             title: Text(
-              'Cours',
+              'Apprendre',
               style: TextStyle(
                 fontWeight: FontWeight.w800,
                 color: feed.ink,
@@ -90,10 +92,6 @@ class LearnScreen extends ConsumerWidget {
                   label: Text('${ref.watch(cartProvider).length}'),
                   child: Icon(Icons.shopping_cart_outlined, color: feed.ink),
                 ),
-              ),
-              IconButton(
-                onPressed: () => context.push('/lmd/assistant'),
-                icon: Icon(Icons.chat_bubble_outline_rounded, color: feed.ink),
               ),
             ],
           ),
@@ -144,22 +142,6 @@ class LearnScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Column(
-                    children: [
-                      Icon(Icons.menu_book_outlined,
-                          color: Colors.green.shade700, size: 22),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Cours',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.green.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -170,7 +152,7 @@ class LearnScreen extends ConsumerWidget {
               color: feed.cardBg,
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: DomainStoriesRow(
-                domains: LearnDomains.all,
+                domains: domains,
                 courseCounts: counts,
                 onTap: (domain) {
                   context.push('/learn/domain/${domain.id}');

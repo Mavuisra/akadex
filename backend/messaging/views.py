@@ -15,6 +15,40 @@ def _touch_presence(user):
     User.objects.filter(pk=user.pk).update(last_seen_at=timezone.now())
 
 
+def _notify_peers_of_message(message: Message) -> None:
+    """Notification in-app + push FCM (via signal) aux autres participants."""
+    try:
+        from accounts.models import AppNotification
+    except Exception:
+        return
+
+    sender = message.sender
+    sender_name = (
+        sender.get_full_name() if hasattr(sender, 'get_full_name') else ''
+    ) or sender.email or 'Akadex'
+    if message.kind == Message.Kind.AUDIO:
+        body = 'Message vocal'
+    else:
+        body = (message.content or '').strip() or 'Nouveau message'
+    if len(body) > 120:
+        body = body[:117] + '…'
+
+    route = f'/messages/chat/{message.conversation_id}'
+    peers = message.conversation.participants.exclude(pk=sender.pk)
+    for peer in peers:
+        try:
+            AppNotification.objects.create(
+                user=peer,
+                kind=AppNotification.Kind.MESSAGE,
+                title=sender_name,
+                message=body,
+                link=route,
+            )
+        except Exception:
+            # Ne jamais faire échouer l’envoi du message à cause de la notif.
+            pass
+
+
 class ConversationViewSet(viewsets.ModelViewSet):
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -154,6 +188,7 @@ class MessageViewSet(viewsets.ModelViewSet):
             user=self.request.user,
         ).update(is_typing=False, is_recording=False)
         _touch_presence(self.request.user)
+        _notify_peers_of_message(message)
 
     def create(self, request, *args, **kwargs):
         # Support multipart vocal

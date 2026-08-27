@@ -15,6 +15,62 @@ void main() {
     });
   });
 
+  group('RoleAccess.canAccess — invité', () {
+    test('autorise login / register / forgot / reset / CGU', () {
+      expect(RoleAccess.canAccess(role: null, location: '/login'), isTrue);
+      expect(RoleAccess.canAccess(role: null, location: '/register'), isTrue);
+      expect(
+        RoleAccess.canAccess(role: null, location: '/forgot-password'),
+        isTrue,
+      );
+      expect(
+        RoleAccess.canAccess(role: null, location: '/reset-password'),
+        isTrue,
+      );
+      expect(
+        RoleAccess.canAccess(
+          role: null,
+          location: '/reset-password?email=a%40b.com',
+        ),
+        isTrue,
+      );
+      expect(
+        RoleAccess.canAccess(role: null, location: '/profile/terms'),
+        isTrue,
+      );
+      expect(
+        RoleAccess.canAccess(role: null, location: '/profile/privacy'),
+        isTrue,
+      );
+    });
+
+    test('interdit le campus et le shell enseignant', () {
+      for (final loc in [
+        '/home',
+        '/learn',
+        '/community',
+        '/alumni',
+        '/profile',
+        '/messages',
+        '/ma-fac',
+        '/cart',
+        '/teacher',
+        '/library/course/1',
+      ]) {
+        expect(
+          RoleAccess.canAccess(role: null, location: loc),
+          isFalse,
+          reason: loc,
+        );
+        expect(
+          RoleAccess.canAccess(role: '', location: loc),
+          isFalse,
+          reason: loc,
+        );
+      }
+    });
+  });
+
   group('RoleAccess.canAccess — enseignant', () {
     const role = 'teacher';
 
@@ -95,6 +151,13 @@ void main() {
   });
 
   group('RoleAccess.redirectForDenied', () {
+    test('invité → /login', () {
+      expect(
+        RoleAccess.redirectForDenied(role: null, location: '/home'),
+        '/login',
+      );
+    });
+
     test('renvoie vers le bon shell', () {
       expect(
         RoleAccess.redirectForDenied(role: 'teacher', location: '/home'),

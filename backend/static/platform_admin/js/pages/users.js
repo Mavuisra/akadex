@@ -31,7 +31,6 @@ export async function renderUsers(root, { roleFilter = '' } = {}) {
     <div class="page-head">
       <div>
         <h1>${esc(title)}</h1>
-        <p>CRUD réel — API auth/admin/users/</p>
       </div>
       <div class="page-actions">
         <button class="btn btn-primary" type="button" id="btn-add">+ Ajouter</button>
@@ -51,9 +50,9 @@ export async function renderUsers(root, { roleFilter = '' } = {}) {
       </select>
     </div>
     <div class="panel"><div class="panel-b table-wrap" id="table"><div class="skeleton" style="height:120px"></div></div></div>
-    <dialog id="dlg" style="border:1px solid var(--border);border-radius:12px;padding:0;width:min(520px,94vw)">
-      <form method="dialog" id="form" style="padding:20px">
-        <h2 id="dlg-title" style="margin:0 0 14px">Utilisateur</h2>
+    <dialog class="admin-dialog" id="dlg" style="width:min(520px,94vw)">
+      <form method="dialog" id="form">
+        <h2 id="dlg-title">Utilisateur</h2>
         <input type="hidden" name="id">
         <div class="form-grid">
           <div class="field"><label>Prénom</label><input name="first_name" required></div>
@@ -68,7 +67,7 @@ export async function renderUsers(root, { roleFilter = '' } = {}) {
           <div class="field"><label><input type="checkbox" name="is_staff"> Staff Django</label></div>
         </div>
         <div id="form-err"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <div class="admin-dialog-actions">
           <button class="btn btn-secondary" value="cancel" type="submit">Annuler</button>
           <button class="btn btn-primary" id="form-save" value="default" type="submit">Enregistrer</button>
         </div>

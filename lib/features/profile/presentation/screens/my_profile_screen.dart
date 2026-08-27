@@ -314,16 +314,6 @@ class _MyProfileScreenState extends ConsumerState<MyProfileScreen> {
                         onTap: () => context.push('/my-contributions'),
                       ),
                       _MenuTile(
-                        icon: Icons.card_giftcard_rounded,
-                        label: 'Récompenses & roue',
-                        onTap: () => context.push('/rewards'),
-                      ),
-                      _MenuTile(
-                        icon: Icons.auto_awesome,
-                        label: 'Akadex IA',
-                        onTap: () => context.push('/ai'),
-                      ),
-                      _MenuTile(
                         icon: Icons.calendar_month_outlined,
                         label: 'Calendrier',
                         onTap: () => context.push('/calendar'),

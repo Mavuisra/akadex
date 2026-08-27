@@ -3,6 +3,7 @@ Django settings for Akadex API.
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 import os
 import warnings
@@ -226,6 +227,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.User'
 
+# --- E-mail (reset MDP, etc.) ---
+# Défaut console : le code s’affiche dans les logs du serveur en local.
+# Prod : EMAIL_HOST / USER / PASSWORD (+ EMAIL_BACKEND smtp).
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587') or '587')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes')
+DEFAULT_FROM_EMAIL = os.getenv(
+    'DEFAULT_FROM_EMAIL',
+    'Akadex <noreply@akadex.app>',
+)
+
 CORS_ALLOW_ALL_ORIGINS = os.getenv(
     'CORS_ALLOW_ALL_ORIGINS',
     'True' if DEBUG else 'True',
@@ -306,6 +324,19 @@ PAWAPAY_BASE_URL = _env_strip(
 ).rstrip('/')
 PAWAPAY_CURRENCY = _env_strip('PAWAPAY_CURRENCY', 'USD') or 'USD'
 PAWAPAY_COUNTRY = _env_strip('PAWAPAY_COUNTRY', 'COD') or 'COD'
+
+# Tarifs catalogue Apprendre (USD) — source de vérité serveur.
+# Le client ne doit pas imposer le montant du dépôt.
+def _env_decimal(key: str, default: str) -> Decimal:
+    raw = _env_strip(key, default) or default
+    try:
+        return Decimal(raw)
+    except Exception:
+        return Decimal(default)
+
+
+COURSE_SALE_PRICE_USD = _env_decimal('COURSE_SALE_PRICE_USD', '15')
+COURSE_LIST_PRICE_USD = _env_decimal('COURSE_LIST_PRICE_USD', '29')
 
 # --- Firebase Cloud Messaging (push notifications) ---
 # Coller le JSON du compte de service Firebase (Project settings → Service accounts).

@@ -18,7 +18,7 @@ export async function renderCourses(root, courseId = null) {
 
   root.innerHTML = `
     <div class="page-head">
-      <div><h1>Cours</h1><p>CRUD + modération réelle</p></div>
+      <div><h1>Cours</h1></div>
       <div class="page-actions"><button class="btn btn-primary" type="button" id="btn-add">+ Ajouter</button></div>
     </div>
     <div class="toolbar">
@@ -32,18 +32,18 @@ export async function renderCourses(root, courseId = null) {
       </select>
     </div>
     <div class="panel"><div class="panel-b table-wrap" id="table"><div class="skeleton" style="height:120px"></div></div></div>
-    <dialog id="dlg" style="border:1px solid var(--border);border-radius:12px;padding:0;width:min(560px,94vw)">
-      <form method="dialog" id="form" style="padding:20px">
-        <h2 style="margin:0 0 12px">Cours</h2>
+    <dialog class="admin-dialog" id="dlg" style="width:min(560px,94vw)">
+      <form method="dialog" id="form">
+        <h2>Cours</h2>
         <input type="hidden" name="id">
         <div class="form-grid">
           <div class="field full"><label>Titre</label><input name="title" required></div>
-          <div class="field"><label>Code</label><input name="code" placeholder="ENS-…"></div>
+          <div class="field"><label>Code</label><input name="code"></div>
           <div class="field"><label>Enseignant (nom)</label><input name="teacher_name"></div>
           <div class="field full"><label>Description</label><textarea name="description" rows="3"></textarea></div>
         </div>
         <div id="form-err"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <div class="admin-dialog-actions">
           <button class="btn btn-secondary" value="cancel" type="submit">Annuler</button>
           <button class="btn btn-primary" value="default" type="submit">Enregistrer</button>
         </div>

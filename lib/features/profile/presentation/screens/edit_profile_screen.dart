@@ -11,6 +11,7 @@ import '../../../../core/theme/akadex_theme.dart';
 import '../../../../core/widgets/academic_autocomplete.dart';
 import '../../../../core/widgets/common_widgets.dart';
 import '../../../../core/widgets/living_ui.dart';
+import '../../../../core/permissions/media_permissions.dart';
 import '../../../../data/api/api_client.dart';
 import '../../../../data/auth/auth_repository.dart';
 import '../../../../data/repositories/repositories.dart';
@@ -135,6 +136,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   Future<void> _pickImage({required bool cover}) async {
+    final ok = await MediaPermissions.ensureGallery();
+    if (!ok) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(MediaPermissions.deniedMessage(camera: false)),
+        ),
+      );
+      return;
+    }
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
       maxWidth: cover ? 1600 : 800,
@@ -216,12 +227,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         SnackBar(
           content: Text(
             pending
-                ? 'Profil mis à jour. Confirme ton nouvel e-mail via le code dans tes notifications.'
+                ? 'Profil mis à jour. Confirme ton nouvel e-mail.'
                 : 'Profil mis à jour',
           ),
         ),
       );
-      context.pop();
+      if (pending) {
+        context.push('/confirm-email');
+      } else {
+        context.pop();
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -500,6 +515,44 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     textInputAction: TextInputAction.next,
                                   ),
                                 ),
+                                if (user.pendingEmail.isNotEmpty) ...[
+                                  const SizedBox(height: 10),
+                                  SoftCard(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        Text(
+                                          'Confirmation en attente pour '
+                                          '${user.pendingEmail}. '
+                                          'Le code est dans tes notifications.',
+                                          style: TextStyle(
+                                            color: Theme.of(context)
+                                                        .brightness ==
+                                                    Brightness.dark
+                                                ? AkadexColors.metaOnDark
+                                                : AkadexColors.inkMuted,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.35,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: TextButton(
+                                            onPressed: () => context
+                                                .push('/confirm-email'),
+                                            child: const Text(
+                                              'Entrer le code',
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                                 if (isStudent) ...[
                                   const SizedBox(height: 12),
                                   _softField(
