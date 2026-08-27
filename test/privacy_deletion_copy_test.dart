@@ -17,10 +17,14 @@ void main() {
     await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pump();
 
-    expect(find.text('Suppression de compte'), findsOneWidget);
-
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    final deletionTitle = find.text('Suppression de compte');
+    await tester.scrollUntilVisible(
+      deletionTitle,
+      280,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pump();
+    expect(deletionTitle, findsOneWidget);
 
     expect(find.textContaining('Android'), findsWidgets);
     expect(find.textContaining('Supprimer mon compte'), findsWidgets);

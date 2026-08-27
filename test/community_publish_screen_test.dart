@@ -32,7 +32,7 @@ void main() {
     expect(find.text('Quoi de neuf ?'), findsOneWidget);
     expect(find.text('Publier'), findsOneWidget);
     expect(find.text('Public'), findsOneWidget);
-    expect(find.text('Étudiant'), findsOneWidget);
+    expect(find.text('Utilisateur'), findsOneWidget);
 
     final contextField = find.textContaining('Contexte académique');
     await tester.scrollUntilVisible(
