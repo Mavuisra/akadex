@@ -262,12 +262,34 @@ export function initAuthModal({ onMenuClose } = {}) {
     if (step === 'password') setTimeout(() => passInput?.focus(), 40);
   }
 
+  let scrollLockY = 0;
+
+  function lockBodyScroll() {
+    scrollLockY = window.scrollY || window.pageYOffset || 0;
+    document.body.classList.add('auth-open');
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollLockY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  }
+
+  function unlockBodyScroll() {
+    document.body.classList.remove('auth-open');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, scrollLockY);
+  }
+
   function openAuth(mode) {
     authMode = mode === 'signup' ? 'signup' : 'login';
     signupStep = 0;
     overlay.hidden = false;
     overlay.setAttribute('data-open', 'true');
-    document.body.classList.add('auth-open');
+    lockBodyScroll();
     onMenuClose?.();
     if (authMode === 'signup') {
       setAuthStep('signup');
@@ -282,7 +304,7 @@ export function initAuthModal({ onMenuClose } = {}) {
   function closeAuth() {
     overlay.setAttribute('data-open', 'false');
     overlay.hidden = true;
-    document.body.classList.remove('auth-open');
+    unlockBodyScroll();
     clearSensitiveInputs(overlay);
     setAuthStep('email');
     if (location.hash.includes('authMode')) {

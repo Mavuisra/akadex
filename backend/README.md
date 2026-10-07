@@ -101,7 +101,7 @@ python manage.py runserver
 
 - API : http://127.0.0.1:8000/api/
 - Docs : http://127.0.0.1:8000/api/docs/
-- Admin : http://127.0.0.1:8000/admin/
+- AdminAkadex : http://127.0.0.1:8000/adminakadex/
 
 ## Comptes démo
 

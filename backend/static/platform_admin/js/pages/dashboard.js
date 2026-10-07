@@ -35,8 +35,8 @@ export async function renderDashboard(root) {
       ['Étudiants', d.students, ''],
       ['Enseignants', d.teachers, ''],
       ['Cours', d.courses_total, `${d.courses_published || 0} publiés`],
-      ['Publications', d.posts ?? 0, 'page d’accueil'],
-      ['Pubs. en attente', d.posts_pending ?? 0, 'modération'],
+      ['Publications', d.posts ?? 0, `${d.posts_pending ?? 0} en attente`],
+      ['Docs en attente', d.documents_pending ?? 0, `${d.documents ?? 0} total`],
       ['Inscriptions', d.enrollments, 'via progression'],
       ['Paiements', d.payments_completed, `${d.payments_total || 0} total`],
     ];
@@ -110,6 +110,7 @@ export async function renderDashboard(root) {
           .join('')}</tbody></table>`
       : '<div class="empty">Aucun cours</div>';
   } catch (e) {
+    if (e.status === 401 || e.status === 403) throw e;
     root.innerHTML = `<div class="alert alert-error">${esc(e.message)}</div>`;
   }
 }

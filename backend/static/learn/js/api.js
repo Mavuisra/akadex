@@ -1,13 +1,28 @@
 const TOKEN_KEY = 'akadex_learn_access';
 const REFRESH_KEY = 'akadex_learn_refresh';
 const USER_KEY = 'akadex_learn_user';
+const WEB_TOKEN_KEY = 'akadex_web_access';
+const WEB_REFRESH_KEY = 'akadex_web_refresh';
+const WEB_USER_KEY = 'akadex_web_user';
 
 function apiBase() {
   return (window.AKADEX_LEARN?.apiBase || '/api/').replace(/\/?$/, '/');
 }
 
 export function getAccessToken() {
-  return localStorage.getItem(TOKEN_KEY) || '';
+  return (
+    localStorage.getItem(TOKEN_KEY) ||
+    localStorage.getItem(WEB_TOKEN_KEY) ||
+    ''
+  );
+}
+
+export function isLoggedIn() {
+  return Boolean(getAccessToken());
+}
+
+export function openLoginModal() {
+  document.querySelector('[data-auth-open="login"]')?.click();
 }
 
 export function getStoredUser() {
@@ -25,13 +40,25 @@ export function clearSession() {
 }
 
 export function saveSession({ access, refresh, user }) {
-  if (access) localStorage.setItem(TOKEN_KEY, access);
-  if (refresh) localStorage.setItem(REFRESH_KEY, refresh);
-  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  if (access) {
+    localStorage.setItem(TOKEN_KEY, access);
+    localStorage.setItem(WEB_TOKEN_KEY, access);
+  }
+  if (refresh) {
+    localStorage.setItem(REFRESH_KEY, refresh);
+    localStorage.setItem(WEB_REFRESH_KEY, refresh);
+  }
+  if (user) {
+    const raw = JSON.stringify(user);
+    localStorage.setItem(USER_KEY, raw);
+    localStorage.setItem(WEB_USER_KEY, raw);
+  }
 }
 
 async function refreshAccess() {
-  const refresh = localStorage.getItem(REFRESH_KEY);
+  const refresh =
+    localStorage.getItem(REFRESH_KEY) ||
+    localStorage.getItem(WEB_REFRESH_KEY);
   if (!refresh) return false;
   const res = await fetch(`${apiBase()}auth/token/refresh/`, {
     method: 'POST',
@@ -42,6 +69,7 @@ async function refreshAccess() {
   const data = await res.json();
   if (data.access) {
     localStorage.setItem(TOKEN_KEY, data.access);
+    localStorage.setItem(WEB_TOKEN_KEY, data.access);
     return true;
   }
   return false;
@@ -113,6 +141,30 @@ export async function fetchPricing() {
   } catch {
     return { sale: 15, list: 29, currency: 'USD' };
   }
+}
+
+/** Opérateurs Mobile Money (mêmes clés que l’app / PawaPay). */
+export const MOMO_PROVIDERS = [
+  { key: 'vodacom_mpesa', label: 'M-Pesa', brand: 'Vodacom' },
+  { key: 'airtel', label: 'Airtel Money', brand: 'Airtel' },
+  { key: 'orange', label: 'Orange Money', brand: 'Orange' },
+];
+
+export async function initiateDeposit({ phone, provider, amount, courseIds }) {
+  return api('payments/deposits/', {
+    method: 'POST',
+    body: JSON.stringify({
+      phone,
+      provider,
+      amount,
+      course_ids: courseIds,
+      statement: 'Akadex cours',
+    }),
+  });
+}
+
+export async function getDepositStatus(depositId) {
+  return api(`payments/deposits/${depositId}/`);
 }
 
 export async function fetchCourses(params = {}) {

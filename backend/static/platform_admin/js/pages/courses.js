@@ -97,7 +97,7 @@ export async function renderCourses(root, courseId = null) {
       root.querySelectorAll('.btn-ok').forEach((b) =>
         b.addEventListener('click', async () => {
           try {
-            await api(`courses/${b.dataset.id}/approve/`, { method: 'POST', body: '{}' });
+            await approveCourse(b.dataset.id);
             toast('Cours publié');
             load();
           } catch (e) {
@@ -214,21 +214,65 @@ async function renderCourseDetail(root, id) {
         }
       </div></div>`;
     document.getElementById('approve')?.addEventListener('click', async () => {
-      await api(`courses/${id}/approve/`, { method: 'POST', body: '{}' });
-      toast('Publié');
-      renderCourseDetail(root, id);
+      try {
+        await approveCourse(id);
+        toast('Publié');
+        renderCourseDetail(root, id);
+      } catch (e) {
+        toast(e.message, 'error');
+      }
     });
     document.getElementById('reject')?.addEventListener('click', async () => {
-      const note = window.prompt('Motif du refus ?') || '';
-      await api(`courses/${id}/reject/`, {
-        method: 'POST',
-        body: JSON.stringify({ note }),
-      });
-      toast('Refusé');
-      renderCourseDetail(root, id);
+      try {
+        const note = window.prompt('Motif du refus ?') || '';
+        await api(`courses/${id}/reject/`, {
+          method: 'POST',
+          body: JSON.stringify({ note }),
+        });
+        toast('Refusé');
+        renderCourseDetail(root, id);
+      } catch (e) {
+        toast(e.message, 'error');
+      }
     });
   } catch (e) {
+    if (e.status === 401 || e.status === 403) throw e;
     document.getElementById('body').innerHTML =
       `<div class="alert alert-error">${esc(e.message)}</div>`;
   }
+}
+
+/** Publier un cours avec au moins un domaine (exigé par l’API). */
+async function approveCourse(courseId) {
+  const course = await api(`courses/${courseId}/`);
+  let domainIds = [];
+  const rawDomains = course.domains || course.domain_ids || [];
+  if (Array.isArray(rawDomains)) {
+    domainIds = rawDomains
+      .map((d) => (typeof d === 'object' ? d.id : d))
+      .filter((id) => id != null)
+      .map(Number);
+  }
+  if (!domainIds.length) {
+    const domains = unwrapList(
+      await api('learning-domains/?page_size=100&is_active=true'),
+    );
+    if (!domains.length) {
+      throw new Error('Créez d’abord une catégorie (domaine) avant de publier.');
+    }
+    const pick = window.prompt(
+      `ID du domaine pour publier « ${course.title || courseId} » :\n` +
+        domains.map((d) => `${d.id} — ${d.name}`).join('\n'),
+      String(domains[0].id),
+    );
+    if (!pick) throw new Error('Publication annulée.');
+    domainIds = [Number(pick)];
+    if (!Number.isFinite(domainIds[0])) {
+      throw new Error('ID de domaine invalide.');
+    }
+  }
+  return api(`courses/${courseId}/approve/`, {
+    method: 'POST',
+    body: JSON.stringify({ domain_ids: domainIds }),
+  });
 }

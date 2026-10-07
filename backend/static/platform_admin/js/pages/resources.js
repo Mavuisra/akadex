@@ -136,9 +136,14 @@ export async function renderModules(root) {
     const title = window.prompt('Titre du module ?');
     if (!course || !title) return;
     try {
+      const existing = unwrapList(
+        await api(`course-modules/?course=${Number(course)}&page_size=100`),
+      );
+      const order =
+        existing.reduce((max, m) => Math.max(max, Number(m.order) || 0), -1) + 1;
       await api('course-modules/', {
         method: 'POST',
-        body: JSON.stringify({ course: Number(course), title, order: 0 }),
+        body: JSON.stringify({ course: Number(course), title, order }),
       });
       toast('Module créé');
       load();
@@ -185,22 +190,39 @@ export async function renderLessons(root) {
         : '<div class="empty">Aucune leçon</div>';
       root.querySelectorAll('.btn-ed').forEach((b) =>
         b.addEventListener('click', async () => {
-          const title = window.prompt('Nouveau titre ?');
-          if (!title) return;
-          await api(`course-lessons/${b.dataset.id}/`, {
-            method: 'PATCH',
-            body: JSON.stringify({ title }),
-          });
-          toast('Mis à jour');
-          load();
+          try {
+            const lesson = await api(`course-lessons/${b.dataset.id}/`);
+            const title = window.prompt('Nouveau titre ?', lesson.title || '');
+            if (title == null || !title.trim()) return;
+            const video = window.prompt(
+              'Lien vidéo (laisser vide pour effacer) ?',
+              lesson.video_url || '',
+            );
+            if (video == null) return;
+            await api(`course-lessons/${b.dataset.id}/`, {
+              method: 'PATCH',
+              body: JSON.stringify({
+                title: title.trim(),
+                video_url: video.trim(),
+              }),
+            });
+            toast('Mis à jour');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
         }),
       );
       root.querySelectorAll('.btn-del').forEach((b) =>
         b.addEventListener('click', async () => {
           if (!(await confirmDelete('cette leçon'))) return;
-          await api(`course-lessons/${b.dataset.id}/`, { method: 'DELETE' });
-          toast('Supprimée');
-          load();
+          try {
+            await api(`course-lessons/${b.dataset.id}/`, { method: 'DELETE' });
+            toast('Supprimée');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
         }),
       );
     } catch (e) {
@@ -271,20 +293,28 @@ export async function renderDocuments(root) {
         : '<div class="empty">Aucun document</div>';
       root.querySelectorAll('.btn-ok').forEach((b) =>
         b.addEventListener('click', async () => {
-          await api(`documents/${b.dataset.id}/approve/`, {
-            method: 'POST',
-            body: '{}',
-          });
-          toast('Approuvé');
-          load();
+          try {
+            await api(`documents/${b.dataset.id}/approve/`, {
+              method: 'POST',
+              body: '{}',
+            });
+            toast('Approuvé');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
         }),
       );
       root.querySelectorAll('.btn-del').forEach((b) =>
         b.addEventListener('click', async () => {
           if (!(await confirmDelete('ce document'))) return;
-          await api(`documents/${b.dataset.id}/`, { method: 'DELETE' });
-          toast('Supprimé');
-          load();
+          try {
+            await api(`documents/${b.dataset.id}/`, { method: 'DELETE' });
+            toast('Supprimé');
+            load();
+          } catch (e) {
+            toast(e.message, 'error');
+          }
         }),
       );
     } catch (e) {
@@ -1089,7 +1119,7 @@ export async function renderSettings(root, user) {
       <div class="field"><label>Nom</label><input readonly value="${esc(user.full_name || '')}"></div>
       <div class="field"><label>E-mail</label><input readonly value="${esc(user.email || '')}"></div>
       <div class="field"><label>Rôle</label><input readonly value="${esc(user.role || '')}"></div>
-      <div class="field full"><p style="color:var(--ink-soft)">Django Admin classique : <a href="/django-admin/" target="_blank">/django-admin/</a></p></div>
+      <div class="field full"><p style="color:var(--ink-soft)">URL console : <code>/adminakadex/</code> · Django Admin : <a href="/django-admin/" target="_blank" rel="noopener">/django-admin/</a></p></div>
     </div></div>
   `;
 }

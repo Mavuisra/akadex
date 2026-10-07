@@ -7,7 +7,7 @@ Flutter reste en local / mobile et pointe vers l’API via `--dart-define=API_BA
 URL typique : `https://<username>.pythonanywhere.com`
 
 - Docs API : `https://<username>.pythonanywhere.com/api/docs/`
-- Admin : `https://<username>.pythonanywhere.com/admin/`
+- AdminAkadex : `https://<username>.pythonanywhere.com/adminakadex/`
 
 > Remplace partout `<username>` par ton identifiant PythonAnywhere.
 

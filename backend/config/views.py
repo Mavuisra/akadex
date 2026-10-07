@@ -51,8 +51,17 @@ def profile_app(request, path=''):
 
 
 def admin_app(request, path=''):
-    """SPA administration Akadex — /admin/."""
-    return render(request, 'platform_admin/app.html')
+    """SPA administration Akadex — /adminakadex/ (hors landing publique)."""
+    response = render(request, 'platform_admin/app.html')
+    # Durcissement : pas d’iframe, pas de cache, pas d’indexation.
+    response['X-Frame-Options'] = 'DENY'
+    response['X-Content-Type-Options'] = 'nosniff'
+    response['Referrer-Policy'] = 'same-origin'
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
+    response['Cross-Origin-Opener-Policy'] = 'same-origin'
+    return response
 
 
 def storage_health(request):

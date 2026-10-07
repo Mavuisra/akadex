@@ -85,6 +85,7 @@ img {
 /* ——— Login ——— */
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -101,6 +102,36 @@ img {
   border-radius: 14px;
   padding: 32px 28px;
   box-shadow: var(--shadow-md);
+}
+
+@media (max-width: 720px) {
+  .login-page {
+    place-items: stretch;
+    padding: 0;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  .login-card {
+    width: 100%;
+    min-height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    padding: max(1.25rem, env(safe-area-inset-top, 0px))
+      max(1.25rem, env(safe-area-inset-right, 0px))
+      calc(1.5rem + env(safe-area-inset-bottom, 0px))
+      max(1.25rem, env(safe-area-inset-left, 0px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .login-card .field input {
+    font-size: 16px;
+  }
 }
 
 .login-brand {
@@ -304,11 +335,26 @@ img {
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 14px;
   flex: 1;
   overflow: auto;
   min-height: 0;
   padding-right: 2px;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-group-title {
+  padding: 4px 12px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
 
 .sidebar-nav a {
@@ -1218,26 +1264,17 @@ table.data tr:hover td {
   }
 }
 
-/* Admin login */
-.login-wrap {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: linear-gradient(160deg, #e8eefb 0%, #f0f3fa 45%, #fff 100%);
+/* Admin login — styles .login-page / .login-card déjà définis plus haut */
+.login-note {
+  margin-top: 16px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  line-height: 1.4;
 }
-.login-card {
-  width: min(400px, 100%);
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 28px 24px;
-  box-shadow: var(--shadow-md);
+.login-note a {
+  color: var(--blue);
+  font-weight: 600;
 }
-.login-logo { width: 48px; height: 48px; margin-bottom: 12px; }
-.login-card h1 { margin: 0 0 4px; font-size: 1.5rem; }
-.login-card > p { margin: 0 0 18px; color: var(--ink-muted); }
-.login-note { margin-top: 16px; font-size: 0.85rem; color: var(--ink-soft); }
 .skeleton { height: 14px; background: linear-gradient(90deg, #e8eefb, #f7f9fc, #e8eefb); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .chip-info { background: var(--blue-soft); color: var(--blue); }

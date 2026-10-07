@@ -1,7 +1,9 @@
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from .permissions import user_is_akadex_admin
 from .serializers import UserSerializer
 
 
@@ -11,6 +13,12 @@ class AuthAnonThrottle(AnonRateThrottle):
 
 class AuthBurstThrottle(AnonRateThrottle):
     scope = 'auth_burst'
+
+
+class AdminAuthThrottle(AnonRateThrottle):
+    """Throttle plus strict pour le login AdminAkadex."""
+
+    scope = 'admin_auth'
 
 
 class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -33,3 +41,23 @@ class EmailTokenObtainPairSerializer(TokenObtainPairSerializer):
 class EmailTokenObtainPairView(TokenObtainPairView):
     serializer_class = EmailTokenObtainPairSerializer
     throttle_classes = [AuthBurstThrottle, AuthAnonThrottle]
+
+
+class AdminTokenObtainPairSerializer(EmailTokenObtainPairSerializer):
+    """JWT réservé aux admins / staff — refuse les autres comptes dès le login."""
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        if not user_is_akadex_admin(self.user):
+            raise AuthenticationFailed(
+                'Accès réservé aux administrateurs Akadex.',
+                code='not_admin',
+            )
+        return data
+
+
+class AdminTokenObtainPairView(TokenObtainPairView):
+    """Login dédié AdminAkadex (/adminakadex/)."""
+
+    serializer_class = AdminTokenObtainPairSerializer
+    throttle_classes = [AdminAuthThrottle, AuthBurstThrottle]

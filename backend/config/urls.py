@@ -5,7 +5,7 @@ from django.views.static import serve
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts.auth import EmailTokenObtainPairView
+from accounts.auth import AdminTokenObtainPairView, EmailTokenObtainPairView
 from config.views import (
     admin_app,
     home,
@@ -29,8 +29,8 @@ urlpatterns = [
     path('profil/<path:path>', profile_app, name='profile-app-path'),
     path('enseignant/', teacher_app, name='teacher-app'),
     path('enseignant/<path:path>', teacher_app, name='teacher-app-path'),
-    path('admin/', admin_app, name='akadex-admin'),
-    path('admin/<path:path>', admin_app, name='akadex-admin-path'),
+    path('adminakadex/', admin_app, name='akadex-admin'),
+    path('adminakadex/<path:path>', admin_app, name='akadex-admin-path'),
     path('django-admin/', admin.site.urls),
     path('api/health/storage/', storage_health, name='storage-health'),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
@@ -41,6 +41,11 @@ urlpatterns = [
     ),
     path('api/auth/token/', EmailTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path(
+        'api/auth/admin/token/',
+        AdminTokenObtainPairView.as_view(),
+        name='admin_token_obtain_pair',
+    ),
     path('api/auth/', include('accounts.urls')),
     path('api/', include('academic.urls')),
     path('api/', include('community.urls')),

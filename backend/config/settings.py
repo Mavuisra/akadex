@@ -292,6 +292,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'auth': '20/hour',
         'auth_burst': '8/minute',
+        'admin_auth': '8/hour',
     },
     'DEFAULT_PAGINATION_CLASS': 'config.pagination.FlexiblePagination',
     'PAGE_SIZE': 20,
