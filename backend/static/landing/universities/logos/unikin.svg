@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 72" role="img" aria-label="UNIKIN">
+  <circle cx="36" cy="36" r="28" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
+  <path d="M36 14 L48 36 L36 58 L24 36 Z" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
+  <circle cx="36" cy="36" r="4" fill="#1a1a1a"/>
+  <text x="78" y="45" font-family="Georgia, serif" font-size="26" font-weight="700" fill="#1a1a1a" letter-spacing="2">UNIKIN</text>
+</svg>

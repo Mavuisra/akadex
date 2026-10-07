@@ -34,6 +34,40 @@ def resolve_course_cover_url(course, request=None) -> str:
     return absolute_media_url((course.cover_url or '').strip(), request)
 
 
+# Couvertures de secours (static) par type de document
+_DOC_COVER_STATIC = {
+    'tfc': '/static/landing/domains/informatique.jpg',
+    'memoire': '/static/landing/domains/economie.jpg',
+    'these': '/static/landing/domains/droit.jpg',
+    'projet_tutore': '/static/landing/domains/gestion.jpg',
+    'projet': '/static/landing/domains/informatique.jpg',
+    'tp': '/static/landing/domains/informatique.jpg',
+    'examen': '/static/landing/domains/droit.jpg',
+    'interrogation': '/static/landing/domains/gestion.jpg',
+    'rapport': '/static/landing/domains/economie.jpg',
+    'support_cours': '/static/landing/domains/langues.jpg',
+    'resume': '/static/landing/domains/langues.jpg',
+    'fiche_revision': '/static/landing/domains/medecine.jpg',
+    'corrige': '/static/landing/domains/droit.jpg',
+}
+_DOC_COVER_DEFAULT = '/static/landing/slides/docs.jpg'
+
+
+def resolve_document_cover_url(doc, request=None) -> str:
+    """Couverture document : upload > cover_url > fallback type."""
+    from config.media_urls import absolute_media_url, file_field_url
+
+    if getattr(doc, 'cover', None):
+        url = file_field_url(doc.cover, request)
+        if url:
+            return url
+    explicit = absolute_media_url((doc.cover_url or '').strip(), request)
+    if explicit:
+        return explicit
+    path = _DOC_COVER_STATIC.get(getattr(doc, 'doc_type', ''), _DOC_COVER_DEFAULT)
+    return absolute_media_url(path, request)
+
+
 def teacher_title_of(course):
     t = _first_teacher(course)
     if t is None:
@@ -623,6 +657,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     is_favorited = serializers.SerializerMethodField()
+    is_purchased = serializers.SerializerMethodField()
     peer_validation_count = serializers.SerializerMethodField()
     peer_validations_required = serializers.SerializerMethodField()
     user_has_peer_validated = serializers.SerializerMethodField()
@@ -648,6 +683,8 @@ class DocumentSerializer(serializers.ModelSerializer):
             'course_code',
             'course_title',
             'academic_year',
+            'cover_url',
+            'cover',
             'file',
             'external_url',
             'file_size',
@@ -661,6 +698,9 @@ class DocumentSerializer(serializers.ModelSerializer):
             'moderation_status',
             'rejection_reason',
             'is_featured',
+            'is_free',
+            'price_usd',
+            'is_purchased',
             'is_favorited',
             'peer_validation_count',
             'peer_validations_required',
@@ -686,6 +726,17 @@ class DocumentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         ]
+        extra_kwargs = {
+            'cover_url': {'required': False, 'allow_blank': True},
+            'cover': {'required': False, 'allow_null': True},
+        }
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['cover_url'] = resolve_document_cover_url(
+            instance, self.context.get('request')
+        )
+        return data
 
     def get_author_name(self, obj):
         if not obj.author:
@@ -697,6 +748,14 @@ class DocumentSerializer(serializers.ModelSerializer):
         if not request or not request.user.is_authenticated:
             return False
         return obj.favorited_by.filter(user=request.user).exists()
+
+    def get_is_purchased(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        if obj.is_free:
+            return True
+        return obj.purchases.filter(user=request.user).exists()
 
     def get_peer_validation_count(self, obj):
         if hasattr(obj, '_peer_count'):

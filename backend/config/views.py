@@ -32,6 +32,24 @@ def teacher_app(request, path=''):
     return render(request, 'teacher/app.html')
 
 
+def learn_app(request, path=''):
+    """SPA catalogue Apprendre (style marketplace) — /apprendre/."""
+    return render(
+        request,
+        'learn/app.html',
+        {'play_store_url': settings.PLAY_STORE_URL},
+    )
+
+
+def profile_app(request, path=''):
+    """SPA profil étudiant — suivi d’apprentissage — /profil/."""
+    return render(
+        request,
+        'profile/app.html',
+        {'play_store_url': settings.PLAY_STORE_URL},
+    )
+
+
 def admin_app(request, path=''):
     """SPA administration Akadex — /admin/."""
     return render(request, 'platform_admin/app.html')

@@ -1074,6 +1074,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         'course',
         'academic_year',
         'is_featured',
+        'is_free',
         'author',
         'moderation_status',
         'is_approved',
@@ -1260,8 +1261,35 @@ class DocumentViewSet(viewsets.ModelViewSet):
         doc.refresh_from_db()
         return Response(DocumentSerializer(doc, context={'request': request}).data)
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    def purchase(self, request, pk=None):
+        """Enregistre l’achat d’un document payant (Mobile Money branché ensuite)."""
+        from academic.models import DocumentPurchase
+
+        doc = self.get_object()
+        if doc.is_free:
+            return Response(
+                {'detail': 'Ce document est gratuit.', 'is_free': True},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        purchase, created = DocumentPurchase.objects.get_or_create(
+            user=request.user,
+            document=doc,
+            defaults={'amount_usd': doc.price_usd or 0},
+        )
+        return Response(
+            {
+                'purchased': True,
+                'created': created,
+                'document_id': doc.pk,
+                'amount_usd': str(purchase.amount_usd),
+            },
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=['post'])
     def download(self, request, pk=None):
+        from academic.models import DocumentPurchase
         from academic.peer_validation import peer_validation_count
         from academic.rewards import FACULTY_PEER_VALIDATIONS_REQUIRED
 
@@ -1288,6 +1316,22 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        if not doc.is_free and not is_author and not is_staff:
+            owned = (
+                user.is_authenticated
+                and DocumentPurchase.objects.filter(user=user, document=doc).exists()
+            )
+            if not owned:
+                return Response(
+                    {
+                        'detail': 'Document payant — achat requis pour télécharger.',
+                        'is_free': False,
+                        'price_usd': str(doc.price_usd or 0),
+                        'can_download': False,
+                    },
+                    status=status.HTTP_402_PAYMENT_REQUIRED,
+                )
 
         Document.objects.filter(pk=doc.pk).update(downloads=F('downloads') + 1)
         doc.refresh_from_db()

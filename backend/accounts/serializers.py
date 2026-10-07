@@ -220,9 +220,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             'postnom': 'Le postnom est obligatoire.',
             'email': "L'email est obligatoire.",
             'phone': 'Le téléphone est obligatoire.',
-            'university': "L'université est obligatoire.",
-            'department': 'Le département est obligatoire.',
-            'promotion': 'La promotion est obligatoire.',
         }
 
         if role == User.Role.STUDENT:
@@ -252,8 +249,15 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password_confirm')
         password = validated_data.pop('password')
-        if not validated_data.get('username'):
-            validated_data['username'] = validated_data['email'].split('@')[0]
+        base = (validated_data.get('username') or validated_data['email'].split('@')[0])
+        base = ''.join(c if c.isalnum() or c == '_' else '_' for c in base)[:40] or 'user'
+        username = base
+        n = 0
+        while User.objects.filter(username__iexact=username).exists():
+            n += 1
+            suffix = f'_{n}'
+            username = f'{base[: 40 - len(suffix)]}{suffix}'
+        validated_data['username'] = username
         user = User(**validated_data)
         user.set_password(password)
         user.save()

@@ -355,6 +355,17 @@ class Document(models.Model):
         related_name='documents',
     )
     academic_year = models.CharField(max_length=16, blank=True)
+    cover_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text='Image de couverture (URL publique)',
+    )
+    cover = models.ImageField(
+        upload_to='document_covers/',
+        blank=True,
+        null=True,
+        help_text='Image de couverture uploadée',
+    )
     file = models.FileField(upload_to='documents/', blank=True, null=True)
     external_url = models.URLField(blank=True)
     file_size = models.PositiveBigIntegerField(default=0)
@@ -365,6 +376,16 @@ class Document(models.Model):
     rating_count = models.PositiveIntegerField(default=0)
     is_approved = models.BooleanField(default=False)
     is_featured = models.BooleanField(default=False)
+    is_free = models.BooleanField(
+        default=True,
+        help_text='Document gratuit (téléchargement sans achat).',
+    )
+    price_usd = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        help_text='Prix en USD si le document est payant (is_free=False).',
+    )
     moderation_status = models.CharField(
         max_length=16,
         choices=[
@@ -546,6 +567,30 @@ class Favorite(models.Model):
     class Meta:
         unique_together = ('user', 'document')
         ordering = ['-created_at']
+
+
+class DocumentPurchase(models.Model):
+    """Accès payant à un document académique."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='document_purchases',
+    )
+    document = models.ForeignKey(
+        Document,
+        on_delete=models.CASCADE,
+        related_name='purchases',
+    )
+    amount_usd = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'document')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.user_id} → doc {self.document_id}'
 
 
 class Announcement(models.Model):

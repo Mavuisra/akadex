@@ -1281,6 +1281,71 @@ class Command(BaseCommand):
             '(pont vers Apprendre, hors AKX).'
         )
 
+        doc_covers = [
+            'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=900&q=80',
+            'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=900&q=80',
+            'https://images.unsplash.com/photo-1456513080080-7c3f8d7a935d?w=900&q=80',
+            'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=900&q=80',
+            'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=900&q=80',
+            'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=900&q=80',
+            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=900&q=80',
+            'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=900&q=80',
+        ]
+        bare = Document.objects.filter(cover_url='')
+        for i, doc in enumerate(bare.iterator()):
+            Document.objects.filter(pk=doc.pk).update(
+                cover_url=doc_covers[i % len(doc_covers)]
+            )
+
+        # Progression démo (profil étudiant) pour Aïcha
+        try:
+            from learning.models import CourseLesson, LessonProgress, StudentLearningEvent
+
+            demo_student = User.objects.filter(
+                email='aicha.mbemba@unikin.ac.cd'
+            ).first()
+            akx = list(Course.objects.filter(code__startswith='AKX')[:3])
+            if demo_student and akx:
+                for i, course in enumerate(akx):
+                    lessons = list(
+                        CourseLesson.objects.filter(
+                            module__course=course,
+                            is_published=True,
+                        ).order_by('module__order', 'order', 'id')[:6]
+                    )
+                    for j, lesson in enumerate(lessons):
+                        done = j < (3 if i == 0 else 1)
+                        LessonProgress.objects.update_or_create(
+                            user=demo_student,
+                            lesson=lesson,
+                            defaults={
+                                'completed': done,
+                                'position_seconds': 600 if done else 180,
+                            },
+                        )
+                        if not StudentLearningEvent.objects.filter(
+                            student=demo_student,
+                            lesson=lesson,
+                            event_type=StudentLearningEvent.EventType.LESSON_COMPLETED
+                            if done
+                            else StudentLearningEvent.EventType.CONTENT_OPENED,
+                        ).exists():
+                            StudentLearningEvent.objects.create(
+                                student=demo_student,
+                                course=course,
+                                module=lesson.module,
+                                lesson=lesson,
+                                teacher=course.teachers.first(),
+                                event_type=(
+                                    StudentLearningEvent.EventType.LESSON_COMPLETED
+                                    if done
+                                    else StudentLearningEvent.EventType.CONTENT_OPENED
+                                ),
+                            )
+                self.stdout.write('Progression démo profil (Aïcha) OK.')
+        except Exception as exc:  # pragma: no cover
+            self.stdout.write(self.style.WARNING(f'Progression démo skip: {exc}'))
+
         self.stdout.write(self.style.SUCCESS('Catalogue RDC + démo chargés.'))
         self.stdout.write(
             f'Universités={University.objects.filter(is_active=True).count()} '

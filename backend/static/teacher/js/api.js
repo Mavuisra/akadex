@@ -100,7 +100,9 @@ export async function login(email, password) {
   const user = await api('auth/me/');
   if (user.role !== 'teacher' && user.role !== 'admin') {
     clearSession();
-    throw new Error('Cet espace est réservé aux enseignants.');
+    throw new Error(
+      'Accès refusé. L’espace enseignant est réservé aux comptes autorisés par Akadex.'
+    );
   }
   saveSession({ user });
   return user;

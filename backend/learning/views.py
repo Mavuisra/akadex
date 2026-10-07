@@ -1,8 +1,9 @@
 from rest_framework import permissions, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 
 from academic.models import Course
+from accounts.serializers import UserSerializer
 
 from .events import record_learning_event
 from .models import (
@@ -19,6 +20,7 @@ from .serializers import (
     CourseOutlineSerializer,
     LessonProgressSerializer,
 )
+from .student_dashboard import build_student_dashboard
 
 
 class IsTeacherOrReadOnly(permissions.BasePermission):
@@ -236,3 +238,12 @@ class LessonProgressViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return LessonProgress.objects.filter(user=self.request.user)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def student_dashboard(request):
+    """Profil étudiant : progression, taux d’apprentissage, streak, activité."""
+    data = build_student_dashboard(request.user, request)
+    data['user'] = UserSerializer(request.user, context={'request': request}).data
+    return Response(data)

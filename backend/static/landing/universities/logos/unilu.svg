@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 72" role="img" aria-label="UNILU">
+  <circle cx="36" cy="36" r="28" fill="none" stroke="#222" stroke-width="3"/>
+  <path d="M22 44 V28 h6 l8 12 8-12 h6 v16 h-5.5V35.5L36 47 27.5 35.5V44z" fill="#222"/>
+  <text x="78" y="46" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#222" letter-spacing="1">UNILU</text>
+</svg>

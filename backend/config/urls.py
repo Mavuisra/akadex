@@ -9,9 +9,11 @@ from accounts.auth import EmailTokenObtainPairView
 from config.views import (
     admin_app,
     home,
+    learn_app,
     legal_delete_account,
     legal_privacy,
     legal_terms,
+    profile_app,
     storage_health,
     teacher_app,
 )
@@ -21,6 +23,10 @@ urlpatterns = [
     path('legal/privacy/', legal_privacy, name='legal-privacy'),
     path('legal/terms/', legal_terms, name='legal-terms'),
     path('legal/delete-account/', legal_delete_account, name='legal-delete-account'),
+    path('apprendre/', learn_app, name='learn-app'),
+    path('apprendre/<path:path>', learn_app, name='learn-app-path'),
+    path('profil/', profile_app, name='profile-app'),
+    path('profil/<path:path>', profile_app, name='profile-app-path'),
     path('enseignant/', teacher_app, name='teacher-app'),
     path('enseignant/<path:path>', teacher_app, name='teacher-app-path'),
     path('admin/', admin_app, name='akadex-admin'),

@@ -1,0 +1,106 @@
+{% load static %}
+<div class="auth-overlay" id="auth-overlay" data-open="false" hidden>
+  <div class="auth-panel" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <button type="button" class="auth-close" id="auth-close" aria-label="Fermer">×</button>
+    <button type="button" class="auth-back" id="auth-back" hidden>← Retour</button>
+    <h2 id="auth-title">Se connecter ou créer un compte</h2>
+    <p class="auth-sub" id="auth-sub">Apprends à ton rythme avec Akadex.</p>
+    <div class="auth-steps" id="auth-signup-steps" hidden aria-hidden="true">
+      <span data-step="0" class="active"></span>
+      <span data-step="1"></span>
+    </div>
+    <div class="auth-error" id="auth-error" role="alert"></div>
+
+    <form id="auth-form-email" autocomplete="username">
+      <div class="auth-field">
+        <label for="auth-email">E-mail <span class="req">*</span></label>
+        <input type="email" id="auth-email" name="email" required placeholder="nom@email.com" autocomplete="email" inputmode="email" maxlength="254" spellcheck="false">
+      </div>
+      <button type="submit" class="auth-primary" id="auth-continue">Continuer</button>
+    </form>
+
+    <form id="auth-form-password" hidden autocomplete="current-password">
+      <div class="auth-field">
+        <label for="auth-password">Mot de passe <span class="req">*</span></label>
+        <input type="password" id="auth-password" name="password" required minlength="8" maxlength="128" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button type="submit" class="auth-primary" id="auth-login-btn">Se connecter</button>
+    </form>
+
+    <form id="auth-form-signup" hidden autocomplete="on" novalidate>
+      <div data-signup-step="0">
+        <div class="auth-row">
+          <div class="auth-field">
+            <label for="su-last">Nom <span class="req">*</span></label>
+            <input type="text" id="su-last" name="last_name" required maxlength="150" autocomplete="family-name">
+          </div>
+          <div class="auth-field">
+            <label for="su-postnom">Postnom <span class="req">*</span></label>
+            <input type="text" id="su-postnom" name="postnom" required maxlength="150" autocomplete="additional-name">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="su-first">Prénom <span class="req">*</span></label>
+          <input type="text" id="su-first" name="first_name" required maxlength="150" autocomplete="given-name">
+        </div>
+        <div class="auth-row">
+          <div class="auth-field">
+            <label for="su-gender">Sexe <span class="req">*</span></label>
+            <select id="su-gender" name="gender" required>
+              <option value="">Choisir</option>
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+              <option value="O">Autre</option>
+            </select>
+          </div>
+          <div class="auth-field">
+            <label for="su-birth">Naissance <span class="req">*</span></label>
+            <input type="date" id="su-birth" name="birth_date" required>
+          </div>
+        </div>
+        <button type="submit" class="auth-primary" id="su-next-0" data-signup-action="next-0">Continuer</button>
+      </div>
+
+      <div data-signup-step="1" hidden>
+        <div class="auth-field">
+          <label for="su-email">E-mail <span class="req">*</span></label>
+          <input type="email" id="su-email" name="email" required maxlength="254" autocomplete="email" spellcheck="false">
+        </div>
+        <div class="auth-field">
+          <label for="su-phone">Téléphone <span class="req">*</span></label>
+          <input type="tel" id="su-phone" name="phone" required maxlength="32" placeholder="+243…" autocomplete="tel">
+        </div>
+        <div class="auth-field">
+          <label for="su-password">Mot de passe <span class="req">*</span></label>
+          <input type="password" id="su-password" name="password" required minlength="8" maxlength="128" autocomplete="new-password">
+          <div class="auth-strength"><span id="auth-strength-bar"></span></div>
+          <div class="auth-strength-label" id="auth-strength-label"></div>
+        </div>
+        <div class="auth-field">
+          <label for="su-password2">Confirmer <span class="req">*</span></label>
+          <input type="password" id="su-password2" name="password_confirm" required minlength="8" maxlength="128" autocomplete="new-password">
+        </div>
+        <label class="auth-check">
+          <input type="checkbox" id="su-terms" name="terms" required>
+          <span>J’accepte les <a href="/legal/terms/">Conditions</a> et la <a href="/legal/privacy/">Confidentialité</a>.</span>
+        </label>
+        <button type="submit" class="auth-primary" id="su-submit" data-signup-action="submit">Créer mon compte</button>
+      </div>
+    </form>
+
+    <div class="auth-divider" id="auth-or">ou</div>
+    <button type="button" class="auth-social" id="auth-google">
+      <span class="g" aria-hidden="true">G</span>
+      Continuer avec Google
+    </button>
+
+    <p class="auth-switch" id="auth-switch"></p>
+
+    <div class="auth-foot">
+      Connexion sécurisée JWT · mots de passe jamais stockés en clair.
+      {% if play_store_url %}
+      · <a href="{{ play_store_url }}" target="_blank" rel="noopener">Aide</a>
+      {% endif %}
+    </div>
+  </div>
+</div>

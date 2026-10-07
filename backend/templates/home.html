@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0056d2" id="meta-theme-color">
   <title>Akadex — Campus universitaire dans votre poche</title>
-  <meta name="description" content="Akadex : cours, documents, communauté campus et paiement Mobile Money pour les étudiants et enseignants en RDC.">
+  <meta name="description" content="Akadex : cours, communauté campus et paiement Mobile Money pour les étudiants et enseignants en RDC.">
   <link rel="icon" href="{% static 'landing/logo.png' %}" type="image/png">
   <script>
     (function () {
@@ -26,6 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'landing/css/site-chrome.css' %}">
   <style>
     :root,
     html[data-theme="light"] {
@@ -43,6 +44,8 @@
       --line-soft: rgba(0, 0, 0, 0.06);
       --radius: 4px;
       --radius-md: 6px;
+      --radius-lg: 18px;
+      --radius-pill: 999px;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
       --shadow-card: 0 8px 32px rgba(15, 40, 80, 0.08);
       --nav-bg: rgba(255, 255, 255, 0.62);
@@ -136,7 +139,11 @@
       margin-inline: auto;
     }
 
-    /* —— Glass utility —— */
+    .wrap-wide {
+      width: min(1280px, calc(100% - var(--pad-x) * 2));
+      margin-inline: auto;
+    }
+
     .glass {
       background: var(--glass);
       border: 1px solid var(--glass-border);
@@ -145,7 +152,7 @@
       backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
     }
 
-    /* —— Top bar —— */
+    /* —— Header —— */
     .topbar {
       position: sticky;
       top: 0;
@@ -162,8 +169,8 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      min-height: 56px;
-      padding: 0.45rem 0;
+      min-height: 60px;
+      padding: 0.5rem 0;
     }
 
     .brand {
@@ -188,23 +195,198 @@
       color: var(--blue);
     }
 
-    .nav-main {
-      display: flex;
-      align-items: center;
-      gap: 1.1rem;
-      margin-left: 0.5rem;
+    .nav-explore {
+      flex-shrink: 0;
       font-size: 0.95rem;
-      font-weight: 600;
+      font-weight: 700;
       color: var(--ink);
-    }
-
-    .nav-main a {
       min-height: 44px;
       display: inline-flex;
       align-items: center;
+      padding: 0 0.35rem;
+    }
+
+    .nav-explore:hover { color: var(--blue); }
+
+    .nav-main {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem 0.65rem;
+      flex-shrink: 0;
+    }
+
+    .nav-main a {
+      font-size: 0.9rem;
+      font-weight: 650;
+      color: var(--ink-soft);
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 0.3rem;
+      white-space: nowrap;
     }
 
     .nav-main a:hover { color: var(--blue); }
+
+    .nav-menu-btn {
+      display: none;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius);
+      border: 1px solid var(--theme-btn-border);
+      background: var(--theme-btn-bg);
+      color: var(--ink);
+      place-items: center;
+      cursor: pointer;
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
+      backdrop-filter: saturate(var(--saturate)) blur(14px);
+      box-shadow: var(--glass-shine);
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+
+    .nav-menu-btn svg { width: 20px; height: 20px; }
+
+    .nav-drawer {
+      display: none;
+      position: absolute;
+      left: var(--pad-x);
+      right: var(--pad-x);
+      top: calc(100% + 0.35rem);
+      z-index: 45;
+      padding: 0.75rem;
+      border-radius: var(--radius-lg);
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine), var(--shadow-card);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+    }
+
+    .nav-drawer[data-open="true"] { display: block; }
+
+    .nav-drawer a {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius);
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .nav-drawer a:hover {
+      background: var(--glass);
+      color: var(--blue);
+    }
+
+    .nav-drawer-auth {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.55rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .nav-drawer-auth .btn { flex: 1 1 auto; min-width: 7rem; }
+
+    .btn-compact {
+      min-height: 40px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.88rem;
+    }
+
+    .btn.btn-nav-sm {
+      min-height: 32px;
+      padding: 0.22rem 0.65rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      border-radius: 8px;
+    }
+
+    [hidden],
+    .is-auth-hidden {
+      display: none !important;
+    }
+
+    .nav-right .gap-tight { gap: 0.4rem; }
+
+    .btn-icon-label .btn-short { display: none; }
+
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.15rem;
+    }
+
+    .quick-links a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      padding: 0.25rem 0.8rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
+      backdrop-filter: saturate(var(--saturate)) blur(12px);
+    }
+
+    .quick-links a:hover { background: var(--glass-strong); }
+
+    .nav-search {
+      flex: 1 1 220px;
+      max-width: 420px;
+      display: flex;
+      align-items: stretch;
+      min-height: 42px;
+      border-radius: var(--radius-pill);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(16px);
+      backdrop-filter: saturate(var(--saturate)) blur(16px);
+      overflow: hidden;
+      margin-inline: 0.25rem;
+    }
+
+    .nav-search span {
+      display: grid;
+      place-items: center;
+      padding: 0 0.7rem 0 0.95rem;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .nav-search input {
+      flex: 1;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--ink);
+      font: inherit;
+      font-size: 0.95rem;
+      padding: 0.55rem 0.25rem;
+      min-width: 0;
+    }
+
+    .nav-search button {
+      width: 44px;
+      border: 0;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .nav-search button:hover { background: var(--blue-hover); }
 
     .nav-right {
       margin-left: auto;
@@ -215,8 +397,8 @@
     }
 
     .theme-toggle {
-      width: 40px;
-      height: 40px;
+      width: 34px;
+      height: 34px;
       border-radius: var(--radius);
       border: 1px solid var(--theme-btn-border);
       background: var(--theme-btn-bg);
@@ -230,7 +412,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle svg { width: 16px; height: 16px; }
     html[data-theme="light"] .theme-toggle .icon-sun { display: none; }
     html[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
 
@@ -277,223 +459,219 @@
       padding: 0.4rem 0.5rem;
     }
 
-    /* —— Hero —— */
-    .hero {
-      background: var(--band-blue);
-      padding: clamp(1.5rem, 5vw, 3.5rem) 0 clamp(2rem, 6vw, 4rem);
-      -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
-      backdrop-filter: saturate(var(--saturate)) blur(12px);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.05fr 0.95fr;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .eyebrow {
-      font-size: 0.8rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--blue);
-      margin-bottom: 0.75rem;
-    }
-
-    .hero h1 {
-      font-size: clamp(1.85rem, 4.5vw, 2.85rem);
-      line-height: 1.15;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 1rem;
-      max-width: 18ch;
-    }
-
-    .hero .lead {
-      font-size: 1.05rem;
-      color: var(--ink-soft);
-      max-width: 36rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .cta-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: center;
-      margin-bottom: 0.85rem;
-    }
-
-    .hero-note {
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-
-    .hero-note a { color: var(--blue); font-weight: 600; }
-
-    .hero-visual {
-      display: flex;
-      justify-content: center;
-    }
-
-    .hero-visual img {
-      width: min(100%, 440px);
-      filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.12));
-    }
-
-    html[data-theme="dark"] .hero-visual img {
-      filter: drop-shadow(0 14px 24px rgba(0, 0, 0, 0.5)) brightness(0.92);
-    }
-
-    /* —— Trust —— */
-    .trust {
-      padding: 2rem 0;
-      border-bottom: 1px solid var(--line-soft);
-      text-align: center;
-    }
-
-    .trust h2 {
-      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
-      font-weight: 700;
-      margin-bottom: 1.25rem;
-      color: var(--ink);
-    }
-
-    .trust-logos {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.75rem 1.5rem;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 0.92rem;
-    }
-
-    .trust-logos span {
-      padding: 0.35rem 0.65rem;
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius);
-      background: var(--glass);
-      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
-      backdrop-filter: saturate(var(--saturate)) blur(14px);
-      box-shadow: var(--glass-shine);
-    }
-
-    /* —— Features —— */
-    .section { padding: clamp(2.5rem, 6vw, 4rem) 0; }
+    /* —— Sections —— */
+    .section { padding: clamp(2.25rem, 5.5vw, 3.75rem) 0; }
     .section.alt { background: color-mix(in srgb, var(--band) 72%, transparent); }
     .section.blueish { background: var(--band-blue); }
 
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.85rem 1.25rem;
+      margin-bottom: 1.35rem;
+    }
+
     .section-title {
-      font-size: clamp(1.45rem, 3.5vw, 2rem);
+      font-size: clamp(1.4rem, 3.4vw, 1.9rem);
       font-weight: 800;
       letter-spacing: -0.02em;
-      margin-bottom: 1.5rem;
-      max-width: 40rem;
+      max-width: 36rem;
     }
 
     .section-title.center {
       text-align: center;
       margin-inline: auto;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
+    .section-sub {
+      color: var(--muted);
+      font-size: 0.98rem;
+      margin-top: 0.35rem;
+      max-width: 36rem;
     }
 
-    .feature h3 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin: 0.75rem 0 0.4rem;
+    /* —— Hero carousel —— */
+    .hero-carousel {
+      padding: clamp(1.15rem, 3.5vw, 1.75rem) 0 clamp(1.5rem, 4vw, 2.25rem);
     }
 
-    .feature p { color: var(--ink-soft); font-size: 0.98rem; }
-
-    .feature-icon {
-      width: 40px;
-      height: 40px;
-      color: var(--ink);
+    .carousel-track-wrap {
+      overflow: hidden;
+      position: relative;
     }
 
-    /* —— Social proof —— */
-    .proof-grid {
+    .carousel-track {
+      display: flex;
+      gap: 1rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      padding-bottom: 0.35rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .carousel-track::-webkit-scrollbar { display: none; }
+
+    .hero-slide {
+      flex: 0 0 min(92%, 920px);
+      scroll-snap-align: start;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
       display: grid;
       grid-template-columns: 1.1fr 0.9fr;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .proof-copy h2 {
-      font-size: clamp(1.35rem, 3.2vw, 1.85rem);
-      font-weight: 800;
-      line-height: 1.25;
-      letter-spacing: -0.02em;
-      margin-bottom: 1.25rem;
-    }
-
-    .proof-visual {
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      border: 1px solid var(--glass-border);
+      min-height: clamp(280px, 38vw, 360px);
       background: var(--glass);
-      aspect-ratio: 4 / 3;
-      position: relative;
+      border: 1px solid var(--glass-border);
       box-shadow: var(--glass-shine), var(--shadow-card);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
     }
 
-    .proof-visual img {
+    .hero-slide-copy {
+      padding: clamp(1.25rem, 3.5vw, 2.25rem);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.85rem;
+      min-width: 0;
+    }
+
+    .hero-slide-copy h2 {
+      font-size: clamp(1.45rem, 3.2vw, 2.1rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      max-width: 16ch;
+    }
+
+    .hero-slide-copy p {
+      color: var(--ink-soft);
+      font-size: 1.02rem;
+      max-width: 32ch;
+    }
+
+    .hero-slide-visual {
+      position: relative;
+      min-height: 200px;
+      overflow: hidden;
+      background: color-mix(in srgb, var(--band) 70%, transparent);
+    }
+
+    .hero-slide-visual img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center top;
+      object-position: center;
+      display: block;
     }
 
-    html[data-theme="dark"] .proof-visual img {
-      filter: brightness(0.88) contrast(1.05);
+    html[data-theme="dark"] .hero-slide-visual img {
+      filter: brightness(0.88);
     }
 
-    /* —— Catalog —— */
-    .catalog-panel {
-      background: var(--glass);
+    .carousel-controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    .carousel-dots {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    .carousel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 0;
+      padding: 0;
+      background: color-mix(in srgb, var(--muted) 55%, transparent);
+      cursor: pointer;
+    }
+
+    .carousel-dot[aria-current="true"] {
+      background: var(--blue);
+      width: 22px;
+      border-radius: var(--radius-pill);
+    }
+
+    .carousel-nav {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      padding: clamp(1.1rem, 3vw, 2rem);
-      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
-      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
-      box-shadow: var(--glass-shine), var(--shadow-card);
+      background: var(--glass);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: var(--glass-shine);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(14px);
+      backdrop-filter: saturate(var(--saturate)) blur(14px);
     }
 
-    .catalog-head {
+    .carousel-nav:hover { background: var(--glass-strong); }
+
+    /* —— Tabs + course cards —— */
+    .tabs {
       display: flex;
       flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 1rem;
-      align-items: flex-start;
-      margin-bottom: 1.25rem;
+      gap: 0.4rem;
     }
 
-    .catalog-head h2 {
-      font-size: clamp(1.35rem, 3vw, 1.75rem);
-      font-weight: 800;
-      max-width: 16ch;
-      letter-spacing: -0.02em;
+    .tab {
+      min-height: 38px;
+      padding: 0.35rem 0.95rem;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: var(--glass-shine);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
+      backdrop-filter: saturate(var(--saturate)) blur(12px);
     }
 
-    .course-grid {
+    .tab[aria-selected="true"] {
+      background: var(--blue);
+      color: #fff;
+      border-color: transparent;
+    }
+
+    .course-scroller {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(220px, 1fr);
       gap: 1rem;
-      margin-bottom: 1.25rem;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 0.35rem;
+      scrollbar-width: thin;
+    }
+
+    @media (min-width: 900px) {
+      .course-scroller {
+        grid-auto-flow: unset;
+        grid-template-columns: repeat(4, 1fr);
+        overflow: visible;
+      }
     }
 
     .course-card {
+      scroll-snap-align: start;
       background: var(--glass-strong);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -501,10 +679,13 @@
       -webkit-backdrop-filter: saturate(var(--saturate)) blur(16px);
       backdrop-filter: saturate(var(--saturate)) blur(16px);
       box-shadow: var(--glass-shine), var(--shadow);
+      transition: transform 0.15s ease;
     }
 
+    .course-card:hover { transform: translateY(-2px); }
+
     .course-card .thumb {
-      height: 140px;
+      height: 130px;
       position: relative;
       overflow: hidden;
       background: #1a1a1a;
@@ -521,7 +702,7 @@
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(to top, rgba(0, 0, 0, 0.45), transparent 55%);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent 55%);
       pointer-events: none;
     }
 
@@ -529,106 +710,160 @@
       filter: brightness(0.82) contrast(1.05);
     }
 
-    .course-card .body { padding: 0.9rem 1rem 1.1rem; }
+    .course-card .body { padding: 0.85rem 0.95rem 1.05rem; }
 
-    .course-card .meta {
+    .course-card .partner {
       font-size: 0.78rem;
       color: var(--muted);
-      font-weight: 600;
-      margin-bottom: 0.35rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
     }
 
     .course-card h3 {
-      font-size: 1rem;
+      font-size: 0.98rem;
       font-weight: 700;
       margin-bottom: 0.35rem;
       line-height: 1.3;
     }
 
-    .course-card .level {
-      font-size: 0.85rem;
+    .course-card .meta {
+      font-size: 0.82rem;
       color: var(--muted);
     }
 
-    .course-card .badge {
-      display: inline-block;
-      margin-top: 0.7rem;
-      font-size: 0.75rem;
+    .catalog-actions {
+      text-align: center;
+      margin-top: 1.35rem;
+    }
+
+    /* —— Universities —— */
+    .trust {
+      padding: 2rem 0;
+      border-block: 1px solid var(--line-soft);
+      text-align: center;
+    }
+
+    .trust h2 {
+      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
       font-weight: 700;
-      color: var(--blue);
-      background: var(--chip-bg);
-      padding: 0.2rem 0.45rem;
-      border-radius: var(--radius);
-    }
-
-    .catalog-actions { text-align: center; }
-
-    /* —— Search / domains —— */
-    .search-block { text-align: center; max-width: 760px; margin-inline: auto; }
-
-    .search-block h2 {
-      font-size: clamp(1.4rem, 3.5vw, 1.9rem);
-      font-weight: 800;
       margin-bottom: 1.25rem;
-      letter-spacing: -0.02em;
     }
 
-    .search-box {
-      display: flex;
-      align-items: stretch;
-      border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
-      background: var(--glass-strong);
+    .trust-marquee {
       overflow: hidden;
-      margin-bottom: 1.15rem;
+      mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+    }
+
+    .trust-track {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      width: max-content;
+      will-change: transform;
+    }
+
+    .trust-logo {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 160px;
+      height: 72px;
+      padding: 0 1.25rem;
+      box-sizing: border-box;
+    }
+
+    .trust-logo img {
+      max-width: 130px;
+      max-height: 52px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      filter: grayscale(1) contrast(1.08);
+      opacity: 0.68;
+      transition: opacity 0.2s ease, filter 0.2s ease;
+    }
+
+    .trust-logo:hover img {
+      opacity: 1;
+      filter: grayscale(0.35) contrast(1.05);
+    }
+
+    html[data-theme="dark"] .trust-logo img {
+      opacity: 0.85;
+      filter: grayscale(1) brightness(1.35) contrast(1.05);
+    }
+
+    .domain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.85rem;
+    }
+
+    .domain-card {
+      position: relative;
+      display: block;
+      overflow: hidden;
+      min-height: 148px;
+      border-radius: var(--radius-lg);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
       box-shadow: var(--glass-shine), var(--shadow);
-      -webkit-backdrop-filter: saturate(var(--saturate)) blur(18px);
-      backdrop-filter: saturate(var(--saturate)) blur(18px);
-    }
-
-    .search-box span {
-      display: grid;
-      place-items: center;
-      padding: 0 0.85rem;
-      color: var(--muted);
-    }
-
-    .search-box input {
-      flex: 1;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      color: var(--ink);
-      font: inherit;
-      font-size: 1rem;
-      padding: 0.85rem 0.25rem;
-      min-width: 0;
-    }
-
-    .search-box button {
-      width: 52px;
-      border: 0;
-      background: var(--blue);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(16px);
+      backdrop-filter: saturate(var(--saturate)) blur(16px);
+      font-weight: 700;
       color: #fff;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
+    }
+
+    .domain-card img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.55);
+      transition: transform 0.25s ease, filter 0.2s ease;
+    }
+
+    .domain-card:hover img {
+      transform: scale(1.05);
+      filter: brightness(0.45);
+    }
+
+    .domain-card .domain-label {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 0.75rem;
+      height: 100%;
+      min-height: 148px;
+      padding: 1.05rem 1.15rem;
+      text-shadow: 0 1px 10px rgba(0, 0, 0, 0.45);
+    }
+
+    .domain-card svg {
+      width: 18px;
+      height: 18px;
+      color: rgba(255, 255, 255, 0.9);
+      flex-shrink: 0;
     }
 
     .chips {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: center;
+      gap: 0.55rem;
     }
 
     .chip {
       display: inline-flex;
       align-items: center;
-      min-height: 36px;
-      padding: 0.25rem 0.75rem;
-      border-radius: 999px;
-      font-size: 0.88rem;
+      min-height: 38px;
+      padding: 0.3rem 0.9rem;
+      border-radius: var(--radius-pill);
+      font-size: 0.9rem;
       font-weight: 700;
       background: var(--glass);
       color: var(--chip-fg);
@@ -636,12 +871,108 @@
       -webkit-backdrop-filter: saturate(var(--saturate)) blur(12px);
       backdrop-filter: saturate(var(--saturate)) blur(12px);
       box-shadow: var(--glass-shine);
+      transition: background 0.15s ease;
     }
 
-    .chip.pop {
+    .chip:hover { background: var(--glass-strong); }
+
+    /* —— Intentions —— */
+    .intent-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.85rem;
+    }
+
+    .intent-card {
+      padding: 1.2rem 1.15rem;
+      border-radius: var(--radius-lg);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine), var(--shadow);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(16px);
+      backdrop-filter: saturate(var(--saturate)) blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      min-height: 140px;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .intent-card:hover {
+      transform: translateY(-2px);
       background: var(--glass-strong);
-      color: var(--ink);
-      border-color: var(--line);
+    }
+
+    .intent-card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+    }
+
+    .intent-card p {
+      color: var(--ink-soft);
+      font-size: 0.92rem;
+      flex: 1;
+    }
+
+    .intent-card .link {
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    /* —— Ready CTA —— */
+    .ready-panel {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 1.5rem;
+      align-items: center;
+      padding: clamp(1.25rem, 3.5vw, 2rem);
+      border-radius: var(--radius-lg);
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine), var(--shadow-card);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
+      overflow: hidden;
+    }
+
+    .ready-panel h2 {
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.55rem;
+      max-width: 22ch;
+    }
+
+    .ready-panel p {
+      color: var(--ink-soft);
+      margin-bottom: 1.1rem;
+      max-width: 40ch;
+    }
+
+    .ready-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+
+    .ready-visual {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      aspect-ratio: 4 / 3;
+      background: var(--glass-strong);
+    }
+
+    .ready-visual img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    html[data-theme="dark"] .ready-visual img {
+      filter: brightness(0.9);
     }
 
     /* —— Testimonials —— */
@@ -654,7 +985,7 @@
     .quote {
       background: var(--glass);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       padding: 1.15rem;
       box-shadow: var(--glass-shine), var(--shadow);
       -webkit-backdrop-filter: saturate(var(--saturate)) blur(18px);
@@ -688,17 +1019,14 @@
     .faq-box {
       background: var(--glass);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       box-shadow: var(--glass-shine), var(--shadow);
       overflow: hidden;
       -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
       backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
     }
 
-    details {
-      border-bottom: 1px solid var(--line-soft);
-    }
-
+    details { border-bottom: 1px solid var(--line-soft); }
     details:last-of-type { border-bottom: 0; }
 
     summary {
@@ -730,7 +1058,7 @@
       color: var(--ink-soft);
     }
 
-    /* —— Download CTA —— */
+    /* —— Download —— */
     .download-band {
       display: flex;
       flex-wrap: wrap;
@@ -739,7 +1067,7 @@
       gap: 1.25rem;
       background: var(--glass);
       border: 1px solid var(--glass-border);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       padding: clamp(1.15rem, 3vw, 1.5rem);
       overflow: hidden;
       -webkit-backdrop-filter: saturate(var(--saturate)) blur(var(--blur));
@@ -757,7 +1085,7 @@
     }
 
     .download-band h2 {
-      font-size: clamp(1.25rem, 3vw, 1.6rem);
+      font-size: clamp(1.25rem, 3vw, 1.55rem);
       font-weight: 800;
       margin-bottom: 0.15rem;
     }
@@ -768,20 +1096,17 @@
       flex: 0 0 auto;
       width: clamp(112px, 28vw, 168px);
       height: clamp(112px, 28vw, 168px);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-lg);
       overflow: hidden;
       border: 1px solid var(--glass-border);
       background: var(--glass-strong);
       box-shadow: var(--glass-shine);
-      -webkit-backdrop-filter: blur(8px);
-      backdrop-filter: blur(8px);
     }
 
     .download-band-photo img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
     }
 
     html[data-theme="dark"] .download-band-photo img {
@@ -834,7 +1159,7 @@
 
     .footer-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 1.5rem;
       margin-bottom: 2rem;
     }
@@ -866,37 +1191,58 @@
     }
 
     /* —— Responsive —— */
-    @media (max-width: 960px) {
+    @media (max-width: 1100px) {
+      .topbar .wrap { position: relative; }
       .nav-main { display: none; }
-      .hero-grid,
-      .proof-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-      .hero-visual { order: 2; }
-      .hero-copy { order: 1; }
-      .hero-visual img { width: min(76vw, 300px); margin-inline: auto; }
-      .hero h1 { max-width: none; text-align: center; margin-inline: auto; }
-      .hero .lead, .hero-note { text-align: center; margin-inline: auto; }
-      .cta-row { justify-content: center; }
-      .features-grid,
-      .course-grid,
+      .nav-menu-btn { display: grid; }
+    }
+
+    @media (max-width: 960px) {
+      .nav-explore { display: none; }
+      .nav-right .btn-auth-desktop { display: none; }
+      .hero-slide { grid-template-columns: 1fr; flex-basis: min(88%, 720px); }
+      .hero-slide-visual { min-height: 160px; max-height: 200px; order: -1; }
+      .hero-slide-visual img { width: 100%; height: 100%; }
+      .intent-grid { grid-template-columns: 1fr 1fr; }
+      .domain-grid { grid-template-columns: 1fr 1fr; }
       .quotes,
-      .footer-grid { grid-template-columns: 1fr 1fr; }
-      .section-title { text-align: center; margin-inline: auto; }
-      .proof-copy { text-align: center; }
-      .proof-copy .btn { margin-inline: auto; }
+      .ready-panel { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: repeat(3, 1fr); }
+      .section-title { text-align: left; }
+    }
+
+    @media (max-width: 720px) {
+      .nav-search { max-width: none; }
+      .nav-right .btn span.hide-sm { display: none; }
+      .btn-icon-label .btn-full { display: none; }
+      .btn-icon-label .btn-short { display: inline; }
     }
 
     @media (max-width: 640px) {
       :root { --blur: 26px; --saturate: 190%; --pad-x: 0.95rem; }
 
-      .features-grid,
-      .course-grid,
+      .intent-grid,
+      .domain-grid,
       .quotes,
-      .footer-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
 
-      .cta-row, .store-row { width: 100%; max-width: 22rem; margin-inline: auto; }
-      .cta-row .btn, .store-btn { width: 100%; justify-content: center; }
-      .catalog-head { flex-direction: column; align-items: stretch; text-align: center; }
-      .catalog-head h2 { max-width: none; }
+      .topbar-inner { gap: 0.4rem; min-height: 56px; flex-wrap: wrap; }
+      .brand { order: 1; }
+      .nav-menu-btn { order: 2; }
+      .nav-right { order: 3; margin-left: auto; }
+      .nav-search {
+        order: 4;
+        flex: 1 1 100%;
+        max-width: none;
+        margin-inline: 0;
+      }
+      .nav-drawer { order: 5; }
+
+      .nav-right .btn { padding: 0.45rem 0.7rem; font-size: 0.85rem; min-height: 40px; }
+      .brand span { font-size: 1.15rem; }
+      .section { padding: 2rem 0; }
+      .course-card .thumb { height: 140px; }
+      .nav-search input { font-size: 16px; }
       .download-band {
         flex-direction: column;
         text-align: center;
@@ -909,36 +1255,34 @@
         height: 120px;
         order: -1;
       }
-      .topbar-inner { gap: 0.4rem; min-height: 52px; }
-      .nav-right .btn { padding: 0.45rem 0.75rem; font-size: 0.88rem; min-height: 40px; }
-      .brand span { font-size: 1.15rem; }
-      .hero { padding: 1.25rem 0 2rem; }
-      .section { padding: 2rem 0; }
-      .course-card .thumb { height: 150px; }
-      .search-box input { font-size: 16px; } /* évite zoom iOS */
-      .chips { gap: 0.4rem; }
-      .chip { font-size: 0.82rem; }
+      .ready-actions { justify-content: flex-start; }
+      .store-btn { width: 100%; justify-content: center; max-width: 22rem; }
     }
 
     @media (max-width: 430px) {
       :root { --pad-x: 0.85rem; --blur: 30px; }
-
-      .hero h1 { font-size: clamp(1.55rem, 8.2vw, 1.95rem); }
-      .hero .lead { font-size: 0.95rem; }
-      .hero-visual img { width: min(70vw, 250px); }
-      .section-title { font-size: 1.35rem; }
-      .download-band-photo { width: 108px; height: 108px; }
+      .hero-slide-copy h2 { font-size: 1.4rem; max-width: none; }
+      .section-title { font-size: 1.3rem; }
       .theme-toggle { width: 38px; height: 38px; }
+    }
+
+    @media (max-width: 480px) {
+      .footer-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 360px) {
       :root { --pad-x: 0.75rem; }
-      .nav-right .btn { display: none; }
-      .hero-visual img { width: min(68vw, 210px); }
       .brand span { font-size: 1.05rem; }
+      .nav-right .btn-nav-sm,
+      .nav-right .btn-compact {
+        display: inline-flex;
+        min-height: 32px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.76rem;
+      }
+      .nav-right .gap-tight { gap: 0.3rem; }
     }
 
-    /* Ultra glass iPhone / Safari */
     @supports (-webkit-touch-callout: none) {
       :root {
         --blur: 32px;
@@ -956,227 +1300,577 @@
         -webkit-backdrop-filter: saturate(220%) blur(40px);
         backdrop-filter: saturate(220%) blur(40px);
       }
-
-      .catalog-panel,
-      .faq-box,
-      .download-band,
-      .quote,
-      .course-card,
-      .search-box {
-        -webkit-backdrop-filter: saturate(200%) blur(var(--blur));
-        backdrop-filter: saturate(200%) blur(var(--blur));
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
       * { scroll-behavior: auto !important; transition: none !important; }
+      .trust-track { transform: none !important; }
+    }
+
+    /* —— Auth modal (structure Coursera) —— */
+    body.auth-open { overflow: hidden; }
+
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: none;
+      background: rgba(20, 24, 36, 0.48);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+    }
+
+    .auth-overlay[data-open="true"] {
+      display: grid;
+      justify-content: end;
+      align-items: stretch;
+    }
+
+    .auth-panel {
+      width: min(420px, 100%);
+      height: 100%;
+      max-height: 100dvh;
+      overflow: auto;
+      padding: 1.35rem 1.4rem 1.6rem;
+      background: var(--glass-strong);
+      border-left: 1px solid var(--glass-border);
+      box-shadow: var(--glass-shine), -12px 0 48px rgba(15, 40, 80, 0.18);
+      -webkit-backdrop-filter: saturate(var(--saturate)) blur(calc(var(--blur) + 8px));
+      backdrop-filter: saturate(var(--saturate)) blur(calc(var(--blur) + 8px));
+      display: flex;
+      flex-direction: column;
+      animation: auth-slide .22s ease;
+    }
+
+    .auth-overlay.is-signup .auth-panel {
+      width: min(520px, 100%);
+    }
+
+    .auth-steps {
+      display: flex;
+      gap: 0.45rem;
+      margin: 0 0 1rem;
+    }
+
+    .auth-steps span {
+      flex: 1;
+      height: 4px;
+      border-radius: 99px;
+      background: var(--line);
+    }
+
+    .auth-steps span.active,
+    .auth-steps span.done {
+      background: var(--blue);
+    }
+
+    .auth-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .auth-field select {
+      width: 100%;
+      height: 48px;
+      padding: 0 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.55);
+      color: var(--ink);
+      outline: none;
+    }
+
+    html[data-theme="dark"] .auth-field select {
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .auth-field select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26, 71, 184, 0.18);
+    }
+
+    .auth-check {
+      display: flex;
+      gap: 0.55rem;
+      align-items: flex-start;
+      font-size: 0.86rem;
+      color: var(--ink-soft);
+      margin: 0.35rem 0 1rem;
+      font-weight: 600;
+    }
+
+    .auth-check input {
+      margin-top: 0.2rem;
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+
+    .auth-strength {
+      height: 4px;
+      border-radius: 99px;
+      background: var(--line);
+      margin-top: 0.45rem;
+      overflow: hidden;
+    }
+
+    .auth-strength > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: #c62828;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    .auth-strength > span[data-score="2"] { background: #e09b2d; }
+    .auth-strength > span[data-score="3"],
+    .auth-strength > span[data-score="4"] { background: #1b7a40; }
+
+    .auth-strength-label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+      margin-top: 0.25rem;
+      min-height: 1em;
+    }
+
+    @media (max-width: 520px) {
+      .auth-row { grid-template-columns: 1fr; }
+    }
+
+    @keyframes auth-slide {
+      from { transform: translateX(18px); opacity: 0.6; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    .auth-close {
+      align-self: flex-end;
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      font-size: 1.45rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .auth-close:hover { background: var(--glass); }
+
+    .auth-panel h2 {
+      font-size: clamp(1.45rem, 2.4vw, 1.75rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin: 0.35rem 0 0.55rem;
+      color: var(--ink);
+    }
+
+    .auth-sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.45;
+      margin-bottom: 1.35rem;
+    }
+
+    .auth-field { margin-bottom: 1rem; }
+
+    .auth-field label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--ink);
+    }
+
+    .auth-field label .req { color: #c62828; }
+
+    .auth-field input {
+      width: 100%;
+      height: 48px;
+      padding: 0 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.55);
+      color: var(--ink);
+      outline: none;
+    }
+
+    html[data-theme="dark"] .auth-field input {
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .auth-field input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26, 71, 184, 0.18);
+    }
+
+    .auth-error {
+      display: none;
+      margin-bottom: 0.85rem;
+      padding: 0.7rem 0.85rem;
+      border-radius: 8px;
+      background: rgba(198, 40, 40, 0.1);
+      border: 1px solid rgba(198, 40, 40, 0.28);
+      color: #c62828;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .auth-error[data-show="true"] { display: block; }
+
+    .auth-primary {
+      width: 100%;
+      height: 48px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .auth-primary:hover { background: var(--blue-hover); }
+    .auth-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 1.15rem 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    .auth-social {
+      width: 100%;
+      height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--glass);
+      color: var(--ink);
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 0.65rem;
+    }
+
+    .auth-social:hover { background: var(--glass-strong); }
+
+    .auth-social .g {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #ea4335, #fbbc05, #34a853, #4285f4, #ea4335);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .auth-foot {
+      margin-top: auto;
+      padding-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .auth-foot a { color: var(--blue); font-weight: 700; }
+
+    .auth-switch {
+      margin-top: 0.85rem;
+      font-size: 0.9rem;
+      color: var(--ink-soft);
+    }
+
+    .auth-switch button {
+      border: 0;
+      background: none;
+      color: var(--blue);
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0;
+      font: inherit;
+    }
+
+    .auth-back {
+      border: 0;
+      background: none;
+      color: var(--blue);
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 0.75rem;
+      padding: 0;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 720px) {
+      .auth-overlay[data-open="true"] {
+        justify-content: stretch;
+        align-items: end;
+      }
+      .auth-panel {
+        width: 100%;
+        height: auto;
+        max-height: 92dvh;
+        border-left: 0;
+        border-radius: 16px 16px 0 0;
+        animation: auth-up .22s ease;
+      }
+      @keyframes auth-up {
+        from { transform: translateY(24px); opacity: 0.7; }
+        to { transform: translateY(0); opacity: 1; }
+      }
     }
   </style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="wrap topbar-inner">
-      <a class="brand" href="/">
-        <img src="{% static 'landing/logo.png' %}" width="34" height="34" alt="">
-        <span>Akadex</span>
-      </a>
-      <nav class="nav-main" aria-label="Principal">
-        <a href="#domaines">Explorer</a>
-        <a href="#fonctionnalites">Fonctionnalités</a>
-        <a href="#faq">FAQ</a>
-      </nav>
-      <div class="nav-right">
-        <a class="btn btn-outline" href="#domaines">Explorer</a>
-        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Basculer le thème" title="Thème">
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke-linecap="round"/>
-          </svg>
+  {% include "partials/site_nav.html" with nav_active="home" %}
+
+  <!-- 1. Hero carousel -->
+  <section class="hero-carousel" aria-label="À la une">
+    <div class="wrap-wide">
+      <div class="carousel-track-wrap">
+        <div class="carousel-track" id="hero-track" tabindex="0">
+          <article class="hero-slide">
+            <div class="hero-slide-copy">
+              <h2>L’IA au service du campus</h2>
+              <p>Résume, révise et structure tes notes — sans quitter Akadex.</p>
+              <div>
+                <a class="btn btn-primary" href="/apprendre/#/?q=IA">Explorer l’IA</a>
+              </div>
+            </div>
+            <div class="hero-slide-visual">
+              <img src="{% static 'landing/slides/ia.jpg' %}" width="640" height="480" alt="Étudiants africains collaborant autour d’un ordinateur" fetchpriority="high">
+            </div>
+          </article>
+          <article class="hero-slide">
+            <div class="hero-slide-copy">
+              <h2>Communauté campus</h2>
+              <p>Étudiants, enseignants et alumni — conseils, stages, TFC. Paiement Mobile Money inclus.</p>
+              <div>
+                <a class="btn btn-primary" href="/apprendre/">Explorer</a>
+              </div>
+            </div>
+            <div class="hero-slide-visual">
+              <img src="{% static 'landing/slides/community.jpg' %}" width="640" height="480" alt="Jeunes africains réunis en communauté" loading="lazy">
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="carousel-controls">
+        <button type="button" class="carousel-nav" id="hero-prev" aria-label="Slide précédent">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="carousel-dots" id="hero-dots" role="tablist" aria-label="Slides"></div>
+        <button type="button" class="carousel-nav" id="hero-next" aria-label="Slide suivant">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
     </div>
-  </header>
+  </section>
 
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">Akadex Campus</p>
-        <h1>Atteignez vos objectifs universitaires avec Akadex</h1>
-        <p class="lead">
-          Cours, documents, communauté et Mobile Money — le campus dans votre poche,
-          conçu pour les étudiants et enseignants en République démocratique du Congo.
-        </p>
-        <div class="cta-row">
-          <a class="btn btn-primary" href="#domaines">Découvrir les domaines</a>
-          <a class="btn btn-outline" href="#fonctionnalites">En savoir plus</a>
+  <!-- 2. Nouveautés & populaires -->
+  <section class="section" id="nouveautes">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Nouveautés &amp; populaires</h2>
+          <p class="section-sub">Cours et parcours pour avancer sur le campus.</p>
         </div>
-        <p class="hero-note">Android disponible · iOS bientôt — téléchargement en bas de page</p>
+        <div class="tabs" role="tablist" aria-label="Filtres cours">
+          <button type="button" class="tab" role="tab" aria-selected="true" data-tab="populaires">Populaires</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="nouveautes">Nouveautés</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="tendances">Tendances</button>
+        </div>
       </div>
-      <div class="hero-visual">
-        <img src="{% static 'landing/presentation.png' %}" width="440" height="440" alt="Application mobile Akadex" fetchpriority="high">
+      <div class="course-scroller" id="course-grid" aria-live="polite">
+        <!-- Rempli par JS ou fallback statique -->
+        <a class="course-card" href="/apprendre/#/?q=droit">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&amp;fit=crop&amp;w=800&amp;q=80" alt="" width="800" height="500" loading="lazy">
+          </div>
+          <div class="body">
+            <p class="partner">UNIKIN · Faculté de Droit</p>
+            <h3>Introduction au droit OHADA</h3>
+            <p class="meta">Débutant · Cours</p>
+          </div>
+        </a>
+        <a class="course-card" href="/apprendre/#/?q=python">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&amp;fit=crop&amp;w=800&amp;q=80" alt="" width="800" height="500" loading="lazy">
+          </div>
+          <div class="body">
+            <p class="partner">ISTA · Informatique</p>
+            <h3>Python pour débutants</h3>
+            <p class="meta">Débutant · Parcours</p>
+          </div>
+        </a>
+        <a class="course-card" href="/apprendre/#/?q=comptabilit%C3%A9">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&amp;fit=crop&amp;w=800&amp;q=80" alt="" width="800" height="500" loading="lazy">
+          </div>
+          <div class="body">
+            <p class="partner">ISC · Gestion</p>
+            <h3>Comptabilité générale</h3>
+            <p class="meta">Intermédiaire · Cours</p>
+          </div>
+        </a>
+        <a class="course-card" href="/apprendre/#/?q=m%C3%A9decine">
+          <div class="thumb">
+            <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&amp;fit=crop&amp;w=800&amp;q=80" alt="" width="800" height="500" loading="lazy">
+          </div>
+          <div class="body">
+            <p class="partner">UNILU · Médecine</p>
+            <h3>Anatomie générale</h3>
+            <p class="meta">Débutant · Cours</p>
+          </div>
+        </a>
+      </div>
+      <div class="catalog-actions">
+        <a class="btn btn-outline" href="/apprendre/">Voir tous les cours</a>
       </div>
     </div>
   </section>
 
-  <section class="trust">
+  <!-- 3. Universités — logos gris, défilement horizontal 1s -->
+  <section class="trust" id="universites">
     <div class="wrap">
-      <h2>Apprendre auprès d’universités et filières congolaises</h2>
-      <div class="trust-logos" aria-label="Universités">
-        <span>UNIKIN</span>
-        <span>UNILU</span>
-        <span>UCC</span>
-        <span>ISTA</span>
-        <span>UPC</span>
-        <span>ISC</span>
+      <h2>Apprendre auprès d’universités congolaises</h2>
+      <div class="trust-marquee" aria-label="Logos des universités partenaires">
+        <div class="trust-track" id="uni-logo-track">
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/unikin.png' %}" width="160" height="48" alt="UNIKIN" loading="lazy"></div>
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/unilu.png' %}" width="160" height="48" alt="UNILU" loading="lazy"></div>
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/ucc.png' %}" width="160" height="48" alt="UCC" loading="lazy"></div>
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/ista.svg' %}" width="160" height="48" alt="ISTA" loading="lazy"></div>
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/upc.jpg' %}" width="160" height="48" alt="UPC" loading="lazy"></div>
+          <div class="trust-logo"><img src="{% static 'landing/universities/logos/isc.svg' %}" width="160" height="48" alt="ISC" loading="lazy"></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <section class="section" id="fonctionnalites">
-    <div class="wrap">
-      <h2 class="section-title">Investissez dans votre parcours</h2>
-      <div class="features-grid">
-        <article class="feature">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-            <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
-          </svg>
-          <h3>Explorer de nouvelles compétences</h3>
-          <p>Accédez à des cours vidéo, PDF et parcours structurés par domaine — où que vous soyez.</p>
-        </article>
-        <article class="feature">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-            <rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 8h8M8 12h8M8 16h5"/>
-          </svg>
-          <h3>Obtenir des supports utiles</h3>
-          <p>Résumés, examens et documents partagés par la communauté, validés pour le campus.</p>
-        </article>
-        <article class="feature">
-          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
-            <path d="M12 3l2.2 4.5 5 .7-3.6 3.5.9 5L12 14.8 7.5 16.7l.9-5L4.8 8.2l5-.7L12 3z"/>
-          </svg>
-          <h3>Apprendre des meilleurs</h3>
-          <p>Échangez avec enseignants, alumni et étudiants — conseils, stages, TFC et carrière.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt">
-    <div class="wrap proof-grid">
-      <div class="proof-copy">
-        <h2>
-          Rejoignez les étudiants qui avancent grâce à Akadex :
-          meilleurs supports, plus de clarté en cours et un campus toujours à portée de main.
-        </h2>
-        <a class="btn btn-outline" href="#domaines">Voir les domaines</a>
-      </div>
-      <div class="proof-visual">
-        <img
-          src="{% static 'landing/together.png' %}"
-          width="1200"
-          height="800"
-          alt="Étudiants qui avancent avec Akadex"
-          loading="lazy"
-        >
-      </div>
-    </div>
-  </section>
-
+  <!-- 4. Catégories -->
   <section class="section" id="domaines">
     <div class="wrap">
-      <div class="catalog-panel">
-        <div class="catalog-head">
-          <h2>Des compétences universitaires qui fonctionnent</h2>
-        </div>
-        <div class="course-grid">
-          <article class="course-card">
-            <div class="thumb">
-              <img
-                src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
-                alt="Droit — balance de la justice"
-                width="800"
-                height="500"
-                loading="lazy"
-              >
-            </div>
-            <div class="body">
-              <p class="meta">Faculté · Campus</p>
-              <h3>Introduction au droit OHADA</h3>
-              <p class="level">Débutant · Cours</p>
-              <span class="badge">Populaire</span>
-            </div>
-          </article>
-          <article class="course-card">
-            <div class="thumb">
-              <img
-                src="https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
-                alt="Informatique — code sur écran"
-                width="800"
-                height="500"
-                loading="lazy"
-              >
-            </div>
-            <div class="body">
-              <p class="meta">Sciences · Numérique</p>
-              <h3>Python pour débutants</h3>
-              <p class="level">Débutant · Parcours</p>
-            </div>
-          </article>
-          <article class="course-card">
-            <div class="thumb">
-              <img
-                src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&amp;fit=crop&amp;w=800&amp;q=80"
-                alt="Économie — comptabilité et calculs"
-                width="800"
-                height="500"
-                loading="lazy"
-              >
-            </div>
-            <div class="body">
-              <p class="meta">Gestion · Finance</p>
-              <h3>Comptabilité générale</h3>
-              <p class="level">Intermédiaire · Cours</p>
-              <span class="badge">Recommandé</span>
-            </div>
-          </article>
-        </div>
-        <div class="catalog-actions">
-          <a class="btn btn-outline" href="#explorer">Afficher plus de domaines</a>
-        </div>
+      <h2 class="section-title">Explorer les catégories</h2>
+      <p class="section-sub" style="margin-bottom: 1.25rem;">Domaines universitaires les plus demandés.</p>
+      <div class="domain-grid">
+        <a class="domain-card" href="/apprendre/#/?domain=droit">
+          <img src="{% static 'landing/domains/droit.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Droit <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+        <a class="domain-card" href="/apprendre/#/?domain=informatique">
+          <img src="{% static 'landing/domains/informatique.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Informatique <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+        <a class="domain-card" href="/apprendre/#/?domain=economie">
+          <img src="{% static 'landing/domains/economie.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Économie <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+        <a class="domain-card" href="/apprendre/#/?domain=medecine">
+          <img src="{% static 'landing/domains/medecine.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Médecine <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+        <a class="domain-card" href="/apprendre/#/?domain=gestion">
+          <img src="{% static 'landing/domains/gestion.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Gestion <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
+        <a class="domain-card" href="/apprendre/#/?domain=langues">
+          <img src="{% static 'landing/domains/langues.jpg' %}" width="800" height="500" alt="" loading="lazy">
+          <span class="domain-label">Langues <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </a>
       </div>
     </div>
   </section>
 
-  <section class="section" id="explorer">
-    <div class="wrap search-block">
-      <h2>Rechercher des programmes d’apprentissage</h2>
-      <form class="search-box" action="#telecharger" method="get" role="search">
-        <span aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3" stroke-linecap="round"/></svg>
-        </span>
-        <input type="search" name="q" placeholder="p. ex. : Droit, Python, Comptabilité" aria-label="Rechercher un domaine">
-        <button type="submit" aria-label="Rechercher">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3" stroke-linecap="round"/></svg>
-        </button>
-      </form>
-      <div class="chips" aria-label="Domaines">
-        <span class="chip pop">POPULAIRE</span>
-        <a class="chip" href="#telecharger">Droit</a>
-        <a class="chip" href="#telecharger">Informatique</a>
-        <a class="chip" href="#telecharger">Économie</a>
-        <a class="chip" href="#telecharger">Médecine</a>
-        <a class="chip" href="#telecharger">Gestion</a>
-        <a class="chip" href="#telecharger">Langues</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section alt">
+  <!-- 6. Recherches tendances -->
+  <section class="section alt" id="tendances">
     <div class="wrap">
-      <h2 class="section-title center">Ce que les étudiants réalisent grâce à Akadex</h2>
+      <h2 class="section-title">Recherches tendances</h2>
+      <p class="section-sub" style="margin-bottom: 1.15rem;">Ce que les étudiants cherchent en ce moment.</p>
+      <div class="chips" aria-label="Recherches populaires">
+        <a class="chip" href="/apprendre/#/?q=Python">Python</a>
+        <a class="chip" href="/apprendre/#/?q=Droit">Droit</a>
+        <a class="chip" href="/apprendre/#/?q=IA">IA</a>
+        <a class="chip" href="/apprendre/#/?q=Comptabilit%C3%A9">Comptabilité</a>
+        <a class="chip" href="/apprendre/#/?q=OHADA">OHADA</a>
+        <a class="chip" href="/apprendre/#/?q=Statistiques">Statistiques</a>
+        <a class="chip" href="/apprendre/#/?q=Anglais">Anglais</a>
+        <a class="chip" href="/apprendre/#/?q=TFC">TFC</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. Intentions -->
+  <section class="section" id="intentions">
+    <div class="wrap">
+      <h2 class="section-title center">Pourquoi tu es là ?</h2>
+      <div class="intent-grid">
+        <a class="intent-card" href="/apprendre/">
+          <h3>Démarrer</h3>
+          <p>Première année ou nouveau campus — trouve tes premiers cours.</p>
+          <span class="link">Commencer →</span>
+        </a>
+        <a class="intent-card" href="/apprendre/#/?q=fili%C3%A8re">
+          <h3>Changer de filière</h3>
+          <p>Explore un autre domaine avant de t’engager.</p>
+          <span class="link">Explorer →</span>
+        </a>
+        <a class="intent-card" href="/apprendre/">
+          <h3>Progresser</h3>
+          <p>Renforce une matière, prépare un partiel ou un TFC.</p>
+          <span class="link">Voir les cours →</span>
+        </a>
+        <a class="intent-card" href="#domaines">
+          <h3>Explorer</h3>
+          <p>Parcours les catégories et les recherches tendances.</p>
+          <span class="link">Découvrir →</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Prêt pour le campus -->
+  <section class="section blueish" id="pret-campus">
+    <div class="wrap">
+      <div class="ready-panel">
+        <div>
+          <h2>Prêt pour le campus</h2>
+          <p>Cours et communauté — tout ce qu’il faut pour réussir ton semestre.</p>
+          <div class="ready-actions">
+            <a class="btn btn-primary" href="/apprendre/">Accéder aux cours</a>
+            <a class="btn btn-outline" href="#telecharger">Télécharger l’app</a>
+          </div>
+        </div>
+        <div class="ready-visual">
+          <img src="{% static 'landing/together.png' %}" width="1200" height="800" alt="Étudiants sur le campus avec Akadex" loading="lazy">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. Pourquoi Akadex -->
+  <section class="section" id="temoignages">
+    <div class="wrap">
+      <h2 class="section-title center">Pourquoi Akadex</h2>
       <div class="quotes">
         <article class="quote">
           <div class="quote-top">
@@ -1186,7 +1880,7 @@
               <span class="role">Étudiante · UNIKIN</span>
             </div>
           </div>
-          <p>« Les PDF et les discussions m’ont aidée à préparer mes partiels sans courir partout sur le campus. »</p>
+          <p>« Les PDF et les discussions m’ont aidée à préparer mes partiels. »</p>
         </article>
         <article class="quote">
           <div class="quote-top">
@@ -1196,7 +1890,7 @@
               <span class="role">Étudiant · Informatique</span>
             </div>
           </div>
-          <p>« J’ai suivi un parcours vidéo puis payé un cours en Mobile Money — simple et local. »</p>
+          <p>« Parcours vidéo puis paiement Mobile Money — simple et local. »</p>
         </article>
         <article class="quote">
           <div class="quote-top">
@@ -1206,15 +1900,16 @@
               <span class="role">Alumni</span>
             </div>
           </div>
-          <p>« Je partage mes conseils TFC et stages. La communauté reste active même après le diplôme. »</p>
+          <p>« Je partage mes conseils TFC. La communauté reste active après le diplôme. »</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="section" id="faq">
+  <!-- 10. FAQ -->
+  <section class="section alt" id="faq">
     <div class="wrap">
-      <h2 class="section-title">Foire Aux Questions</h2>
+      <h2 class="section-title">Foire aux questions</h2>
       <div class="faq-box">
         <details open>
           <summary>Akadex est-il gratuit ?</summary>
@@ -1222,21 +1917,22 @@
         </details>
         <details>
           <summary>Sur quels appareils puis-je l’utiliser ?</summary>
-          <p>Android est disponible dès maintenant. La version iOS (App Store) arrive bientôt.</p>
+          <p>Android est disponible dès maintenant. La version iOS (App Store) arrive bientôt. Le web Apprendre est accessible tout de suite.</p>
         </details>
         <details>
           <summary>Comment payer un cours ?</summary>
           <p>Depuis l’app, choisissez Mobile Money (Vodacom, Airtel ou Orange) et validez le paiement sur votre téléphone.</p>
         </details>
         <details>
-          <summary>Qui peut publier des documents ?</summary>
-          <p>Les étudiants et enseignants peuvent partager des supports. Les contenus passent par une modération avant publication.</p>
+          <summary>Comment accéder aux cours en ligne ?</summary>
+          <p>Ouvrez <a href="/apprendre/" style="color: var(--blue); font-weight: 700;">/apprendre/</a> dans votre navigateur, ou utilisez la barre de recherche en haut de cette page.</p>
         </details>
       </div>
     </div>
   </section>
 
-  <section class="section blueish" id="telecharger">
+  <!-- Download (ancre #telecharger) -->
+  <section class="section" id="telecharger">
     <div class="wrap">
       <div class="download-band">
         <div class="download-band-copy">
@@ -1265,62 +1961,65 @@
           </div>
         </div>
         <div class="download-band-photo" aria-hidden="true">
-          <img
-            src="{% static 'landing/install.png' %}"
-            width="168"
-            height="168"
-            alt=""
-            loading="lazy"
-          >
+          <img src="{% static 'landing/install.png' %}" width="168" height="168" alt="" loading="lazy">
         </div>
       </div>
     </div>
   </section>
 
+  {% include "partials/auth_modal.html" %}
+
   <footer class="site-footer">
     <div class="wrap">
       <div class="footer-grid">
         <div>
-          <h3>Domaines</h3>
+          <h3>Apprendre</h3>
           <ul>
-            <li><a href="#telecharger">Droit</a></li>
-            <li><a href="#telecharger">Informatique</a></li>
-            <li><a href="#telecharger">Économie</a></li>
-            <li><a href="#telecharger">Médecine</a></li>
-            <li><a href="#telecharger">Gestion</a></li>
+            <li><a href="/apprendre/">Catalogue</a></li>
+            <li><a href="/apprendre/#/?domain=droit">Droit</a></li>
+            <li><a href="/apprendre/#/?domain=informatique">Informatique</a></li>
+            <li><a href="/apprendre/#/?domain=economie">Économie</a></li>
+            <li><a href="/apprendre/#/?domain=medecine">Médecine</a></li>
+            <li><a href="/apprendre/#/?domain=gestion">Gestion</a></li>
           </ul>
         </div>
         <div>
           <h3>Produit</h3>
           <ul>
-            <li><a href="#fonctionnalites">Fonctionnalités</a></li>
-            <li><a href="#domaines">Cours</a></li>
+            <li><a href="/apprendre/">Cours</a></li>
+            <li><a href="#nouveautes">Nouveautés</a></li>
             <li><a href="#telecharger">Télécharger</a></li>
             <li><a href="#faq">FAQ</a></li>
+            <li><a href="#pret-campus">Prêt campus</a></li>
           </ul>
         </div>
         <div>
           <h3>Communauté</h3>
           <ul>
-            <li><a href="/enseignant/">Espace enseignant</a></li>
-            <li><a href="/admin/">Administration</a></li>
-            <li><a href="#telecharger">Campus</a></li>
-            <li><a href="#telecharger">Alumni</a></li>
-            <li><a href="#telecharger">Documents</a></li>
+            <li><a href="/apprendre/">Alumni</a></li>
+            <li><a href="#temoignages">Témoignages</a></li>
           </ul>
         </div>
         <div>
-          <h3>Paiement</h3>
+          <h3>Entreprise / Campus</h3>
           <ul>
+            <li><a href="#universites">Universités</a></li>
             <li><a href="#faq">Mobile Money</a></li>
-            <li><a href="#faq">Vodacom M-Pesa</a></li>
-            <li><a href="#faq">Airtel Money</a></li>
-            <li><a href="#faq">Orange Money</a></li>
+            <li><a href="#telecharger">App Android</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3>Légal</h3>
+          <ul>
+            <li><a href="/legal/privacy/">Confidentialité</a></li>
+            <li><a href="/legal/terms/">Conditions d’utilisation</a></li>
+            <li><a href="/legal/delete-account/">Supprimer mon compte</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
         <span>© {% now "Y" %} Akadex</span>
+        <a href="/apprendre/">Catalogue Apprendre</a>
       </div>
     </div>
   </footer>
@@ -1350,7 +2049,263 @@
       }
 
       applyTheme(root.getAttribute('data-theme') || 'light');
+
+      /* —— Mobile menu —— */
+      var menuBtn = document.getElementById('nav-menu-btn');
+      var drawer = document.getElementById('nav-drawer');
+
+      function setMenuOpen(open) {
+        if (!menuBtn || !drawer) return;
+        drawer.setAttribute('data-open', open ? 'true' : 'false');
+        if (open) drawer.removeAttribute('hidden');
+        else drawer.setAttribute('hidden', '');
+        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        menuBtn.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
+      }
+
+      if (menuBtn && drawer) {
+        menuBtn.addEventListener('click', function () {
+          setMenuOpen(drawer.getAttribute('data-open') !== 'true');
+        });
+        drawer.querySelectorAll('a').forEach(function (link) {
+          link.addEventListener('click', function () { setMenuOpen(false); });
+        });
+        document.addEventListener('keydown', function (e) {
+          if (e.key === 'Escape') setMenuOpen(false);
+        });
+        document.addEventListener('click', function (e) {
+          if (drawer.getAttribute('data-open') !== 'true') return;
+          if (drawer.contains(e.target) || menuBtn.contains(e.target)) return;
+          setMenuOpen(false);
+        });
+      }
+
+      /* —— Nav search → /apprendre/#/?q= —— */
+      var navForm = document.getElementById('nav-search');
+      if (navForm) {
+        navForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var q = (document.getElementById('nav-q') || {}).value || '';
+          q = String(q).trim();
+          var url = q
+            ? '/apprendre/#/?q=' + encodeURIComponent(q)
+            : '/apprendre/';
+          window.location.href = url;
+        });
+      }
+
+      /* —— Logos universités : défilement horizontal, 1 logo / seconde —— */
+      (function initUniLogoMarquee() {
+        var track = document.getElementById('uni-logo-track');
+        if (!track) return;
+        var originals = Array.prototype.slice.call(track.children);
+        if (!originals.length) return;
+        originals.forEach(function (el) {
+          track.appendChild(el.cloneNode(true));
+        });
+        var offset = 0;
+        var timer = null;
+
+        function stepWidth() {
+          return (originals[0] && originals[0].offsetWidth) || 160;
+        }
+
+        function tick() {
+          var step = stepWidth();
+          offset += step;
+          var half = track.scrollWidth / 2;
+          if (half > 0 && offset >= half) {
+            track.style.transition = 'none';
+            offset = 0;
+            track.style.transform = 'translateX(0)';
+            // force reflow puis reprendre l’animation
+            void track.offsetWidth;
+          }
+          track.style.transition = 'transform 0.4s ease';
+          track.style.transform = 'translateX(' + (-offset) + 'px)';
+        }
+
+        function start() {
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+          if (timer) clearInterval(timer);
+          timer = setInterval(tick, 1000);
+        }
+
+        // Attendre le chargement des logos pour mesurer la largeur
+        var imgs = track.querySelectorAll('img');
+        var pending = imgs.length;
+        function maybeStart() {
+          pending -= 1;
+          if (pending <= 0) start();
+        }
+        if (!pending) start();
+        else {
+          imgs.forEach(function (img) {
+            if (img.complete) maybeStart();
+            else {
+              img.addEventListener('load', maybeStart);
+              img.addEventListener('error', maybeStart);
+            }
+          });
+          setTimeout(start, 1200);
+        }
+      })();
+
+      /* —— Hero carousel —— */
+      var track = document.getElementById('hero-track');
+      var dotsWrap = document.getElementById('hero-dots');
+      var prevBtn = document.getElementById('hero-prev');
+      var nextBtn = document.getElementById('hero-next');
+      var slides = track ? Array.prototype.slice.call(track.querySelectorAll('.hero-slide')) : [];
+      var index = 0;
+      var autoTimer = null;
+
+      function goTo(i) {
+        if (!track || !slides.length) return;
+        index = (i + slides.length) % slides.length;
+        var target = slides[index];
+        track.scrollTo({ left: target.offsetLeft - track.offsetLeft, behavior: 'smooth' });
+        if (dotsWrap) {
+          var dots = dotsWrap.querySelectorAll('.carousel-dot');
+          for (var d = 0; d < dots.length; d++) {
+            dots[d].setAttribute('aria-current', d === index ? 'true' : 'false');
+          }
+        }
+      }
+
+      function syncFromScroll() {
+        if (!track || !slides.length) return;
+        var left = track.scrollLeft;
+        var best = 0;
+        var bestDist = Infinity;
+        for (var s = 0; s < slides.length; s++) {
+          var dist = Math.abs(slides[s].offsetLeft - track.offsetLeft - left);
+          if (dist < bestDist) { bestDist = dist; best = s; }
+        }
+        if (best !== index) {
+          index = best;
+          if (dotsWrap) {
+            var dots = dotsWrap.querySelectorAll('.carousel-dot');
+            for (var d = 0; d < dots.length; d++) {
+              dots[d].setAttribute('aria-current', d === index ? 'true' : 'false');
+            }
+          }
+        }
+      }
+
+      if (dotsWrap && slides.length) {
+        slides.forEach(function (_, i) {
+          var dot = document.createElement('button');
+          dot.type = 'button';
+          dot.className = 'carousel-dot';
+          dot.setAttribute('aria-label', 'Aller au slide ' + (i + 1));
+          if (i === 0) dot.setAttribute('aria-current', 'true');
+          dot.addEventListener('click', function () { goTo(i); resetAuto(); });
+          dotsWrap.appendChild(dot);
+        });
+      }
+
+      if (prevBtn) prevBtn.addEventListener('click', function () { goTo(index - 1); resetAuto(); });
+      if (nextBtn) nextBtn.addEventListener('click', function () { goTo(index + 1); resetAuto(); });
+      if (track) {
+        var scrollT;
+        track.addEventListener('scroll', function () {
+          clearTimeout(scrollT);
+          scrollT = setTimeout(syncFromScroll, 80);
+        }, { passive: true });
+      }
+
+      function resetAuto() {
+        if (autoTimer) clearInterval(autoTimer);
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        autoTimer = setInterval(function () { goTo(index + 1); }, 6500);
+      }
+      resetAuto();
+
+      /* —— Tabs (filtre local des cartes) —— */
+      var tabs = document.querySelectorAll('.tab[data-tab]');
+      var grid = document.getElementById('course-grid');
+      var fallbackHTML = grid ? grid.innerHTML : '';
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          tabs.forEach(function (t) { t.setAttribute('aria-selected', t === tab ? 'true' : 'false'); });
+          var key = tab.getAttribute('data-tab');
+          if (!grid) return;
+          var cards = Array.prototype.slice.call(grid.querySelectorAll('.course-card'));
+          if (key === 'nouveautes') {
+            cards.reverse().forEach(function (c) { grid.appendChild(c); });
+          } else if (key === 'tendances') {
+            cards.sort(function () { return Math.random() - 0.5; }).forEach(function (c) { grid.appendChild(c); });
+          } else {
+            grid.innerHTML = fallbackHTML;
+            hydrateFromApi(false);
+          }
+        });
+      });
+
+      /* —— Fetch cours API (optionnel) —— */
+      var PLACEHOLDER =
+        'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80';
+
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function cardHTML(c) {
+        var title = escapeHtml(c.title || 'Cours');
+        var partner = escapeHtml(c.university_name || c.faculty_name || 'Akadex Campus');
+        var meta = escapeHtml(
+          [c.level_label, c.estimated_hours ? c.estimated_hours + ' h' : ''].filter(Boolean).join(' · ') || 'Cours'
+        );
+        var cover = escapeHtml(c.cover_url || PLACEHOLDER);
+        var href = '/apprendre/#/?q=' + encodeURIComponent(c.title || '');
+        return (
+          '<a class="course-card" href="' + href + '">' +
+            '<div class="thumb"><img src="' + cover + '" alt="" width="800" height="500" loading="lazy"></div>' +
+            '<div class="body">' +
+              '<p class="partner">' + partner + '</p>' +
+              '<h3>' + title + '</h3>' +
+              '<p class="meta">' + meta + '</p>' +
+            '</div>' +
+          '</a>'
+        );
+      }
+
+      function hydrateFromApi(force) {
+        if (!grid) return;
+        fetch('/api/courses/?page_size=8')
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (data) {
+            var list = Array.isArray(data) ? data : (data.results || []);
+            if (!list.length) return;
+            grid.innerHTML = list.slice(0, 8).map(cardHTML).join('');
+            fallbackHTML = grid.innerHTML;
+          })
+          .catch(function () {
+            if (force) { /* keep static fallback */ }
+          });
+      }
+
+      hydrateFromApi(true);
+
+      /* Auth: voir static/landing/js/auth-modal.js */
+      window.__akadexCloseMenu = function () { setMenuOpen(false); };
     })();
+  </script>
+  <script type="module">
+    import { initSiteNav } from "{% static 'landing/js/site-nav.js' %}";
+    import { initAuthModal } from "{% static 'landing/js/auth-modal.js' %}";
+    initSiteNav();
+    initAuthModal({
+      onMenuClose: function () {
+        if (typeof window.__akadexCloseMenu === "function") window.__akadexCloseMenu();
+      },
+    });
   </script>
 </body>
 </html>

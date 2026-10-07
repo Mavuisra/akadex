@@ -54,7 +54,7 @@ function renderLogin() {
           </div>
         </div>
         <h1>Connexion</h1>
-        <p class="sub">Accédez à votre tableau de bord professionnel.</p>
+        <p class="sub">Espace réservé aux enseignants autorisés (accès sur invitation).</p>
         <div id="login-error"></div>
         <form id="login-form">
           <div class="field">

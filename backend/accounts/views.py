@@ -30,6 +30,30 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
+    def get_throttles(self):
+        from .auth import AuthAnonThrottle, AuthBurstThrottle
+
+        return [AuthBurstThrottle(), AuthAnonThrottle()]
+
+    def create(self, request, *args, **kwargs):
+        """Inscription + JWT immédiat (même contrat que login)."""
+        from rest_framework_simplejwt.tokens import RefreshToken
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        refresh['email'] = user.email
+        refresh['role'] = user.role
+        return Response(
+            {
+                'user': UserSerializer(user, context={'request': request}).data,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 72" role="img" aria-label="UPC">
+  <rect x="10" y="14" width="44" height="44" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2.5"/>
+  <path d="M22 48 V28 h8 c8 0 12 4 12 10 s-4 10-12 10 H22z" fill="none" stroke="#1a1a1a" stroke-width="2.2"/>
+  <text x="70" y="45" font-family="Georgia, serif" font-size="28" font-weight="700" fill="#1a1a1a" letter-spacing="2">UPC</text>
+</svg>

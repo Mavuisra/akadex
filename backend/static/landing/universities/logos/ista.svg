@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 72" role="img" aria-label="ISTA">
+  <polygon points="36,10 58,58 14,58" fill="none" stroke="#222" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="36" cy="40" r="5" fill="#222"/>
+  <text x="72" y="46" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" fill="#222" letter-spacing="1">ISTA</text>
+</svg>

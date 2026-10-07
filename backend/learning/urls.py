@@ -7,6 +7,7 @@ from .views import (
     CourseModuleViewSet,
     CourseOutlineViewSet,
     LessonProgressViewSet,
+    student_dashboard,
 )
 
 router = DefaultRouter()
@@ -17,5 +18,6 @@ router.register('course-comments', CourseCommentViewSet, basename='course-commen
 router.register('lesson-progress', LessonProgressViewSet, basename='lesson-progress')
 
 urlpatterns = [
+    path('student-dashboard/', student_dashboard, name='student-dashboard'),
     path('', include(router.urls)),
 ]
