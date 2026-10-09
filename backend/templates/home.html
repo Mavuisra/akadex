@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0056d2" id="meta-theme-color">
-  <title>Akadex — Campus universitaire dans votre poche</title>
+  <title>Akadex : campus universitaire dans votre poche</title>
   <meta name="description" content="Akadex : cours, communauté campus et paiement Mobile Money pour les étudiants et enseignants en RDC.">
   <link rel="icon" href="{% static 'landing/logo.png' %}" type="image/png">
   <script>
@@ -26,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'landing/css/site-chrome.css' %}">
+  <link rel="stylesheet" href="{% static 'landing/css/site-chrome.css' %}?v=auth-lite1">
   <style>
     :root,
     html[data-theme="light"] {
@@ -42,10 +42,10 @@
       --blue-hover: #00419e;
       --line: rgba(0, 0, 0, 0.1);
       --line-soft: rgba(0, 0, 0, 0.06);
-      --radius: 4px;
-      --radius-md: 6px;
-      --radius-lg: 18px;
-      --radius-pill: 999px;
+      --radius: 2px;
+      --radius-md: 2px;
+      --radius-lg: 2px;
+      --radius-pill: 2px;
       --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
       --shadow-card: 0 8px 32px rgba(15, 40, 80, 0.08);
       --nav-bg: rgba(255, 255, 255, 0.62);
@@ -302,7 +302,7 @@
       padding: 0.22rem 0.65rem;
       font-size: 0.78rem;
       font-weight: 700;
-      border-radius: 8px;
+      border-radius: 2px;
     }
 
     [hidden],
@@ -1355,7 +1355,7 @@
     .auth-steps span {
       flex: 1;
       height: 4px;
-      border-radius: 99px;
+      border-radius: 2px;
       background: var(--line);
     }
 
@@ -1374,7 +1374,7 @@
       width: 100%;
       height: 48px;
       padding: 0 0.75rem;
-      border-radius: 8px;
+      border-radius: 2px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.55);
       color: var(--ink);
@@ -1409,7 +1409,7 @@
 
     .auth-strength {
       height: 4px;
-      border-radius: 99px;
+      border-radius: 2px;
       background: var(--line);
       margin-top: 0.45rem;
       overflow: hidden;
@@ -1449,7 +1449,7 @@
       width: 36px;
       height: 36px;
       border: 0;
-      border-radius: 8px;
+      border-radius: 2px;
       background: transparent;
       color: var(--ink);
       font-size: 1.45rem;
@@ -1491,7 +1491,7 @@
       width: 100%;
       height: 48px;
       padding: 0 0.9rem;
-      border-radius: 8px;
+      border-radius: 2px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, 0.55);
       color: var(--ink);
@@ -1511,7 +1511,7 @@
       display: none;
       margin-bottom: 0.85rem;
       padding: 0.7rem 0.85rem;
-      border-radius: 8px;
+      border-radius: 2px;
       background: rgba(198, 40, 40, 0.1);
       border: 1px solid rgba(198, 40, 40, 0.28);
       color: #c62828;
@@ -1525,7 +1525,7 @@
       width: 100%;
       height: 48px;
       border: 0;
-      border-radius: 8px;
+      border-radius: 2px;
       background: var(--blue);
       color: #fff;
       font-weight: 800;
@@ -1561,7 +1561,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.65rem;
-      border-radius: 8px;
+      border-radius: 2px;
       border: 1px solid var(--line);
       background: var(--glass);
       color: var(--ink);
@@ -1624,21 +1624,37 @@
     @media (max-width: 720px) {
       .auth-overlay[data-open="true"] {
         justify-content: stretch;
-        align-items: end;
+        align-items: stretch;
       }
       .auth-panel {
         width: 100%;
-        height: auto;
-        max-height: 92dvh;
+        height: 100%;
+        max-height: 100%;
+        min-height: 100%;
         border-left: 0;
-        border-radius: 16px 16px 0 0;
-        animation: auth-up .22s ease;
-      }
-      @keyframes auth-up {
-        from { transform: translateY(24px); opacity: 0.7; }
-        to { transform: translateY(0); opacity: 1; }
+        border-radius: 0;
+        animation: none;
       }
     }
+
+/* —— Akadex radius lock: 2px everywhere (circles exempt) —— */
+:where(
+  button, .btn, input:not([type="checkbox"]):not([type="radio"]), select, textarea,
+  .chip, .tab, .panel, .panel-b, .card, .glass, .glass-strong, .course-card, .domain-card,
+  .intent-card, .quote, .faq-box, .stat-card, .login-card,
+  dialog, .admin-dialog, .toast, .nav-search, .nav-drawer, .store-btn, .module,
+  .ready-panel, .download-band, .momo-provider, .momo-input, .momo-checkout,
+  .field input, .field select, .field textarea, .sidebar, .user-chip, .topbar,
+  .cart-item, .cart-summary, .cart-panel, .empty, .alert, .toolbar input, .toolbar select,
+  table.data, .ud-buy, .ud-buy .btn, .hero-slide, .carousel-nav, .trust-logo, .boot,
+  .lesson-editor, .timeline-item
+) {
+  border-radius: 2px !important;
+}
+:where(.avatar, .boot-spinner, .g, .timeline-dot, .nav-profile-btn, .nav-profile-avatar, .pf-avatar) {
+  border-radius: 50% !important;
+}
+
   </style>
 </head>
 <body>
@@ -1652,7 +1668,7 @@
           <article class="hero-slide">
             <div class="hero-slide-copy">
               <h2>L’IA au service du campus</h2>
-              <p>Résume, révise et structure tes notes — sans quitter Akadex.</p>
+              <p>Résume, révise et structure tes notes sans quitter Akadex.</p>
               <div>
                 <a class="btn btn-primary" href="/apprendre/#/?q=IA">Explorer l’IA</a>
               </div>
@@ -1664,7 +1680,7 @@
           <article class="hero-slide">
             <div class="hero-slide-copy">
               <h2>Communauté campus</h2>
-              <p>Étudiants, enseignants et alumni — conseils, stages, TFC. Paiement Mobile Money inclus.</p>
+              <p>Étudiants, enseignants et alumni : conseils, stages et TFC. Paiement Mobile Money inclus.</p>
               <div>
                 <a class="btn btn-primary" href="/apprendre/">Explorer</a>
               </div>
@@ -1750,7 +1766,7 @@
     </div>
   </section>
 
-  <!-- 3. Universités — logos gris, défilement horizontal 1s -->
+  <!-- 3. Universités : logos gris, défilement horizontal 1s -->
   <section class="trust" id="universites">
     <div class="wrap">
       <h2>Apprendre auprès d’universités congolaises</h2>
@@ -1801,73 +1817,7 @@
     </div>
   </section>
 
-  <!-- 6. Recherches tendances -->
-  <section class="section alt" id="tendances">
-    <div class="wrap">
-      <h2 class="section-title">Recherches tendances</h2>
-      <p class="section-sub" style="margin-bottom: 1.15rem;">Ce que les étudiants cherchent en ce moment.</p>
-      <div class="chips" aria-label="Recherches populaires">
-        <a class="chip" href="/apprendre/#/?q=Python">Python</a>
-        <a class="chip" href="/apprendre/#/?q=Droit">Droit</a>
-        <a class="chip" href="/apprendre/#/?q=IA">IA</a>
-        <a class="chip" href="/apprendre/#/?q=Comptabilit%C3%A9">Comptabilité</a>
-        <a class="chip" href="/apprendre/#/?q=OHADA">OHADA</a>
-        <a class="chip" href="/apprendre/#/?q=Statistiques">Statistiques</a>
-        <a class="chip" href="/apprendre/#/?q=Anglais">Anglais</a>
-        <a class="chip" href="/apprendre/#/?q=TFC">TFC</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 7. Intentions -->
-  <section class="section" id="intentions">
-    <div class="wrap">
-      <h2 class="section-title center">Pourquoi tu es là ?</h2>
-      <div class="intent-grid">
-        <a class="intent-card" href="/apprendre/">
-          <h3>Démarrer</h3>
-          <p>Première année ou nouveau campus — trouve tes premiers cours.</p>
-          <span class="link">Commencer →</span>
-        </a>
-        <a class="intent-card" href="/apprendre/#/?q=fili%C3%A8re">
-          <h3>Changer de filière</h3>
-          <p>Explore un autre domaine avant de t’engager.</p>
-          <span class="link">Explorer →</span>
-        </a>
-        <a class="intent-card" href="/apprendre/">
-          <h3>Progresser</h3>
-          <p>Renforce une matière, prépare un partiel ou un TFC.</p>
-          <span class="link">Voir les cours →</span>
-        </a>
-        <a class="intent-card" href="#domaines">
-          <h3>Explorer</h3>
-          <p>Parcours les catégories et les recherches tendances.</p>
-          <span class="link">Découvrir →</span>
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 8. Prêt pour le campus -->
-  <section class="section blueish" id="pret-campus">
-    <div class="wrap">
-      <div class="ready-panel">
-        <div>
-          <h2>Prêt pour le campus</h2>
-          <p>Cours et communauté — tout ce qu’il faut pour réussir ton semestre.</p>
-          <div class="ready-actions">
-            <a class="btn btn-primary" href="/apprendre/">Accéder aux cours</a>
-            <a class="btn btn-outline" href="#telecharger">Télécharger l’app</a>
-          </div>
-        </div>
-        <div class="ready-visual">
-          <img src="{% static 'landing/together.png' %}" width="1200" height="800" alt="Étudiants sur le campus avec Akadex" loading="lazy">
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 9. Pourquoi Akadex -->
+  <!-- Pourquoi Akadex -->
   <section class="section" id="temoignages">
     <div class="wrap">
       <h2 class="section-title center">Pourquoi Akadex</h2>
@@ -1890,7 +1840,7 @@
               <span class="role">Étudiant · Informatique</span>
             </div>
           </div>
-          <p>« Parcours vidéo puis paiement Mobile Money — simple et local. »</p>
+          <p>« Parcours vidéo puis paiement Mobile Money, simple et local. »</p>
         </article>
         <article class="quote">
           <div class="quote-top">
@@ -1912,20 +1862,24 @@
       <h2 class="section-title">Foire aux questions</h2>
       <div class="faq-box">
         <details open>
-          <summary>Akadex est-il gratuit ?</summary>
-          <p>L’application est gratuite à télécharger. Certains cours ou contenus premium peuvent être payants via Mobile Money.</p>
+          <summary>Qu’est-ce qu’Akadex ?</summary>
+          <p>Akadex est une plateforme d’apprentissage numérique conçue pour l’enseignement supérieur en République démocratique du Congo. Elle structure l’accès aux contenus académiques (cours, documents et parcours) en lien avec les filières et campus locaux.</p>
         </details>
         <details>
-          <summary>Sur quels appareils puis-je l’utiliser ?</summary>
-          <p>Android est disponible dès maintenant. La version iOS (App Store) arrive bientôt. Le web Apprendre est accessible tout de suite.</p>
+          <summary>Qui peut utiliser la plateforme ?</summary>
+          <p>Étudiants, enseignants et alumni. L’inscription est gratuite ; certains contenus spécialisés peuvent être soumis à un accès payant, clairement indiqué avant confirmation.</p>
         </details>
         <details>
-          <summary>Comment payer un cours ?</summary>
-          <p>Depuis l’app, choisissez Mobile Money (Vodacom, Airtel ou Orange) et validez le paiement sur votre téléphone.</p>
+          <summary>Comment fonctionne le paiement ?</summary>
+          <p>Les transactions s’effectuent en Mobile Money (opérateurs locaux), via un prestataire de paiement sécurisé. Le montant est affiché en USD ; l’accès au contenu n’est accordé qu’après validation du paiement. Akadex ne collecte jamais votre code PIN.</p>
         </details>
         <details>
-          <summary>Comment accéder aux cours en ligne ?</summary>
-          <p>Ouvrez <a href="/apprendre/" style="color: var(--blue); font-weight: 700;">/apprendre/</a> dans votre navigateur, ou utilisez la barre de recherche en haut de cette page.</p>
+          <summary>Sur quels supports est-elle disponible ?</summary>
+          <p>Via le navigateur web et l’application Android. Une version iOS est en cours de déploiement.</p>
+        </details>
+        <details>
+          <summary>Comment mes données sont-elles traitées ?</summary>
+          <p>Les comptes sont protégés par authentification sécurisée et mots de passe hashés. Les données servent uniquement au fonctionnement du service académique. Vous pouvez consulter la politique de confidentialité ou demander la suppression de votre compte.</p>
         </details>
       </div>
     </div>
@@ -1990,7 +1944,7 @@
             <li><a href="#nouveautes">Nouveautés</a></li>
             <li><a href="#telecharger">Télécharger</a></li>
             <li><a href="#faq">FAQ</a></li>
-            <li><a href="#pret-campus">Prêt campus</a></li>
+            <li><a href="#domaines">Domaines</a></li>
           </ul>
         </div>
         <div>
@@ -2026,73 +1980,7 @@
 
   <script>
     (function () {
-      var root = document.documentElement;
-      var btn = document.getElementById('theme-toggle');
-      var meta = document.getElementById('meta-theme-color');
-
-      function applyTheme(theme) {
-        root.setAttribute('data-theme', theme);
-        try { localStorage.setItem('akadex-theme', theme); } catch (e) {}
-        if (meta) meta.setAttribute('content', theme === 'dark' ? '#121212' : '#0056d2');
-        if (btn) {
-          btn.setAttribute(
-            'aria-label',
-            theme === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'
-          );
-        }
-      }
-
-      if (btn) {
-        btn.addEventListener('click', function () {
-          applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-        });
-      }
-
-      applyTheme(root.getAttribute('data-theme') || 'light');
-
-      /* —— Mobile menu —— */
-      var menuBtn = document.getElementById('nav-menu-btn');
-      var drawer = document.getElementById('nav-drawer');
-
-      function setMenuOpen(open) {
-        if (!menuBtn || !drawer) return;
-        drawer.setAttribute('data-open', open ? 'true' : 'false');
-        if (open) drawer.removeAttribute('hidden');
-        else drawer.setAttribute('hidden', '');
-        menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        menuBtn.setAttribute('aria-label', open ? 'Fermer le menu' : 'Ouvrir le menu');
-      }
-
-      if (menuBtn && drawer) {
-        menuBtn.addEventListener('click', function () {
-          setMenuOpen(drawer.getAttribute('data-open') !== 'true');
-        });
-        drawer.querySelectorAll('a').forEach(function (link) {
-          link.addEventListener('click', function () { setMenuOpen(false); });
-        });
-        document.addEventListener('keydown', function (e) {
-          if (e.key === 'Escape') setMenuOpen(false);
-        });
-        document.addEventListener('click', function (e) {
-          if (drawer.getAttribute('data-open') !== 'true') return;
-          if (drawer.contains(e.target) || menuBtn.contains(e.target)) return;
-          setMenuOpen(false);
-        });
-      }
-
-      /* —— Nav search → /apprendre/#/?q= —— */
-      var navForm = document.getElementById('nav-search');
-      if (navForm) {
-        navForm.addEventListener('submit', function (e) {
-          e.preventDefault();
-          var q = (document.getElementById('nav-q') || {}).value || '';
-          q = String(q).trim();
-          var url = q
-            ? '/apprendre/#/?q=' + encodeURIComponent(q)
-            : '/apprendre/';
-          window.location.href = url;
-        });
-      }
+      /* Thème / menu / recherche nav → landing/js/site-nav.js (un seul handler) */
 
       /* —— Logos universités : défilement horizontal, 1 logo / seconde —— */
       (function initUniLogoMarquee() {
@@ -2292,9 +2180,6 @@
       }
 
       hydrateFromApi(true);
-
-      /* Auth: voir static/landing/js/auth-modal.js */
-      window.__akadexCloseMenu = function () { setMenuOpen(false); };
     })();
   </script>
   <script type="module">

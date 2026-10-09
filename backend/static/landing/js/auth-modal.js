@@ -1,8 +1,4 @@
-/**
- * Auth modal Akadex — login Coursera-like + inscription complète (étudiant).
- * Sécurité : validation serveur (Django), throttle API, JWT Bearer,
- * pas de stockage du mot de passe, double-submit lock, messages d’erreur génériques login.
- */
+/** Auth modal Akadex — connexion / inscription étudiant. */
 const AUTH_KEYS = {
   access: 'akadex_web_access',
   refresh: 'akadex_web_refresh',
@@ -130,6 +126,7 @@ export function initAuthModal({ onMenuClose } = {}) {
   const stepsEl = $('auth-signup-steps');
   const formEmail = $('auth-form-email');
   const formPass = $('auth-form-password');
+  const formVerify = $('auth-form-verify');
   const formSignup = $('auth-form-signup');
   const orEl = $('auth-or');
   const googleBtn = $('auth-google');
@@ -203,13 +200,11 @@ export function initAuthModal({ onMenuClose } = {}) {
       });
     }
     if (titleEl) {
-      titleEl.textContent = signupStep === 0 ? 'Qui es-tu ?' : 'Ton compte';
+      titleEl.textContent = signupStep === 0 ? 'Inscription' : 'Compte';
     }
     if (subEl) {
-      subEl.textContent =
-        signupStep === 0
-          ? 'Profil et identité'
-          : 'E-mail, mot de passe et conditions';
+      subEl.hidden = true;
+      subEl.textContent = '';
     }
     if (backBtn) backBtn.hidden = false;
   }
@@ -220,6 +215,7 @@ export function initAuthModal({ onMenuClose } = {}) {
     overlay.classList.toggle('is-signup', authMode === 'signup' || step === 'signup');
     if (formEmail) formEmail.hidden = step !== 'email';
     if (formPass) formPass.hidden = step !== 'password';
+    if (formVerify) formVerify.hidden = step !== 'verify';
     if (formSignup) formSignup.hidden = step !== 'signup';
     if (stepsEl) stepsEl.hidden = step !== 'signup';
     if (orEl) orEl.hidden = step !== 'email';
@@ -229,13 +225,26 @@ export function initAuthModal({ onMenuClose } = {}) {
     if (step === 'signup') {
       paintSignupStep();
     } else if (step === 'password') {
-      if (titleEl) titleEl.textContent = 'Bienvenue';
-      if (subEl) subEl.textContent = `Connexion pour ${pendingEmail}`;
+      if (titleEl) titleEl.textContent = 'Mot de passe';
+      if (subEl) {
+        subEl.hidden = true;
+        subEl.textContent = '';
+      }
+      if (backBtn) backBtn.hidden = false;
+    } else if (step === 'verify') {
+      if (titleEl) titleEl.textContent = 'Confirmation';
+      if (subEl) {
+        subEl.hidden = !pendingEmail;
+        subEl.textContent = pendingEmail || '';
+      }
       if (backBtn) backBtn.hidden = false;
     } else {
-      if (titleEl) titleEl.textContent = 'Se connecter ou créer un compte';
+      if (titleEl) {
+        titleEl.textContent = authMode === 'signup' ? 'Inscription' : 'Connexion';
+      }
       if (subEl) {
-        subEl.textContent = 'Apprends à ton rythme avec Akadex.';
+        subEl.hidden = true;
+        subEl.textContent = '';
       }
       if (backBtn) backBtn.hidden = true;
     }
@@ -244,14 +253,17 @@ export function initAuthModal({ onMenuClose } = {}) {
       if (step === 'email') {
         switchEl.innerHTML =
           authMode === 'signup'
-            ? 'Déjà un compte ? <button type="button" data-auth-mode="login">Se connecter</button>'
-            : 'Nouveau sur Akadex ? <button type="button" data-auth-mode="signup">Créer un compte</button>';
+            ? 'Déjà un compte ? <button type="button" data-auth-mode="login">Connexion</button>'
+            : 'Pas de compte ? <button type="button" data-auth-mode="signup">S’inscrire</button>';
       } else if (step === 'password') {
         switchEl.innerHTML =
-          'Pas encore de compte ? <button type="button" data-auth-mode="signup">Créer un compte</button>';
+          'Pas de compte ? <button type="button" data-auth-mode="signup">S’inscrire</button>';
+      } else if (step === 'verify') {
+        switchEl.innerHTML =
+          '<button type="button" data-auth-mode="login">Connexion</button>';
       } else {
         switchEl.innerHTML =
-          'Déjà inscrit ? <button type="button" data-auth-mode="login">Se connecter</button>';
+          'Déjà un compte ? <button type="button" data-auth-mode="login">Connexion</button>';
       }
       switchEl.querySelectorAll('[data-auth-mode]').forEach((b) => {
         b.addEventListener('click', () => openAuth(b.getAttribute('data-auth-mode')));
@@ -384,6 +396,38 @@ export function initAuthModal({ onMenuClose } = {}) {
         method: 'POST',
         body: JSON.stringify(payload),
       });
+      pendingEmail = normalizeEmail(signupData.email);
+      clearSensitiveInputs(overlay);
+      if (data.dev_code && $('auth-verify-code')) {
+        $('auth-verify-code').value = data.dev_code;
+      }
+      setAuthStep('verify');
+      if (subEl) {
+        subEl.textContent =
+          data.detail ||
+          'Un code de confirmation a été envoyé. Saisis-le pour activer ton compte.';
+      }
+    } catch (e) {
+      showError(e.message || 'Inscription impossible.');
+    } finally {
+      setBusy(false, btn, 'Créer mon compte');
+    }
+  }
+
+  async function submitVerifyEmail() {
+    const btn = $('auth-verify-btn');
+    const code = ($('auth-verify-code')?.value || '').trim();
+    if (!pendingEmail || !code) {
+      showError('E-mail et code requis.');
+      return;
+    }
+    setBusy(true, btn, 'Confirmer mon e-mail');
+    showError('');
+    try {
+      const data = await apiJson('auth/verify-email/', {
+        method: 'POST',
+        body: JSON.stringify({ email: pendingEmail, token: code }),
+      });
       saveSession({
         access: data.access,
         refresh: data.refresh,
@@ -393,9 +437,9 @@ export function initAuthModal({ onMenuClose } = {}) {
       closeAuth();
       redirectAfterLogin(data.user || { role: 'student' });
     } catch (e) {
-      showError(e.message || 'Inscription impossible.');
+      showError(e.message || 'Code invalide.');
     } finally {
-      setBusy(false, btn, 'Créer mon compte');
+      setBusy(false, btn, 'Confirmer mon e-mail');
     }
   }
 
@@ -475,15 +519,26 @@ export function initAuthModal({ onMenuClose } = {}) {
       closeAuth();
       redirectAfterLogin(user);
     } catch (e) {
-      // Message générique : évite d’indiquer si l’e-mail existe.
-      showError(
-        e.status === 429
-          ? 'Trop de tentatives. Réessaie dans quelques minutes.'
-          : 'E-mail ou mot de passe incorrect.'
-      );
+      const msg = String(e.message || '');
+      if (/e-mail|email|confirm/i.test(msg) && /confirm|vérif|verif/i.test(msg)) {
+        setAuthStep('verify');
+        showError('Confirme ton e-mail avec le code reçu.');
+      } else {
+        showError(
+          e.status === 429
+            ? 'Trop de tentatives. Réessaie dans quelques minutes.'
+            : 'E-mail ou mot de passe incorrect.'
+        );
+      }
     } finally {
       setBusy(false, btn, 'Se connecter');
     }
+  });
+
+  formVerify?.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (busy) return;
+    await submitVerifyEmail();
   });
 
   formSignup?.addEventListener('submit', async (ev) => {
